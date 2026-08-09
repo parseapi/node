@@ -17,6 +17,7 @@ import type {
 	HolidayDate,
 	HolidayYear,
 	Ip,
+	Language,
 	Mx,
 	Phone,
 	Point,
@@ -198,6 +199,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			(name: string, opts?: { country?: string; state?: string }): Promise<City> =>
 				request(`/city/${enc(name)}`, { country: opts?.country, state: opts?.state }),
 			{
+				id: (id: string): Promise<City> => request(`/city/id/${enc(id)}`),
 				search: (q: string, opts?: { country?: string; state?: string; limit?: number }): Promise<CitySearch> =>
 					request('/city', { q, country: opts?.country, state: opts?.state, limit: opts?.limit }),
 				nearest: (lat: number, lon: number): Promise<CityNearest> => request('/city', { lat, lon }),
@@ -242,6 +244,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request(`/currency/${enc(base)}/${enc(quote)}`),
 			}
 		),
+
+		language: (code: string): Promise<Language> => request(`/language/${enc(code)}`),
 
 		timezone: (id: string, opts?: { at?: string }): Promise<Timezone> =>
 			request(`/timezone/${enc(id)}`, { at: opts?.at }),

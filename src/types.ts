@@ -122,6 +122,8 @@ export interface District {
 }
 
 export interface City {
+	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
+	id: string;
 	country: string;
 	state: string | null;
 	state_name: string | null;
@@ -321,6 +323,17 @@ export interface Currency {
 	symbol: string | null;
 	symbol_native: string | null;
 	digits: number | null;
+	countries: string[];
+}
+
+/** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
+export interface Language {
+	language: string;
+	iso3: string | null;
+	name: string;
+	local_name: string | null;
+	script: string | null;
+	direction: 'ltr' | 'rtl' | string;
 	countries: string[];
 }
 

@@ -53,7 +53,22 @@ await expectOk('state.districts', parse.state.districts('NC', { country: 'US' })
 	r.districts.length > 0 ? null : 'no districts'
 );
 await expectOk('district', parse.district('37081'), (r) => (r.name?.includes('Guilford') ? null : 'wrong district'));
-await expectOk('city', parse.city('charlotte', { country: 'US' }), (r) => (r.name === 'Charlotte' ? null : 'wrong city'));
+{
+	let cityId = null;
+	await expectOk('city', parse.city('charlotte', { country: 'US' }), (r) => {
+		if (r.name !== 'Charlotte') return 'wrong city';
+		if (typeof r.id !== 'string' || !r.id.startsWith('city_')) return 'missing id';
+		cityId = r.id;
+		return null;
+	});
+	if (cityId) {
+		await expectOk('city.id', parse.city.id(cityId), (r) =>
+			r.id === cityId && r.name === 'Charlotte' ? null : 'id mismatch'
+		);
+	} else {
+		check('city.id', false, 'skipped, no id from city');
+	}
+}
 await expectOk('city.search', parse.city.search('char', { country: 'US', limit: 5 }), (r) =>
 	r.cities.length > 0 ? null : 'no results'
 );
@@ -77,6 +92,9 @@ await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac O
 await expectOk('currency', parse.currency('USD'), (r) => (r.symbol === '$' ? null : 'wrong symbol'));
 await expectOk('currency.rate', parse.currency.rate('USD', 'EUR'), (r) =>
 	r.rate > 0 && r.rate < 10 ? null : `rate ${r.rate}`
+);
+await expectOk('language', parse.language('en'), (r) =>
+	r.language === 'en' && r.name === 'English' ? null : 'wrong language'
 );
 await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
 	r.offset_minutes === -240 || r.offset_minutes === -300 ? null : `offset ${r.offset_minutes}`

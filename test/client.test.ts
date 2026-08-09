@@ -53,6 +53,11 @@ describe('url mapping', () => {
 		['district', (p) => p.district('37081'), 'https://api.parseapi.com/district/37081'],
 		['city', (p) => p.city('charlotte', { state: 'NC' }), 'https://api.parseapi.com/city/charlotte?state=NC'],
 		[
+			'city.id',
+			(p) => p.city.id('city_mb8mbqrkz8zb'),
+			'https://api.parseapi.com/city/id/city_mb8mbqrkz8zb',
+		],
+		[
 			'city.search',
 			(p) => p.city.search('char', { country: 'US', limit: 10 }),
 			'https://api.parseapi.com/city?q=char&country=US&limit=10',
@@ -80,6 +85,7 @@ describe('url mapping', () => {
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
 		['currency', (p) => p.currency('USD'), 'https://api.parseapi.com/currency/USD'],
 		['currency.rate', (p) => p.currency.rate('USD', 'EUR'), 'https://api.parseapi.com/currency/USD/EUR'],
+		['language', (p) => p.language('en'), 'https://api.parseapi.com/language/en'],
 		[
 			'timezone encodes slash',
 			(p) => p.timezone('America/New_York'),
