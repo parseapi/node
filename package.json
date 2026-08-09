@@ -1,0 +1,57 @@
+{
+	"name": "parseapi",
+	"version": "0.1.0",
+	"description": "Official parseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
+	"keywords": [
+		"parseapi",
+		"ip",
+		"geolocation",
+		"email validation",
+		"phone validation",
+		"postal",
+		"timezone",
+		"currency",
+		"weather"
+	],
+	"license": "MIT",
+	"author": "parseAPI <hello@parseapi.com> (https://parseapi.com)",
+	"homepage": "https://parseapi.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/parseapi/parseapi-node.git"
+	},
+	"bugs": {
+		"url": "https://github.com/parseapi/parseapi-node/issues"
+	},
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=18"
+	},
+	"scripts": {
+		"build": "tsup src/index.ts --format esm,cjs --dts --target node18 --clean",
+		"prepublishOnly": "npm run build && npm test",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit",
+		"smoke": "npm run build && node smoke/smoke.mjs"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"tsup": "^8.3.5",
+		"typescript": "^5.7.0",
+		"vitest": "^2.1.8"
+	}
+}
