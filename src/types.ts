@@ -353,7 +353,7 @@ export interface TimezoneNextDst {
 }
 
 export interface Timezone {
-	id: string;
+	timezone: string;
 	abbreviation: string;
 	offset: string;
 	offset_minutes: number;
