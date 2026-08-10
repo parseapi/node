@@ -443,15 +443,20 @@ export interface Weather {
 	temp: number | null;
 	temp_f: number | null;
 	feels_like: number | null;
+	feels_like_f: number | null;
 	humidity: number | null;
 	wind_speed: number | null;
+	wind_speed_mph: number | null;
 	wind_dir: number | string | null;
 	pressure: number | null;
+	pressure_inhg: number | null;
 	conditions: string | null;
 	conditions_name: string | null;
 	observed_at: string | null;
 	station: string;
+	station_name: string | null;
 	station_distance: number;
+	station_distance_mi: number;
 	source: string;
 	deep?: Deep<WeatherDeep>;
 }

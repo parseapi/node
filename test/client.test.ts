@@ -97,8 +97,8 @@ describe('url mapping', () => {
 		['point', (p) => p.point(36.0726, -79.792, { deep: true }), 'https://api.parseapi.com/point?lat=36.0726&lon=-79.792&deep=true'],
 		[
 			'weather',
-			(p) => p.weather(40.7128, -74.006, { unit: 'imperial' }),
-			'https://api.parseapi.com/weather?lat=40.7128&lon=-74.006&unit=imperial',
+			(p) => p.weather(40.7128, -74.006, { deep: true }),
+			'https://api.parseapi.com/weather?lat=40.7128&lon=-74.006&deep=true',
 		],
 		['emoji', (p) => p.emoji('rocket'), 'https://api.parseapi.com/emoji/rocket'],
 		['emoji.search', (p) => p.emoji.search('fire', { limit: 20 }), 'https://api.parseapi.com/emoji?q=fire&limit=20'],

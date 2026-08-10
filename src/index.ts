@@ -264,8 +264,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		point: (lat: number, lon: number, opts?: DeepOption): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }),
 
-		weather: (lat: number, lon: number, opts?: { unit?: 'metric' | 'imperial' } & DeepOption): Promise<Weather> =>
-			request('/weather', { lat, lon, unit: opts?.unit, ...deepQuery(opts) }),
+		weather: (lat: number, lon: number, opts?: DeepOption): Promise<Weather> =>
+			request('/weather', { lat, lon, ...deepQuery(opts) }),
 
 		emoji: Object.assign(
 			(query: string): Promise<Emoji> => request(`/emoji/${enc(query)}`),
