@@ -12,9 +12,9 @@ export interface IpDeep {
 	state: string;
 	city: string;
 	registry: string;
-	is_datacenter: boolean;
-	is_relay: boolean;
-	is_tor: boolean;
+	datacenter: boolean;
+	relay: boolean;
+	tor: boolean;
 	provider: string;
 }
 
@@ -269,7 +269,7 @@ export interface UseragentDeviceDeep {
 	brand: string | null;
 	model: string | null;
 	cpu: string | null;
-	is_touchscreen: boolean | null;
+	touchscreen: boolean | null;
 }
 
 export interface UseragentOsDeep {
@@ -300,9 +300,9 @@ export interface UseragentDeep {
 	os: UseragentOsDeep;
 	browser: UseragentBrowserDeep;
 	engine: UseragentEngineDeep;
-	is_headless: boolean;
+	headless: boolean;
 	bot?: Record<string, unknown>;
-	is_ai?: boolean;
+	ai?: boolean;
 }
 
 export interface Useragent {
@@ -310,8 +310,8 @@ export interface Useragent {
 	device: string | null;
 	os: string | null;
 	browser: string | null;
-	is_bot: boolean;
-	is_mobile: boolean;
+	bot: boolean;
+	mobile: boolean;
 	deep?: Deep<UseragentDeep>;
 }
 
@@ -414,7 +414,7 @@ export interface WeatherForecastPeriod {
 	name: string;
 	start: string;
 	end: string;
-	day: boolean;
+	daytime: boolean;
 	temp: number | null;
 	temp_f: number | null;
 	precip: number | null;
