@@ -366,6 +366,8 @@ export interface Holiday {
 	date: string;
 	name: string;
 	local_name: string | null;
+	/** 'public' for an official day off, 'observance' for cultural days. */
+	type: string;
 	regions: string[] | null;
 	substitute: boolean;
 }
