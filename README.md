@@ -21,7 +21,7 @@ One method per endpoint, named after the route.
 
 ```ts
 await parse.ip('8.8.8.8');
-await parse.ip.me();
+await parse.ip.self();
 await parse.email('hello@gmail.com');
 await parse.phone('+14155552671');
 await parse.postal('28202', { country: 'US' });

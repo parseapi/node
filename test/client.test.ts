@@ -38,7 +38,7 @@ afterEach(() => {
 describe('url mapping', () => {
 	const table: [string, (parse: ReturnType<typeof parseAPI>) => Promise<unknown>, string][] = [
 		['ip', (p) => p.ip('8.8.8.8'), 'https://api.parseapi.com/ip/8.8.8.8'],
-		['ip.me', (p) => p.ip.me(), 'https://api.parseapi.com/ip/me'],
+		['ip.self', (p) => p.ip.self(), 'https://api.parseapi.com/ip'],
 		['ip deep', (p) => p.ip('8.8.8.8', { deep: true }), 'https://api.parseapi.com/ip/8.8.8.8?deep=true'],
 		['continent', (p) => p.continent('NA'), 'https://api.parseapi.com/continent/NA'],
 		['continent.countries', (p) => p.continent.countries('NA'), 'https://api.parseapi.com/continent/NA/countries'],

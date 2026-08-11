@@ -165,7 +165,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		ip: Object.assign(
 			(ip: string, opts?: DeepOption): Promise<Ip> => request(`/ip/${enc(ip)}`, deepQuery(opts)),
 			{
-				me: (opts?: DeepOption): Promise<Ip> => request('/ip/me', deepQuery(opts)),
+				self: (opts?: DeepOption): Promise<Ip> => request('/ip', deepQuery(opts)),
 			}
 		),
 

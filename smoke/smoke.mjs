@@ -41,7 +41,7 @@ async function expectError(name, promise, code) {
 }
 
 await expectOk('ip', parse.ip('8.8.8.8'), (r) => (r.ip === '8.8.8.8' ? null : 'wrong ip'));
-await expectOk('ip.me', parse.ip.me(), (r) => (r.ip ? null : 'no ip'));
+await expectOk('ip.self', parse.ip.self(), (r) => (r.ip ? null : 'no ip'));
 await expectOk('continent', parse.continent('NA'), (r) => (r.name === 'North America' ? null : 'wrong name'));
 await expectOk('continent.countries', parse.continent.countries('NA'), (r) =>
 	Array.isArray(r.countries) && r.countries.length > 0 ? null : 'no countries'
