@@ -268,7 +268,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request('/weather', { lat, lon, ...deepQuery(opts) }),
 
 		emoji: Object.assign(
-			(query: string): Promise<Emoji> => request(`/emoji/${enc(query)}`),
+			(emoji: string): Promise<Emoji> => request(`/emoji/${enc(emoji)}`),
 			{
 				search: (q: string, opts?: { limit?: number }): Promise<EmojiSearch> =>
 					request('/emoji', { q, limit: opts?.limit }),
