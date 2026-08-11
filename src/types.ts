@@ -30,7 +30,6 @@ export interface Ip {
 
 export interface Continent {
 	continent: string;
-	numeric: number;
 	name: string;
 	region: string;
 	subregion: string;
@@ -56,6 +55,7 @@ export interface Country {
 	name: string;
 	full_name: string | null;
 	local_name: string | null;
+	demonym: string | null;
 	capital: string | null;
 	continent: string;
 	region: string | null;
@@ -66,10 +66,9 @@ export interface Country {
 	currency_name: string | null;
 	currency_symbol: string | null;
 	tld: string | null;
-	flag_emoji: string | null;
+	emoji: string | null;
 	languages: string[];
 	borders: string[];
-	demonym: string | null;
 }
 
 export interface CountryStateItem {
@@ -84,11 +83,12 @@ export interface CountryStates {
 }
 
 export interface State {
-	country: string;
 	state: string;
 	name: string;
 	local_name: string | null;
 	type: string | null;
+	country: string;
+	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
 	population: number | null;
@@ -103,36 +103,40 @@ export interface StateDistrictItem {
 }
 
 export interface StateDistricts {
-	country: string;
 	state: string;
+	state_name: string | null;
+	country: string;
+	country_name: string | null;
 	districts: StateDistrictItem[];
 }
 
 export interface District {
-	country: string;
-	state: string | null;
 	district: string;
 	name: string;
 	type: string | null;
-	population: number | null;
+	state: string | null;
+	state_name: string | null;
+	country: string;
+	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
-	area_land: number | null;
-	area_water: number | null;
+	population: number | null;
+	land_area: number | null;
+	water_area: number | null;
 }
 
 export interface City {
-	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
-	id: string;
-	country: string;
-	state: string | null;
-	state_name: string | null;
 	name: string;
 	local_name: string | null;
+	state: string | null;
+	state_name: string | null;
+	country: string;
 	latitude: number | null;
 	longitude: number | null;
 	population: number | null;
 	timezone: string | null;
+	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
+	id: string;
 }
 
 /** Nearest-city lookups add the distance from the query point. */
@@ -152,20 +156,20 @@ export interface Postal {
 	postal: string;
 	city: string | null;
 	city_local: string | null;
-	state: string | null;
-	state_name: string | null;
-	state_name_local: string | null;
 	district: string | null;
 	district_name: string | null;
 	district_name_local: string | null;
+	state: string | null;
+	state_name: string | null;
+	state_name_local: string | null;
 	country: string;
 	latitude: number | null;
 	longitude: number | null;
-	timezone: string | null;
-	currency: string | null;
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	timezone: string | null;
+	currency: string | null;
 	neighbors: string[];
 }
 
@@ -179,8 +183,8 @@ export interface PostalNearbyItem {
 }
 
 export interface PostalNearby {
-	country: string;
 	postal: string;
+	country: string;
 	radius: number;
 	unit: string;
 	nearby: PostalNearbyItem[];
@@ -354,11 +358,11 @@ export interface TimezoneNextDst {
 
 export interface Timezone {
 	timezone: string;
+	name: string | null;
 	abbreviation: string;
 	offset: string;
 	offset_minutes: number;
 	dst: boolean;
-	name: string | null;
 	next_dst: TimezoneNextDst | null;
 }
 
@@ -400,29 +404,32 @@ export interface PointDeep {
 export interface Point {
 	latitude: number;
 	longitude: number;
-	elevation: number | null;
-	elevation_ft: number | null;
-	resolution: number | null;
 	country: string | null;
 	country_name: string | null;
 	state: string | null;
 	state_name: string | null;
 	district: string | null;
 	district_name: string | null;
+	elevation: number | null;
+	elevation_ft: number | null;
+	resolution: number | null;
 	deep?: Deep<PointDeep>;
 }
 
 export interface WeatherForecastPeriod {
 	name: string;
-	start: string;
-	end: string;
-	daytime: boolean;
-	temp: number | null;
-	temp_f: number | null;
-	precip: number | null;
-	wind: string | null;
-	wind_dir: string | null;
-	conditions: string | null;
+	start: string | null;
+	end: string | null;
+	daytime: boolean | null;
+	temperature: number | null;
+	temperature_f: number | null;
+	precipitation_chance: number | null;
+	wind_speed: number | null;
+	wind_speed_mph: number | null;
+	wind_direction: number | null;
+	condition: string | null;
+	condition_name: string | null;
+	condition_emoji: string | null;
 }
 
 export interface WeatherAlert {
@@ -442,24 +449,32 @@ export interface WeatherDeep {
 export interface Weather {
 	latitude: number;
 	longitude: number;
-	temp: number | null;
-	temp_f: number | null;
+	temperature: number | null;
+	temperature_f: number | null;
 	feels_like: number | null;
 	feels_like_f: number | null;
+	dewpoint: number | null;
+	dewpoint_f: number | null;
 	humidity: number | null;
 	wind_speed: number | null;
 	wind_speed_mph: number | null;
-	wind_dir: number | string | null;
+	wind_gust: number | null;
+	wind_gust_mph: number | null;
+	wind_direction: number | null;
 	pressure: number | null;
 	pressure_inhg: number | null;
-	conditions: string | null;
-	conditions_name: string | null;
+	visibility: number | null;
+	visibility_mi: number | null;
+	condition: string | null;
+	condition_name: string | null;
+	condition_emoji: string | null;
 	observed_at: string | null;
 	station: string;
 	station_name: string | null;
 	station_distance: number;
 	station_distance_mi: number;
 	source: string;
+	source_name: string | null;
 	deep?: Deep<WeatherDeep>;
 }
 
