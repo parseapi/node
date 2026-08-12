@@ -1,13 +1,13 @@
-# parseapi
+# @parseapi/sdk
 
 Official parseAPI client for Node and TypeScript.
 
 ```bash
-npm install parseapi
+npm install @parseapi/sdk
 ```
 
 ```ts
-import { parseAPI } from 'parseapi';
+import { parseAPI } from '@parseapi/sdk';
 
 const parse = parseAPI('your-api-key');
 const country = await parse.country('US');
@@ -70,7 +70,7 @@ ip.deep?.datacenter; // true
 Every non-2xx response throws a `ParseAPIError` with `status`, `code`, `docs`, and `requestId`. Branch on `code`.
 
 ```ts
-import { ParseAPIError } from 'parseapi';
+import { ParseAPIError } from '@parseapi/sdk';
 
 try {
   await parse.city('atlantis');
