@@ -18,10 +18,10 @@
 	"homepage": "https://parseapi.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/parseapi/parseapi-node.git"
+		"url": "git+https://github.com/parseapi/node.git"
 	},
 	"bugs": {
-		"url": "https://github.com/parseapi/parseapi-node/issues"
+		"url": "https://github.com/parseapi/node/issues"
 	},
 	"type": "module",
 	"main": "./dist/index.cjs",
