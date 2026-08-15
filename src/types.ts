@@ -41,6 +41,8 @@ export interface Continent {
 export interface ContinentCountryItem {
 	country: string;
 	name: string;
+	emoji?: string | null;
+	calling_code?: string | null;
 }
 
 export interface ContinentCountries {
@@ -66,6 +68,7 @@ export interface Country {
 	currency_name: string | null;
 	currency_symbol: string | null;
 	tld: string | null;
+	calling_code: string | null;
 	emoji: string | null;
 	languages: string[];
 	borders: string[];
