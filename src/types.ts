@@ -59,6 +59,8 @@ export interface Country {
 	local_name: string | null;
 	demonym: string | null;
 	capital: string | null;
+	capital_lat: number | null;
+	capital_lon: number | null;
 	continent: string;
 	region: string | null;
 	subregion: string | null;
