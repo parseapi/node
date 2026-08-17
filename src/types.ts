@@ -224,13 +224,16 @@ export interface Email {
 }
 
 export interface PhoneDeep {
-	type: 'mobile' | 'landline' | 'toll_free' | 'unknown';
-	region: string;
+	type: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown';
+	carrier: string | null;
+	city: string | null;
+	state: string | null;
+	state_name: string | null;
 }
 
 export interface Phone {
+	phone: string | null;
 	valid: boolean;
-	e164: string | null;
 	country: string | null;
 	national: string | null;
 	international: string | null;

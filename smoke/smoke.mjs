@@ -83,7 +83,7 @@ await expectOk('postal.distance', parse.postal.distance('28202', '10001', { coun
 	r.distance > 800 && r.distance < 1000 ? null : `distance ${r.distance}`
 );
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
-await expectOk('phone', parse.phone('+14155552671'), (r) => (r.e164 === '+14155552671' ? null : 'wrong e164'));
+await expectOk('phone', parse.phone('+14155552671'), (r) => (r.phone === '+14155552671' ? null : 'wrong phone'));
 await expectOk('domain', parse.domain('gmail.com'), (r) => (r.available === false ? null : 'gmail available?'));
 await expectOk('mx', parse.mx('gmail.com'), (r) => (r.mx.length > 0 ? null : 'no mx'));
 await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), (r) =>
