@@ -226,6 +226,8 @@ export interface Email {
 export interface PhoneDeep {
 	type: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown';
 	carrier: string | null;
+	/** Carrier is a known burner number app. Null when carrier is unknown. */
+	burner: boolean | null;
 	city: string | null;
 	state: string | null;
 	state_name: string | null;
