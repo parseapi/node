@@ -41,6 +41,7 @@ await parse.continent.countries('NA');
 await parse.currency('USD');
 await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
+await parse.name('BILLY OSHALL');
 await parse.timezone('America/New_York');
 await parse.holiday('US', { year: 2026 });
 await parse.holiday.date('US', '2026-12-25');

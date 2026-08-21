@@ -19,6 +19,7 @@ import type {
 	Ip,
 	Language,
 	Mx,
+	Name,
 	Phone,
 	Point,
 	Postal,
@@ -246,6 +247,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		),
 
 		language: (code: string): Promise<Language> => request(`/language/${enc(code)}`),
+
+		name: (name: string): Promise<Name> => request(`/name/${enc(name)}`),
 
 		timezone: (id: string, opts?: { at?: string }): Promise<Timezone> =>
 			request(`/timezone/${enc(id)}`, { at: opts?.at }),

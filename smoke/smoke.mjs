@@ -96,6 +96,9 @@ await expectOk('currency.rate', parse.currency.rate('USD', 'EUR'), (r) =>
 await expectOk('language', parse.language('en'), (r) =>
 	r.language === 'en' && r.name === 'English' ? null : 'wrong language'
 );
+await expectOk('name', parse.name("BILLY O'SHALL"), (r) =>
+	r.name === "Billy O'Shall" && r.valid === true && r.gender === 'male' ? null : 'wrong name'
+);
 await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
 	r.offset_minutes === -240 || r.offset_minutes === -300 ? null : `offset ${r.offset_minutes}`
 );

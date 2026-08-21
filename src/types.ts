@@ -351,6 +351,19 @@ export interface Language {
 	countries: string[];
 }
 
+/** A parsed person name. Junk input returns valid: false, never an error. Gender comes from dictionary data and is null when the data does not decide. */
+export interface Name {
+	name: string;
+	valid: boolean;
+	prefix: string | null;
+	first: string | null;
+	middle: string | null;
+	last: string | null;
+	suffix: string | null;
+	gender: 'male' | 'female' | null;
+	salutation: 'Mr' | 'Ms' | null;
+}
+
 export interface CurrencyRate {
 	base: string;
 	quote: string;
