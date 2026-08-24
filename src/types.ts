@@ -263,7 +263,7 @@ export interface DomainDeep {
 	ns: string[];
 	mx: MxRecord[];
 	txt: string[];
-	provider: string;
+	mailhost: string;
 	registration: DomainRegistration;
 }
 
