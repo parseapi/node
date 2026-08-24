@@ -15,6 +15,7 @@ export interface IpDeep {
 	datacenter: boolean;
 	relay: boolean;
 	tor: boolean;
+	vpn: boolean;
 	provider: string;
 }
 
