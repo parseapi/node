@@ -216,6 +216,7 @@ export interface EmailDeep {
 
 export interface Email {
 	email: string;
+	didyoumean: string | null;
 	valid: boolean;
 	domain: string | null;
 	domain_valid: boolean | null;
