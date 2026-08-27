@@ -382,12 +382,14 @@ export interface TimezoneNextDst {
 }
 
 export interface Timezone {
-	timezone: string;
+	latitude?: number;
+	longitude?: number;
+	timezone: string | null;
 	name: string | null;
-	abbreviation: string;
-	offset: string;
-	offset_minutes: number;
-	dst: boolean;
+	abbreviation: string | null;
+	offset: string | null;
+	offset_minutes: number | null;
+	dst: boolean | null;
 	next_dst: TimezoneNextDst | null;
 }
 
@@ -422,8 +424,8 @@ export interface Elevation {
 }
 
 export interface PointDeep {
-	city: CityNearest;
-	timezone: Timezone;
+	city: CityNearest | null;
+	timezone: Timezone | null;
 }
 
 export interface Point {

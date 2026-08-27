@@ -43,6 +43,7 @@ await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
 await parse.name('BILLY OSHALL');
 await parse.timezone('America/New_York');
+await parse.timezone(40.7128, -74.006);
 await parse.holiday('US', { year: 2026 });
 await parse.holiday.date('US', '2026-12-25');
 await parse.elevation(35.2271, -80.8431);

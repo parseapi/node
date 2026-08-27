@@ -92,6 +92,11 @@ describe('url mapping', () => {
 			(p) => p.timezone('America/New_York'),
 			'https://api.parseapi.com/timezone/America%2FNew_York',
 		],
+		[
+			'timezone from coords',
+			(p) => p.timezone(40.7128, -74.006),
+			'https://api.parseapi.com/timezone?lat=40.7128&lon=-74.006',
+		],
 		['holiday', (p) => p.holiday('US', { year: 1955 }), 'https://api.parseapi.com/holiday/US?year=1955'],
 		['holiday.date', (p) => p.holiday.date('US', '2026-12-25'), 'https://api.parseapi.com/holiday/US/2026-12-25'],
 		['elevation', (p) => p.elevation(35.2, -80.8), 'https://api.parseapi.com/elevation?lat=35.2&lon=-80.8'],

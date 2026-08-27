@@ -162,6 +162,25 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	const enc = encodeURIComponent;
 	const deepQuery = (opts?: DeepOption): Query => (opts?.deep ? { deep: true } : {});
 
+	function timezone(id: string, opts?: { at?: string }): Promise<Timezone>;
+	function timezone(lat: number, lon: number, opts?: { at?: string }): Promise<Timezone>;
+	function timezone(
+		idOrLat: string | number,
+		lonOrOpts?: number | { at?: string },
+		opts?: { at?: string }
+	): Promise<Timezone> {
+		if (typeof idOrLat === 'number') {
+			return request('/timezone', {
+				lat: idOrLat,
+				lon: typeof lonOrOpts === 'number' ? lonOrOpts : undefined,
+				at: opts?.at,
+			});
+		}
+		return request(`/timezone/${enc(idOrLat)}`, {
+			at: lonOrOpts && typeof lonOrOpts === 'object' ? lonOrOpts.at : undefined,
+		});
+	}
+
 	return {
 		ip: Object.assign(
 			(ip: string, opts?: DeepOption): Promise<Ip> => request(`/ip/${enc(ip)}`, deepQuery(opts)),
@@ -250,8 +269,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		name: (name: string): Promise<Name> => request(`/name/${enc(name)}`),
 
-		timezone: (id: string, opts?: { at?: string }): Promise<Timezone> =>
-			request(`/timezone/${enc(id)}`, { at: opts?.at }),
+		timezone,
 
 		holiday: Object.assign(
 			(country: string, opts?: { year?: number }): Promise<HolidayYear> =>
