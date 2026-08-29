@@ -113,7 +113,7 @@ await expectOk('elevation', parse.elevation(35.2271, -80.8431), (r) =>
 	typeof r.elevation === 'number' ? null : 'no elevation'
 );
 await expectOk('point', parse.point(36.0726, -79.792), (r) => (r.country === 'US' ? null : `country ${r.country}`));
-await expectOk('weather', parse.weather(40.7128, -74.006), (r) => (r.station ? null : 'no station'));
+await expectOk('weather', parse.weather(40.7128, -74.006), (r) => (r.station?.id ? null : 'no station'));
 await expectOk('emoji', parse.emoji('rocket'), (r) => (r.emoji === '\u{1F680}' ? null : 'wrong emoji'));
 await expectOk('emoji.search', parse.emoji.search('fire', { limit: 5 }), (r) =>
 	r.emojis.length > 0 ? null : 'no results'

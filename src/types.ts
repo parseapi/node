@@ -468,14 +468,28 @@ export interface WeatherAlert {
 	expires: string | null;
 }
 
+export interface WeatherHour {
+	at: string | null;
+	daytime: boolean | null;
+	temperature: number | null;
+	temperature_f: number | null;
+	humidity: number | null;
+	precipitation_chance: number | null;
+	wind_speed: number | null;
+	wind_speed_mph: number | null;
+	wind_direction: number | null;
+	condition: string | null;
+	condition_name: string | null;
+	condition_emoji: string | null;
+}
+
 export interface WeatherDeep {
 	forecast: WeatherForecastPeriod[];
 	alerts: WeatherAlert[];
+	hours: WeatherHour[];
 }
 
-export interface Weather {
-	latitude: number;
-	longitude: number;
+export interface WeatherCurrent {
 	temperature: number | null;
 	temperature_f: number | null;
 	feels_like: number | null;
@@ -496,12 +510,26 @@ export interface Weather {
 	condition_name: string | null;
 	condition_emoji: string | null;
 	observed_at: string | null;
-	station: string;
-	station_name: string | null;
-	station_distance: number;
-	station_distance_mi: number;
-	source: string;
-	source_name: string | null;
+}
+
+export interface WeatherStation {
+	id: string;
+	name: string | null;
+	distance: number | null;
+	distance_mi: number | null;
+}
+
+export interface WeatherSource {
+	id: string;
+	name: string | null;
+}
+
+export interface Weather {
+	latitude: number;
+	longitude: number;
+	current: WeatherCurrent;
+	station: WeatherStation | null;
+	source: WeatherSource;
 	deep?: Deep<WeatherDeep>;
 }
 
