@@ -523,9 +523,17 @@ export interface WeatherHour {
 	condition_emoji: string | null;
 }
 
+export interface WeatherMinute {
+	at: string;
+	precipitation: number | null;
+	precipitation_in: number | null;
+	type: string | null;
+}
+
 export interface WeatherDeep {
 	forecast: WeatherForecastPeriod[];
 	alerts: WeatherAlert[];
+	minutes: WeatherMinute[];
 	hours: WeatherHour[];
 }
 
