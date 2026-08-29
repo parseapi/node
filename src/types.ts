@@ -225,23 +225,63 @@ export interface Email {
 	deep?: Deep<EmailDeep>;
 }
 
-export interface PhoneDeep {
-	type: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown';
-	carrier: string | null;
-	/** Carrier is a known burner number app. Null when carrier is unknown. */
-	burner: boolean | null;
-	city: string | null;
-	state: string | null;
-	state_name: string | null;
-}
-
 export interface Phone {
 	phone: string | null;
 	valid: boolean;
+	/** What the numbering plan can see. Never voip (that is the carrier field's word). Present when valid. */
+	type?: 'mobile' | 'landline' | 'toll_free' | 'unknown';
+	/** NPA-derived state code (US/CA). Present when valid. */
+	state?: string | null;
+	state_name?: string | null;
 	country: string | null;
-	national: string | null;
-	international: string | null;
-	deep?: Deep<PhoneDeep>;
+	national?: string | null;
+	international?: string | null;
+	/** Always empty. The metered proves are their own endpoints: carrier, caller, hlr. */
+	deep?: Record<string, never>;
+}
+
+export interface Carrier {
+	phone: string | null;
+	valid: boolean;
+	country: string | null;
+	/** The network's word, including voip. Present when valid. */
+	type?: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown';
+	/** Current carrier display name. Null when the probe had no answer. */
+	carrier?: string | null;
+	/** Carrier is a known burner number app. Null when carrier is unknown. */
+	burner?: boolean | null;
+	/** Issuing rate-center city. */
+	city?: string | null;
+	state?: string | null;
+	state_name?: string | null;
+}
+
+export interface Caller {
+	phone: string | null;
+	valid: boolean;
+	country: string | null;
+	/** CNAM record verbatim (all-caps telco artifact). Null when no record or outside NANP. Present when valid. */
+	caller?: string | null;
+}
+
+export interface Hlr {
+	phone: string | null;
+	valid: boolean;
+	country: string | null;
+	/** Assigned to a subscriber. Present when valid. */
+	live?: boolean | null;
+	/** Handset reachable right now. Null means unconfirmed, never no. */
+	connected?: boolean | null;
+	/** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
+	roaming?: boolean | null;
+	roaming_network?: string | null;
+	/** ISO2, uppercase. */
+	roaming_country?: string | null;
+	/** Current serving network name. */
+	network?: string | null;
+	original_network?: string | null;
+	mcc?: string | null;
+	mnc?: string | null;
 }
 
 export interface MxRecord {

@@ -80,6 +80,17 @@ describe('url mapping', () => {
 			(p) => p.phone('+14155552671', { deep: true }),
 			'https://api.parseapi.com/phone/%2B14155552671?deep=true',
 		],
+		[
+			'carrier encodes plus',
+			(p) => p.carrier('+14155552671'),
+			'https://api.parseapi.com/carrier/%2B14155552671',
+		],
+		[
+			'caller with country',
+			(p) => p.caller('4155552671', { country: 'US' }),
+			'https://api.parseapi.com/caller/4155552671?country=US',
+		],
+		['hlr', (p) => p.hlr('+447712345678'), 'https://api.parseapi.com/hlr/%2B447712345678'],
 		['domain', (p) => p.domain('example.com'), 'https://api.parseapi.com/domain/example.com'],
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],

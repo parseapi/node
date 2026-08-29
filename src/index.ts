@@ -1,4 +1,6 @@
 import type {
+	Caller,
+	Carrier,
 	City,
 	CityNearest,
 	CitySearch,
@@ -14,6 +16,7 @@ import type {
 	Email,
 	Emoji,
 	EmojiSearch,
+	Hlr,
 	HolidayDate,
 	HolidayYear,
 	Ip,
@@ -248,6 +251,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		phone: (number: string, opts?: { country?: string } & DeepOption): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }),
+
+		carrier: (number: string, opts?: { country?: string }): Promise<Carrier> =>
+			request(`/carrier/${enc(number)}`, { country: opts?.country }),
+
+		caller: (number: string, opts?: { country?: string }): Promise<Caller> =>
+			request(`/caller/${enc(number)}`, { country: opts?.country }),
+
+		hlr: (number: string, opts?: { country?: string }): Promise<Hlr> =>
+			request(`/hlr/${enc(number)}`, { country: opts?.country }),
 
 		domain: (domain: string, opts?: DeepOption): Promise<Domain> =>
 			request(`/domain/${enc(domain)}`, deepQuery(opts)),
