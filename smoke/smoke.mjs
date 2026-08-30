@@ -46,6 +46,12 @@ await expectOk('continent', parse.continent('NA'), (r) => (r.name === 'North Ame
 await expectOk('continent.countries', parse.continent.countries('NA'), (r) =>
 	Array.isArray(r.countries) && r.countries.length > 0 ? null : 'no countries'
 );
+await expectOk('bloc', parse.bloc('EU'), (r) =>
+	r.name === 'European Union' && r.members === 27 ? null : 'wrong bloc'
+);
+await expectOk('bloc.countries', parse.bloc.countries('SCHENGEN'), (r) =>
+	Array.isArray(r.countries) && r.countries.length === 29 ? null : 'wrong members'
+);
 await expectOk('country', parse.country('US'), (r) => (r.iso3 === 'USA' ? null : 'wrong iso3'));
 await expectOk('country.states', parse.country.states('US'), (r) => (r.states.length >= 50 ? null : 'too few states'));
 await expectOk('state', parse.state('NC', { country: 'US' }), (r) => (r.name === 'North Carolina' ? null : 'wrong name'));

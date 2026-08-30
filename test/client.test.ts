@@ -42,6 +42,8 @@ describe('url mapping', () => {
 		['ip deep', (p) => p.ip('8.8.8.8', { deep: true }), 'https://api.parseapi.com/ip/8.8.8.8?deep=true'],
 		['continent', (p) => p.continent('NA'), 'https://api.parseapi.com/continent/NA'],
 		['continent.countries', (p) => p.continent.countries('NA'), 'https://api.parseapi.com/continent/NA/countries'],
+		['bloc', (p) => p.bloc('EU'), 'https://api.parseapi.com/bloc/EU'],
+		['bloc.countries', (p) => p.bloc.countries('SCHENGEN'), 'https://api.parseapi.com/bloc/SCHENGEN/countries'],
 		['country', (p) => p.country('US'), 'https://api.parseapi.com/country/US'],
 		['country.states', (p) => p.country.states('US'), 'https://api.parseapi.com/country/US/states'],
 		['state', (p) => p.state('NC', { country: 'US' }), 'https://api.parseapi.com/state/NC?country=US'],

@@ -1,4 +1,6 @@
 import type {
+	Bloc,
+	BlocCountries,
 	Caller,
 	Carrier,
 	City,
@@ -199,6 +201,13 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			(code: string): Promise<Continent> => request(`/continent/${enc(code)}`),
 			{
 				countries: (code: string): Promise<ContinentCountries> => request(`/continent/${enc(code)}/countries`),
+			}
+		),
+
+		bloc: Object.assign(
+			(code: string): Promise<Bloc> => request(`/bloc/${enc(code)}`),
+			{
+				countries: (code: string): Promise<BlocCountries> => request(`/bloc/${enc(code)}/countries`),
 			}
 		),
 

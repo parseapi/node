@@ -51,6 +51,25 @@ export interface ContinentCountries {
 	countries: ContinentCountryItem[];
 }
 
+export interface Bloc {
+	bloc: string;
+	name: string;
+	/** Current member count. An entity fact, not a list-length field. */
+	members: number;
+}
+
+export interface BlocCountryItem {
+	country: string;
+	name: string;
+	emoji?: string | null;
+	calling_code?: string | null;
+}
+
+export interface BlocCountries {
+	bloc: string;
+	countries: BlocCountryItem[];
+}
+
 export interface Country {
 	country: string;
 	iso3: string;
@@ -75,6 +94,8 @@ export interface Country {
 	emoji: string | null;
 	languages: string[];
 	borders: string[];
+	/** Bloc memberships (EU, SCHENGEN, NATO, ...). Empty when none. */
+	blocs: string[];
 }
 
 export interface CountryStateItem {
