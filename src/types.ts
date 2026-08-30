@@ -431,6 +431,51 @@ export interface Timezone {
 	offset_minutes: number | null;
 	dst: boolean | null;
 	next_dst: TimezoneNextDst | null;
+	/** With to= only: the resolved wall time in the from zone, ISO with its UTC offset. */
+	at?: string;
+	/** With to= only: the other zone at the same instant. to.at is the converted time. */
+	to?: TimezoneConversionTarget;
+}
+
+/** The other side of a timezone conversion. `at` is the converted wall time. */
+export interface TimezoneConversionTarget {
+	timezone: string;
+	name: string | null;
+	abbreviation: string | null;
+	offset: string;
+	offset_minutes: number;
+	dst: boolean;
+	at: string;
+}
+
+/**
+ * Calendar facts for one date. Junk or ambiguous input returns valid: false,
+ * never an error. `to` and `days` appear only when a to= date was passed.
+ */
+export interface DateInfo {
+	date: string;
+	valid: boolean;
+	year: number | null;
+	month: number | null;
+	month_name: string | null;
+	day: number | null;
+	/** ISO weekday, Monday 1 to Sunday 7. */
+	weekday: number | null;
+	weekday_name: string | null;
+	/** ISO 8601 week number. */
+	week: number | null;
+	/** The year that ISO week belongs to. Differs from year around January 1. */
+	week_year: number | null;
+	day_of_year: number | null;
+	quarter: number | null;
+	leap: boolean | null;
+	days_in_month: number | null;
+	/** Unix time at midnight UTC of that date, seconds. */
+	unix: number | null;
+	/** With to= only: the other date, normalized ISO. */
+	to?: string;
+	/** With to= only: signed days to the other date. Future positive. */
+	days?: number | null;
 }
 
 export interface Holiday {
@@ -513,10 +558,14 @@ export interface WeatherHour {
 	daytime: boolean | null;
 	temperature: number | null;
 	temperature_f: number | null;
+	feels_like: number | null;
+	feels_like_f: number | null;
 	humidity: number | null;
 	precipitation_chance: number | null;
 	wind_speed: number | null;
 	wind_speed_mph: number | null;
+	wind_gust: number | null;
+	wind_gust_mph: number | null;
 	wind_direction: number | null;
 	condition: string | null;
 	condition_name: string | null;
@@ -530,11 +579,56 @@ export interface WeatherMinute {
 	type: string | null;
 }
 
+export interface WeatherDay {
+	date: string;
+	high: number | null;
+	high_f: number | null;
+	low: number | null;
+	low_f: number | null;
+	precipitation_chance: number | null;
+	condition: string | null;
+	condition_name: string | null;
+	condition_emoji: string | null;
+	sunrise: string | null;
+	sunset: string | null;
+	moon_phase: string | null;
+	moon_phase_name: string | null;
+	moon_phase_emoji: string | null;
+}
+
+export interface WeatherAir {
+	aqi: number | null;
+	aqi_name: string | null;
+	pm2_5: number | null;
+	pm10: number | null;
+}
+
+export interface WeatherHistory {
+	date: string;
+	high: number | null;
+	high_f: number | null;
+	low: number | null;
+	low_f: number | null;
+	precipitation: number | null;
+	precipitation_in: number | null;
+	wind_max: number | null;
+	wind_max_mph: number | null;
+	sunrise: string | null;
+	sunset: string | null;
+	moon_phase: string | null;
+	moon_phase_name: string | null;
+	moon_phase_emoji: string | null;
+}
+
 export interface WeatherDeep {
-	forecast: WeatherForecastPeriod[];
-	alerts: WeatherAlert[];
-	minutes: WeatherMinute[];
-	hours: WeatherHour[];
+	forecast: WeatherForecastPeriod[] | null;
+	alerts: WeatherAlert[] | null;
+	minutes: WeatherMinute[] | null;
+	hours: WeatherHour[] | null;
+	days: WeatherDay[] | null;
+	air: WeatherAir | null;
+	/** Only present when the call carried ?date=. */
+	history?: WeatherHistory | null;
 }
 
 export interface WeatherCurrent {

@@ -10,6 +10,7 @@ import type {
 	CountryStates,
 	Currency,
 	CurrencyRate,
+	DateInfo,
 	District,
 	Domain,
 	Elevation,
@@ -165,11 +166,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	const enc = encodeURIComponent;
 	const deepQuery = (opts?: DeepOption): Query => (opts?.deep ? { deep: true } : {});
 
-	function timezone(id: string, opts?: { at?: string }): Promise<Timezone>;
+	function timezone(id: string, opts?: { at?: string; to?: string }): Promise<Timezone>;
 	function timezone(lat: number, lon: number, opts?: { at?: string }): Promise<Timezone>;
 	function timezone(
 		idOrLat: string | number,
-		lonOrOpts?: number | { at?: string },
+		lonOrOpts?: number | { at?: string; to?: string },
 		opts?: { at?: string }
 	): Promise<Timezone> {
 		if (typeof idOrLat === 'number') {
@@ -179,8 +180,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				at: opts?.at,
 			});
 		}
+		const idOpts = lonOrOpts && typeof lonOrOpts === 'object' ? lonOrOpts : undefined;
 		return request(`/timezone/${enc(idOrLat)}`, {
-			at: lonOrOpts && typeof lonOrOpts === 'object' ? lonOrOpts.at : undefined,
+			at: idOpts?.at,
+			to: idOpts?.to,
 		});
 	}
 
@@ -283,6 +286,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		timezone,
 
+		date: Object.assign(
+			(date: string, opts?: { format?: 'mdy' | 'dmy'; to?: string }): Promise<DateInfo> =>
+				request(`/date/${enc(date)}`, { format: opts?.format, to: opts?.to }),
+			{
+				today: (opts?: { to?: string }): Promise<DateInfo> => request('/date', { to: opts?.to }),
+			}
+		),
+
 		holiday: Object.assign(
 			(country: string, opts?: { year?: number }): Promise<HolidayYear> =>
 				request(`/holiday/${enc(country)}`, { year: opts?.year }),
@@ -297,8 +308,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		point: (lat: number, lon: number, opts?: DeepOption): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }),
 
-		weather: (lat: number, lon: number, opts?: DeepOption): Promise<Weather> =>
-			request('/weather', { lat, lon, ...deepQuery(opts) }),
+		weather: (lat: number, lon: number, opts?: DeepOption & { date?: string }): Promise<Weather> =>
+			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }),
 
 		emoji: Object.assign(
 			(emoji: string): Promise<Emoji> => request(`/emoji/${enc(emoji)}`),

@@ -108,6 +108,22 @@ describe('url mapping', () => {
 			(p) => p.timezone(40.7128, -74.006),
 			'https://api.parseapi.com/timezone?lat=40.7128&lon=-74.006',
 		],
+		[
+			'timezone convert',
+			(p) => p.timezone('America/New_York', { to: 'Asia/Tokyo', at: '2026-08-29T15:00' }),
+			'https://api.parseapi.com/timezone/America%2FNew_York?at=2026-08-29T15%3A00&to=Asia%2FTokyo',
+		],
+		[
+			'date encodes slashes',
+			(p) => p.date('3/29/2026'),
+			'https://api.parseapi.com/date/3%2F29%2F2026',
+		],
+		[
+			'date with format and to',
+			(p) => p.date('03/04/2026', { format: 'mdy', to: '2026-12-25' }),
+			'https://api.parseapi.com/date/03%2F04%2F2026?format=mdy&to=2026-12-25',
+		],
+		['date.today', (p) => p.date.today({ to: '2026-12-25' }), 'https://api.parseapi.com/date?to=2026-12-25'],
 		['holiday', (p) => p.holiday('US', { year: 1955 }), 'https://api.parseapi.com/holiday/US?year=1955'],
 		['holiday.date', (p) => p.holiday.date('US', '2026-12-25'), 'https://api.parseapi.com/holiday/US/2026-12-25'],
 		['elevation', (p) => p.elevation(35.2, -80.8), 'https://api.parseapi.com/elevation?lat=35.2&lon=-80.8'],
