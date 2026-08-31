@@ -304,6 +304,8 @@ export interface Iban {
 	iban: string | null;
 	valid: boolean;
 	country: string | null;
+	/** Print form in groups of four, for display. Null when invalid. */
+	formatted: string | null;
 	/** Two check digits as a string, keeping a leading zero. */
 	checksum: string | null;
 	/** Bank identifier parsed from the number, not a name. */
