@@ -89,6 +89,12 @@ describe('url mapping', () => {
 			'https://api.parseapi.com/postal/28202/distance/10001?country=US',
 		],
 		['email', (p) => p.email('a@b.com'), 'https://api.parseapi.com/email/a%40b.com'],
+		['vat', (p) => p.vat('DE136695976'), 'https://api.parseapi.com/vat/DE136695976'],
+		[
+			'vat from deep',
+			(p) => p.vat('DE136695976', { from: 'IE6388047V', deep: true }),
+			'https://api.parseapi.com/vat/DE136695976?from=IE6388047V&deep=true',
+		],
 		[
 			'phone encodes plus',
 			(p) => p.phone('+14155552671', { deep: true }),

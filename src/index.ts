@@ -18,6 +18,7 @@ import type {
 	Domain,
 	Elevation,
 	Email,
+	Vat,
 	Emoji,
 	EmojiSearch,
 	Hlr,
@@ -41,7 +42,7 @@ import type {
 
 export * from './types.js';
 
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -272,6 +273,16 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		),
 
 		email: (email: string, opts?: DeepOption): Promise<Email> => request(`/email/${enc(email)}`, deepQuery(opts)),
+
+		vat: (
+			number: string,
+			opts?: { country?: string; from?: string } & DeepOption
+		): Promise<Vat> =>
+			request(`/vat/${enc(number)}`, {
+				country: opts?.country,
+				from: opts?.from,
+				...deepQuery(opts),
+			}),
 
 		phone: (number: string, opts?: { country?: string } & DeepOption): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }),

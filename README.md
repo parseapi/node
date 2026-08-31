@@ -23,6 +23,7 @@ One method per endpoint, named after the route.
 await parse.ip('8.8.8.8');
 await parse.ip.self();
 await parse.email('hello@gmail.com');
+await parse.vat('DE136695976');
 await parse.phone('+14155552671');
 await parse.carrier('+14155552671');
 await parse.caller('+14155552671');

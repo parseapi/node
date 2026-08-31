@@ -277,6 +277,29 @@ export interface Email {
 	deep?: Deep<EmailDeep>;
 }
 
+export interface VatAddress {
+	street: string | null;
+	city: string | null;
+	postal: string | null;
+	country: string | null;
+}
+
+export interface VatDeep {
+	registered: boolean | null;
+	name: string | null;
+	address: VatAddress | null;
+	consultation: string | null;
+	consulted: string | null;
+}
+
+export interface Vat {
+	vat: string | null;
+	valid: boolean;
+	country: string | null;
+	from?: string;
+	deep?: Deep<VatDeep>;
+}
+
 export interface Phone {
 	phone: string | null;
 	valid: boolean;

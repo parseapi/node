@@ -89,6 +89,7 @@ await expectOk('postal.distance', parse.postal.distance('28202', '10001', { coun
 	r.distance > 800 && r.distance < 1000 ? null : `distance ${r.distance}`
 );
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
+await expectOk('vat', parse.vat('DE136695976'), (r) => (r.valid === true && r.country === 'DE' ? null : 'not valid DE'));
 await expectOk('phone', parse.phone('+14155552671'), (r) => (r.phone === '+14155552671' ? null : 'wrong phone'));
 // Metered core siblings: junk numbers answer 200 valid false, free, no vendor dip.
 await expectOk('carrier junk free', parse.carrier('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));
