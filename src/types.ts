@@ -486,6 +486,10 @@ export interface CurrencyRate {
 	quote: string;
 	rate: number;
 	date: string;
+	/** With amount= only: echo of the amount asked. */
+	amount?: number;
+	/** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
+	converted?: number;
 	source?: string;
 }
 

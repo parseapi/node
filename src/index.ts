@@ -307,8 +307,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		currency: Object.assign(
 			(code: string): Promise<Currency> => request(`/currency/${enc(code)}`),
 			{
-				rate: (base: string, quote: string): Promise<CurrencyRate> =>
-					request(`/currency/${enc(base)}/${enc(quote)}`),
+				rate: (
+					base: string,
+					quote: string,
+					opts?: { date?: string; amount?: number }
+				): Promise<CurrencyRate> =>
+					request(`/currency/${enc(base)}/${enc(quote)}`, {
+						date: opts?.date,
+						amount: opts?.amount,
+					}),
 			}
 		),
 
