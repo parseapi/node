@@ -19,6 +19,7 @@ import type {
 	Elevation,
 	Email,
 	Vat,
+	Iban,
 	Emoji,
 	EmojiSearch,
 	Hlr,
@@ -283,6 +284,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				from: opts?.from,
 				...deepQuery(opts),
 			}),
+
+		iban: (iban: string, opts?: { country?: string }): Promise<Iban> =>
+			request(`/iban/${enc(iban)}`, { country: opts?.country }),
 
 		phone: (number: string, opts?: { country?: string } & DeepOption): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }),

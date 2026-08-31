@@ -91,6 +91,16 @@ describe('url mapping', () => {
 		['email', (p) => p.email('a@b.com'), 'https://api.parseapi.com/email/a%40b.com'],
 		['vat', (p) => p.vat('DE136695976'), 'https://api.parseapi.com/vat/DE136695976'],
 		[
+			'iban',
+			(p) => p.iban('DE89370400440532013000'),
+			'https://api.parseapi.com/iban/DE89370400440532013000',
+		],
+		[
+			'iban country',
+			(p) => p.iban('89370400440532013000', { country: 'DE' }),
+			'https://api.parseapi.com/iban/89370400440532013000?country=DE',
+		],
+		[
 			'vat from deep',
 			(p) => p.vat('DE136695976', { from: 'IE6388047V', deep: true }),
 			'https://api.parseapi.com/vat/DE136695976?from=IE6388047V&deep=true',

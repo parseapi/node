@@ -300,6 +300,19 @@ export interface Vat {
 	deep?: Deep<VatDeep>;
 }
 
+export interface Iban {
+	iban: string | null;
+	valid: boolean;
+	country: string | null;
+	/** Two check digits as a string, keeping a leading zero. */
+	checksum: string | null;
+	/** Bank identifier parsed from the number, not a name. */
+	bank: string | null;
+	/** Branch identifier when that country has one. */
+	branch: string | null;
+	account: string | null;
+}
+
 export interface Phone {
 	phone: string | null;
 	valid: boolean;
