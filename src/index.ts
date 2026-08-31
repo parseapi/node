@@ -4,6 +4,7 @@ import type {
 	Caller,
 	Carrier,
 	City,
+	CityNearby,
 	CityNearest,
 	CitySearch,
 	Continent,
@@ -219,16 +220,16 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		),
 
 		state: Object.assign(
-			(code: string, opts: { country: string }): Promise<State> =>
-				request(`/state/${enc(code)}`, { country: opts.country }),
+			(code: string, opts?: { country?: string }): Promise<State> =>
+				request(`/state/${enc(code)}`, { country: opts?.country }),
 			{
-				districts: (code: string, opts: { country: string }): Promise<StateDistricts> =>
-					request(`/state/${enc(code)}/districts`, { country: opts.country }),
+				districts: (code: string, opts?: { country?: string }): Promise<StateDistricts> =>
+					request(`/state/${enc(code)}/districts`, { country: opts?.country }),
 			}
 		),
 
-		district: (code: string, opts?: { country?: string }): Promise<District> =>
-			request(`/district/${enc(code)}`, { country: opts?.country }),
+		district: (code: string, opts?: { country?: string; state?: string }): Promise<District> =>
+			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state }),
 
 		city: Object.assign(
 			(name: string, opts?: { country?: string; state?: string }): Promise<City> =>
@@ -238,24 +239,35 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				search: (q: string, opts?: { country?: string; state?: string; limit?: number }): Promise<CitySearch> =>
 					request('/city', { q, country: opts?.country, state: opts?.state, limit: opts?.limit }),
 				nearest: (lat: number, lon: number): Promise<CityNearest> => request('/city', { lat, lon }),
+				nearby: (
+					name: string,
+					opts?: { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number }
+				): Promise<CityNearby> =>
+					request(`/city/${enc(name)}/nearby`, {
+						radius: opts?.radius,
+						unit: opts?.unit,
+						country: opts?.country,
+						state: opts?.state,
+						limit: opts?.limit,
+					}),
 			}
 		),
 
 		postal: Object.assign(
-			(code: string, opts: { country: string }): Promise<Postal> =>
-				request(`/postal/${enc(code)}`, { country: opts.country }),
+			(code: string, opts?: { country?: string }): Promise<Postal> =>
+				request(`/postal/${enc(code)}`, { country: opts?.country }),
 			{
 				nearby: (
 					code: string,
-					opts: { country: string; radius?: number; unit?: 'km' | 'mi' }
+					opts?: { country?: string; radius?: number; unit?: 'km' | 'mi' }
 				): Promise<PostalNearby> =>
 					request(`/postal/${enc(code)}/nearby`, {
-						country: opts.country,
-						radius: opts.radius,
-						unit: opts.unit,
+						country: opts?.country,
+						radius: opts?.radius,
+						unit: opts?.unit,
 					}),
-				distance: (from: string, to: string, opts: { country: string }): Promise<PostalDistance> =>
-					request(`/postal/${enc(from)}/distance/${enc(to)}`, { country: opts.country }),
+				distance: (from: string, to: string, opts?: { country?: string }): Promise<PostalDistance> =>
+					request(`/postal/${enc(from)}/distance/${enc(to)}`, { country: opts?.country }),
 			}
 		),
 

@@ -47,12 +47,18 @@ describe('url mapping', () => {
 		['country', (p) => p.country('US'), 'https://api.parseapi.com/country/US'],
 		['country.states', (p) => p.country.states('US'), 'https://api.parseapi.com/country/US/states'],
 		['state', (p) => p.state('NC', { country: 'US' }), 'https://api.parseapi.com/state/NC?country=US'],
+		['state by name', (p) => p.state('colorado'), 'https://api.parseapi.com/state/colorado'],
 		[
 			'state.districts',
 			(p) => p.state.districts('NC', { country: 'US' }),
 			'https://api.parseapi.com/state/NC/districts?country=US',
 		],
 		['district', (p) => p.district('37081'), 'https://api.parseapi.com/district/37081'],
+		[
+			'district by name',
+			(p) => p.district('guilford county', { state: 'NC' }),
+			'https://api.parseapi.com/district/guilford%20county?state=NC',
+		],
 		['city', (p) => p.city('charlotte', { state: 'NC' }), 'https://api.parseapi.com/city/charlotte?state=NC'],
 		[
 			'city.id',
@@ -65,7 +71,13 @@ describe('url mapping', () => {
 			'https://api.parseapi.com/city?q=char&country=US&limit=10',
 		],
 		['city.nearest', (p) => p.city.nearest(35.2271, -80.8431), 'https://api.parseapi.com/city?lat=35.2271&lon=-80.8431'],
+		[
+			'city.nearby',
+			(p) => p.city.nearby('denver', { radius: 8, unit: 'mi', limit: 3 }),
+			'https://api.parseapi.com/city/denver/nearby?radius=8&unit=mi&limit=3',
+		],
 		['postal', (p) => p.postal('28202', { country: 'US' }), 'https://api.parseapi.com/postal/28202?country=US'],
+		['postal bare', (p) => p.postal('SW1A 1AA'), 'https://api.parseapi.com/postal/SW1A%201AA'],
 		[
 			'postal.nearby',
 			(p) => p.postal.nearby('28202', { country: 'US', radius: 40, unit: 'km' }),

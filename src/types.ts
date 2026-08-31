@@ -121,6 +121,13 @@ export interface State {
 	population: number | null;
 	area: number | null;
 	timezone: string | null;
+	timezones: string[];
+	iso_3166_2: string | null;
+	fips: string | null;
+	capital: string | null;
+	area_codes: string[];
+	tax: string | null;
+	tax_rate: number | null;
 }
 
 export interface StateDistrictItem {
@@ -150,17 +157,29 @@ export interface District {
 	population: number | null;
 	land_area: number | null;
 	water_area: number | null;
+	seat: string | null;
+	timezone: string | null;
+	timezones: string[];
 }
 
 export interface City {
 	name: string;
 	local_name: string | null;
+	type: string | null;
+	capital: 'country' | 'state' | null;
 	state: string | null;
 	state_name: string | null;
+	district: string | null;
+	district_name: string | null;
 	country: string;
+	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
+	elevation: number | null;
+	elevation_ft: number | null;
 	population: number | null;
+	land_area: number | null;
+	water_area: number | null;
 	timezone: string | null;
 	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
 	id: string;
@@ -179,6 +198,15 @@ export interface CitySearch {
 	cities: City[];
 }
 
+export interface CityNearby {
+	city: string;
+	state: string | null;
+	country: string;
+	radius: number;
+	unit: string;
+	nearby: CityNearest[];
+}
+
 export interface Postal {
 	postal: string;
 	city: string | null;
@@ -190,11 +218,14 @@ export interface Postal {
 	state_name: string | null;
 	state_name_local: string | null;
 	country: string;
+	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	land_area: number | null;
+	water_area: number | null;
 	timezone: string | null;
 	currency: string | null;
 	neighbors: string[];
