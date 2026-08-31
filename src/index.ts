@@ -38,6 +38,7 @@ import type {
 	StateDistricts,
 	Timezone,
 	Useragent,
+	Vin,
 	Weather,
 } from './types.js';
 
@@ -307,6 +308,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		useragent: (ua: string, opts?: DeepOption): Promise<Useragent> =>
 			request('/useragent', deepQuery(opts), { 'User-Agent': ua }),
+
+		vin: (vin: string, opts?: DeepOption): Promise<Vin> =>
+			request(`/vin/${enc(vin)}`, deepQuery(opts)),
 
 		currency: Object.assign(
 			(code: string): Promise<Currency> => request(`/currency/${enc(code)}`),

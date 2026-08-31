@@ -61,6 +61,7 @@ await parse.weather(40.7128, -74.006);
 await parse.domain('example.com');
 await parse.mx('example.com');
 await parse.useragent(uaString);
+await parse.vin('1HGCM82633A004352');
 await parse.emoji('rocket');
 await parse.emoji.search('fire');
 ```

@@ -104,6 +104,10 @@ await expectOk('mx', parse.mx('gmail.com'), (r) => (r.mx.length > 0 ? null : 'no
 await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), (r) =>
 	r.browser === 'Chrome' ? null : `browser ${r.browser}`
 );
+await expectOk('vin', parse.vin('1HGCM82633A004352'), (r) =>
+	r.valid === true && r.make === 'Honda' && r.year === 2003 ? null : `vin ${r.make} ${r.year}`
+);
+await expectOk('vin junk', parse.vin('1HGCM82613A004352'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('currency', parse.currency('USD'), (r) => (r.symbol === '$' ? null : 'wrong symbol'));
 await expectOk('currency.rate', parse.currency.rate('USD', 'EUR'), (r) =>
 	r.rate > 0 && r.rate < 10 ? null : `rate ${r.rate}`
