@@ -543,6 +543,26 @@ export interface Name {
 	salutation: 'Mr' | 'Ms' | null;
 }
 
+export interface SanctionsMatch {
+	/** OFAC uid, stable across publications. */
+	id: number;
+	list: 'sdn' | 'consolidated';
+	type: 'individual' | 'entity' | 'vessel' | 'aircraft';
+	/** Listed primary name, verbatim. */
+	name: string;
+	/** Official sanctions program codes (SDGT, CUBA, IRGC). */
+	programs: string[];
+}
+
+export interface Sanctions {
+	/** The name you passed, folded to its match key. */
+	name: string;
+	/** On an official OFAC list as published. false is not clearance. */
+	sanctioned: boolean;
+	/** Official records matched. Empty when sanctioned is false. */
+	matches: SanctionsMatch[];
+}
+
 export interface CurrencyRate {
 	base: string;
 	quote: string;

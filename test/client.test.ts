@@ -144,6 +144,11 @@ describe('url mapping', () => {
 		['language', (p) => p.language('en'), 'https://api.parseapi.com/language/en'],
 		['name encodes spaces', (p) => p.name('Smith, John'), 'https://api.parseapi.com/name/Smith%2C%20John'],
 		[
+			'sanctions encodes spaces',
+			(p) => p.sanctions('AEROCARIBBEAN AIRLINES'),
+			'https://api.parseapi.com/sanctions/AEROCARIBBEAN%20AIRLINES',
+		],
+		[
 			'timezone encodes slash',
 			(p) => p.timezone('America/New_York'),
 			'https://api.parseapi.com/timezone/America%2FNew_York',
