@@ -100,6 +100,7 @@ describe('url mapping', () => {
 			(p) => p.iban('89370400440532013000', { country: 'DE' }),
 			'https://api.parseapi.com/iban/89370400440532013000?country=DE',
 		],
+		['npi', (p) => p.npi('1881018208'), 'https://api.parseapi.com/npi/1881018208'],
 		[
 			'vat from deep',
 			(p) => p.vat('DE136695976', { from: 'IE6388047V', deep: true }),

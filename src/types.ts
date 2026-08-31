@@ -315,6 +315,33 @@ export interface Iban {
 	account: string | null;
 }
 
+export interface Npi {
+	/** Normalized 10-digit NPI. Invalid input still echoes the fold. */
+	npi: string | null;
+	valid: boolean;
+	/** Exists in the CMS NPPES registry. */
+	registered: boolean | null;
+	active: boolean | null;
+	/** On the OIG exclusion list. */
+	excluded: boolean | null;
+	/** individual or organization. */
+	type: string | null;
+	name: string | null;
+	first: string | null;
+	last: string | null;
+	credential: string | null;
+	specialty: string | null;
+	/** NUCC taxonomy code. */
+	taxonomy: string | null;
+	address: string | null;
+	city: string | null;
+	state: string | null;
+	state_name: string | null;
+	postal: string | null;
+	country: string | null;
+	phone: string | null;
+}
+
 export interface VinRecall {
 	/** Government campaign number. */
 	campaign: string;

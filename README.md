@@ -25,6 +25,7 @@ await parse.ip.self();
 await parse.email('hello@gmail.com');
 await parse.vat('DE136695976');
 await parse.iban('DE89370400440532013000');
+await parse.npi('1881018208');
 await parse.phone('+14155552671');
 await parse.carrier('+14155552671');
 await parse.caller('+14155552671');
