@@ -23,6 +23,8 @@ import type {
 	Emoji,
 	EmojiSearch,
 	Hlr,
+	Hts,
+	HtsSearch,
 	HolidayDate,
 	HolidayYear,
 	Ip,
@@ -315,6 +317,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		vin: (vin: string, opts?: DeepOption): Promise<Vin> =>
 			request(`/vin/${enc(vin)}`, deepQuery(opts)),
+
+		hts: Object.assign(
+			(code: string, opts?: { origin?: string } & DeepOption): Promise<Hts> =>
+				request(`/hts/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }),
+			{
+				search: (q: string): Promise<HtsSearch> => request('/hts', { q }),
+			}
+		),
 
 		currency: Object.assign(
 			(code: string): Promise<Currency> => request(`/currency/${enc(code)}`),

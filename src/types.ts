@@ -342,6 +342,61 @@ export interface Npi {
 	phone: string | null;
 }
 
+export interface HtsMeasure {
+	/** Chapter 99 heading, dotted (9903.01.24). */
+	heading: string;
+	/** The measure text verbatim. */
+	description: string;
+	/** The rate string verbatim ("The duty provided in the applicable subheading + 10%"). */
+	rate: string | null;
+	/** Effective from, ISO YYYY-MM-DD. Null when the schedule states none. */
+	from: string | null;
+	/** Expires, ISO YYYY-MM-DD. Null when open-ended. */
+	until: string | null;
+}
+
+export interface HtsDeep {
+	/** The origin country the measures were resolved for. */
+	origin?: string | null;
+	/** Composed ad valorem percent. Null when the components do not compose cleanly. */
+	effective_rate?: number | null;
+	/** Every Chapter 99 tariff measure that applies to this code from this origin. */
+	measures?: HtsMeasure[] | null;
+}
+
+export interface Hts {
+	/** Normalized code with dots (8471.30.01.00). */
+	hts: string;
+	/** The schedule line verbatim. */
+	description: string;
+	/** Parent descriptions from the schedule outline, outermost first. */
+	lineage: string[];
+	/** Units of quantity (No., kg). */
+	units: string[];
+	/** Column 1 general rate, verbatim. */
+	general: string | null;
+	/** Column 1 special rate, verbatim. */
+	special: string | null;
+	/** Column 2 rate, verbatim. */
+	other: string | null;
+	/** The official release that answered (2026HTSRev17). */
+	revision: string;
+	deep?: Deep<HtsDeep>;
+}
+
+export interface HtsSearchHit {
+	hts: string;
+	description: string;
+	general: string | null;
+}
+
+export interface HtsSearch {
+	q: string;
+	revision: string;
+	/** Up to 20 lines, best match first. */
+	codes: HtsSearchHit[];
+}
+
 export interface VinRecall {
 	/** Government campaign number. */
 	campaign: string;
