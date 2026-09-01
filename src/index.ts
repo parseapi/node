@@ -37,7 +37,6 @@ import type {
 	Postal,
 	PostalDistance,
 	PostalNearby,
-	Sanctions,
 	State,
 	StateDistricts,
 	Timezone,
@@ -344,8 +343,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		language: (code: string): Promise<Language> => request(`/language/${enc(code)}`),
 
 		name: (name: string): Promise<Name> => request(`/name/${enc(name)}`),
-
-		ofac: (name: string): Promise<Sanctions> => request(`/ofac/${enc(name)}`),
 
 		timezone,
 

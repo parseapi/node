@@ -122,12 +122,6 @@ await expectOk('language', parse.language('en'), (r) =>
 await expectOk('name', parse.name("BILLY O'SHALL"), (r) =>
 	r.name === "Billy O'Shall" && r.valid === true && r.gender === 'male' ? null : 'wrong name'
 );
-await expectOk('ofac', parse.ofac('AEROCARIBBEAN AIRLINES'), (r) =>
-	r.sanctioned === true && r.matches[0]?.list === 'sdn' ? null : 'expected sdn match'
-);
-await expectOk('ofac clean', parse.ofac('Jane Smith'), (r) =>
-	r.sanctioned === false && r.matches.length === 0 ? null : 'expected no match'
-);
 await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
 	r.offset_minutes === -240 || r.offset_minutes === -300 ? null : `offset ${r.offset_minutes}`
 );
