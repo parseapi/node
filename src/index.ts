@@ -292,7 +292,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		iban: (iban: string, opts?: { country?: string }): Promise<Iban> =>
 			request(`/iban/${enc(iban)}`, { country: opts?.country }),
 
-		npi: (npi: string): Promise<Npi> => request(`/npi/${enc(npi)}`),
+		npi: (npi: string, opts?: DeepOption): Promise<Npi> =>
+			request(`/npi/${enc(npi)}`, deepQuery(opts)),
 
 		phone: (number: string, opts?: { country?: string } & DeepOption): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }),

@@ -102,6 +102,11 @@ describe('url mapping', () => {
 		],
 		['npi', (p) => p.npi('1881018208'), 'https://api.parseapi.com/npi/1881018208'],
 		[
+			'npi deep',
+			(p) => p.npi('1881018208', { deep: true }),
+			'https://api.parseapi.com/npi/1881018208?deep=true',
+		],
+		[
 			'vat from deep',
 			(p) => p.vat('DE136695976', { from: 'IE6388047V', deep: true }),
 			'https://api.parseapi.com/vat/DE136695976?from=IE6388047V&deep=true',

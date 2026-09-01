@@ -355,6 +355,23 @@ export interface Npi {
 	postal: string | null;
 	country: string | null;
 	phone: string | null;
+	deep?: Deep<NpiDeep>;
+}
+
+export interface NpiEnrollment {
+	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
+	type: string | null;
+	specialty: string | null;
+	state: string | null;
+}
+
+export interface NpiDeep {
+	/** In the published Medicare FFS enrollment extract. */
+	medicare?: boolean | null;
+	/** On the CMS opt-out affidavit list. Matched by NPI only. */
+	opt_out?: boolean | null;
+	/** Enrollment rows. [] when medicare is false. */
+	enrollments?: NpiEnrollment[] | null;
 }
 
 export interface HtsMeasure {
