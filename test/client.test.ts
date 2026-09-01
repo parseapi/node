@@ -145,9 +145,9 @@ describe('url mapping', () => {
 		['language', (p) => p.language('en'), 'https://api.parseapi.com/language/en'],
 		['name encodes spaces', (p) => p.name('Smith, John'), 'https://api.parseapi.com/name/Smith%2C%20John'],
 		[
-			'sanctions encodes spaces',
-			(p) => p.sanctions('AEROCARIBBEAN AIRLINES'),
-			'https://api.parseapi.com/sanctions/AEROCARIBBEAN%20AIRLINES',
+			'ofac encodes spaces',
+			(p) => p.ofac('AEROCARIBBEAN AIRLINES'),
+			'https://api.parseapi.com/ofac/AEROCARIBBEAN%20AIRLINES',
 		],
 		[
 			'timezone encodes slash',

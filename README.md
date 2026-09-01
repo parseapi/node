@@ -52,7 +52,6 @@ await parse.currency('USD');
 await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
 await parse.name('BILLY OSHALL');
-await parse.sanctions('AEROCARIBBEAN AIRLINES');
 await parse.timezone('America/New_York');
 await parse.timezone(40.7128, -74.006);
 await parse.holiday('US', { year: 2026 });

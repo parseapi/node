@@ -345,7 +345,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		name: (name: string): Promise<Name> => request(`/name/${enc(name)}`),
 
-		sanctions: (name: string): Promise<Sanctions> => request(`/sanctions/${enc(name)}`),
+		ofac: (name: string): Promise<Sanctions> => request(`/ofac/${enc(name)}`),
 
 		timezone,
 
