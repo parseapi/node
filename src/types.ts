@@ -337,6 +337,8 @@ export interface Npi {
 	/** Exists in the CMS NPPES registry. */
 	registered: boolean | null;
 	active: boolean | null;
+	/** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+	deactivated_at: string | null;
 	/** On the OIG exclusion list. */
 	excluded: boolean | null;
 	/** individual or organization. */
