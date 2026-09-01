@@ -119,6 +119,7 @@ export interface State {
 	latitude: number | null;
 	longitude: number | null;
 	population: number | null;
+	/** Total area in km2. */
 	area: number | null;
 	timezone: string | null;
 	timezones: string[];
@@ -155,7 +156,11 @@ export interface District {
 	latitude: number | null;
 	longitude: number | null;
 	population: number | null;
+	/** Total area in km2 (land + water, or the official total). */
+	area: number | null;
+	/** Land area in km2. Null when the source publishes total only. */
 	land_area: number | null;
+	/** Water area in km2. Null when the source publishes total only. */
 	water_area: number | null;
 	seat: string | null;
 	timezone: string | null;
@@ -166,7 +171,8 @@ export interface City {
 	name: string;
 	local_name: string | null;
 	type: string | null;
-	capital: 'country' | 'state' | null;
+	/** What this city is the capital of: country, state, or null. */
+	capital_of: 'country' | 'state' | null;
 	state: string | null;
 	state_name: string | null;
 	district: string | null;
@@ -178,7 +184,11 @@ export interface City {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	/** Total area in km2 (land + water, or the official total). */
+	area: number | null;
+	/** Land area in km2. Null when the source publishes total only. */
 	land_area: number | null;
+	/** Water area in km2. Null when the source publishes total only. */
 	water_area: number | null;
 	timezone: string | null;
 	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
@@ -224,7 +234,11 @@ export interface Postal {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	/** Total area in km2. Null when the source has no water split. */
+	area: number | null;
+	/** Land area in km2. Null where the source has none. */
 	land_area: number | null;
+	/** Water area in km2. Null where the source has none. */
 	water_area: number | null;
 	timezone: string | null;
 	currency: string | null;
@@ -289,7 +303,8 @@ export interface VatDeep {
 	name: string | null;
 	address: VatAddress | null;
 	consultation: string | null;
-	consulted: string | null;
+	/** Registry timestamp of this check, ISO. */
+	consulted_at: string | null;
 }
 
 export interface Vat {
@@ -393,8 +408,8 @@ export interface HtsSearchHit {
 export interface HtsSearch {
 	q: string;
 	revision: string;
-	/** Up to 20 lines, best match first. */
-	codes: HtsSearchHit[];
+	/** Up to 20 tariff lines, best match first. */
+	lines: HtsSearchHit[];
 }
 
 export interface VinRecall {
@@ -447,14 +462,14 @@ export interface Vin {
 export interface Phone {
 	phone: string | null;
 	valid: boolean;
-	/** What the numbering plan can see. Never voip (that is the carrier field's word). Present when valid. */
-	type?: 'mobile' | 'landline' | 'toll_free' | 'unknown';
-	/** NPA-derived state code (US/CA). Present when valid. */
-	state?: string | null;
-	state_name?: string | null;
 	country: string | null;
-	national?: string | null;
-	international?: string | null;
+	/** What the numbering plan can see. Never voip (that is the carrier field's word). Null when invalid. */
+	type: 'mobile' | 'landline' | 'toll_free' | 'unknown' | null;
+	/** NPA-derived state code (US/CA). */
+	state: string | null;
+	state_name: string | null;
+	national: string | null;
+	international: string | null;
 	/** Always empty. The metered proves are their own endpoints: carrier, caller, hlr. */
 	deep?: Record<string, never>;
 }
@@ -463,44 +478,44 @@ export interface Carrier {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
-	/** The network's word, including voip. Present when valid. */
-	type?: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown';
+	/** The network's word, including voip. Null when invalid. */
+	type: 'mobile' | 'landline' | 'voip' | 'toll_free' | 'unknown' | null;
 	/** Current carrier display name. Null when the probe had no answer. */
-	carrier?: string | null;
+	carrier: string | null;
 	/** Carrier is a known burner number app. Null when carrier is unknown. */
-	burner?: boolean | null;
+	burner: boolean | null;
 	/** Issuing rate-center city. */
-	city?: string | null;
-	state?: string | null;
-	state_name?: string | null;
+	city: string | null;
+	state: string | null;
+	state_name: string | null;
 }
 
 export interface Caller {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
-	/** CNAM record verbatim (all-caps telco artifact). Null when no record or outside NANP. Present when valid. */
-	caller?: string | null;
+	/** CNAM record verbatim (all-caps telco artifact). Null when no record, outside NANP, or invalid. */
+	caller: string | null;
 }
 
 export interface Hlr {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
-	/** Assigned to a subscriber. Present when valid. */
-	live?: boolean | null;
+	/** Assigned to a subscriber. Null when invalid. */
+	live: boolean | null;
 	/** Handset reachable right now. Null means unconfirmed, never no. */
-	connected?: boolean | null;
+	connected: boolean | null;
 	/** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
-	roaming?: boolean | null;
-	roaming_network?: string | null;
+	roaming: boolean | null;
+	roaming_network: string | null;
 	/** ISO2, uppercase. */
-	roaming_country?: string | null;
+	roaming_country: string | null;
 	/** Current serving network name. */
-	network?: string | null;
-	original_network?: string | null;
-	mcc?: string | null;
-	mnc?: string | null;
+	network: string | null;
+	original_network: string | null;
+	mcc: string | null;
+	mnc: string | null;
 }
 
 export interface MxRecord {
