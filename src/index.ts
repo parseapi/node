@@ -318,11 +318,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		vin: (vin: string, opts?: DeepOption): Promise<Vin> =>
 			request(`/vin/${enc(vin)}`, deepQuery(opts)),
 
-		hts: Object.assign(
+		tariff: Object.assign(
 			(code: string, opts?: { origin?: string } & DeepOption): Promise<Hts> =>
-				request(`/hts/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }),
+				request(`/tariff/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }),
 			{
-				search: (q: string): Promise<HtsSearch> => request('/hts', { q }),
+				search: (q: string): Promise<HtsSearch> => request('/tariff', { q }),
 			}
 		),
 
