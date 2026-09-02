@@ -325,6 +325,10 @@ export interface Iban {
 	checksum: string | null;
 	/** Bank identifier parsed from the number, not a name. */
 	bank: string | null;
+	/** Institution name from the national bank-code directory. Null when unsourced. */
+	bank_name: string | null;
+	/** BIC from that same directory. Null when unsourced or missing. */
+	bic: string | null;
 	/** Branch identifier when that country has one. */
 	branch: string | null;
 	account: string | null;
