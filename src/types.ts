@@ -487,6 +487,8 @@ export interface Phone {
 	/** NPA-derived state code (US/CA). */
 	state: string | null;
 	state_name: string | null;
+	/** Numbering-plan IANA zone. Null when the prefix covers more than one zone, or invalid. Not the handset. */
+	timezone: string | null;
 	national: string | null;
 	international: string | null;
 	/** Always empty. The metered proves are their own endpoints: carrier, caller, hlr. */
