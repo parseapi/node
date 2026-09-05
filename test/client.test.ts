@@ -128,6 +128,9 @@ describe('url mapping', () => {
 		],
 		['hlr', (p) => p.hlr('+447712345678'), 'https://api.parseapi.com/hlr/%2B447712345678'],
 		['domain', (p) => p.domain('example.com'), 'https://api.parseapi.com/domain/example.com'],
+		['asn', (p) => p.asn('AS13335'), 'https://api.parseapi.com/asn/AS13335'],
+		['asn decimal', (p) => p.asn('13335'), 'https://api.parseapi.com/asn/13335'],
+		['mac', (p) => p.mac('00:1B:63:84:45:E6'), 'https://api.parseapi.com/mac/00%3A1B%3A63%3A84%3A45%3AE6'],
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
 		[
@@ -156,7 +159,7 @@ describe('url mapping', () => {
 		],
 		[
 			'timezone from coords',
-			(p) => p.timezone(40.7128, -74.006),
+			(p) => p.timezone.at(40.7128, -74.006),
 			'https://api.parseapi.com/timezone?lat=40.7128&lon=-74.006',
 		],
 		[
@@ -241,6 +244,23 @@ describe('construction', () => {
 });
 
 describe('errors', () => {
+	it('does not forward the API key to a redirect target', async () => {
+		const fetchStub = vi.fn(async (_input: unknown, init?: RequestInit) => {
+			expect(init?.redirect).toBe('manual');
+			return new Response(null, { status: 302, headers: { Location: 'https://example.com/elsewhere' } });
+		});
+		const parse = parseAPI('test_key', { fetch: fetchStub, retries: 2 });
+		await expect(parse.country('US')).rejects.toMatchObject({ name: 'ParseAPIError', status: 302 });
+		expect(fetchStub).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([null, [], 'unavailable', 42])('keeps a structured API error for a JSON scalar or array: %j', async (body) => {
+		const { parse } = stubClient(() => jsonResponse(body, 400));
+		await expect(parse.country('US')).rejects.toMatchObject({
+			name: 'ParseAPIError', status: 400, code: 'unknown_error',
+		});
+	});
+
 	it('throws ParseAPIError with the live error shape', async () => {
 		const { parse } = stubClient(() =>
 			jsonResponse(
@@ -272,6 +292,21 @@ describe('errors', () => {
 });
 
 describe('retries', () => {
+	it('releases a retry response before opening the next request', async () => {
+		let released = false;
+		const response = new Response(new ReadableStream({
+			cancel() { released = true; },
+		}), { status: 503, headers: { 'Retry-After': '0' } });
+		const fetchStub = vi.fn()
+			.mockResolvedValueOnce(response)
+			.mockImplementationOnce(async () => {
+				expect(released).toBe(true);
+				return jsonResponse({ country: 'us' });
+			});
+		const parse = parseAPI('test_key', { fetch: fetchStub, retries: 1 });
+		await expect(parse.country('US')).resolves.toMatchObject({ country: 'us' });
+	});
+
 	it('retries 5xx then succeeds', async () => {
 		const { parse, fetchStub } = stubClient(
 			[jsonResponse({ code: 'server_error', message: 'boom' }, 500), jsonResponse({ country: 'us' })],
@@ -320,5 +355,36 @@ describe('retries', () => {
 		const result = await parse.country('US');
 		expect(result.country).toBe('us');
 		expect(calls.length).toBe(2);
+	});
+});
+
+describe('configuration and backoff', () => {
+	it.each([-1, 1.5, Infinity, NaN])('rejects invalid retry counts before a request: %s', (retries) => {
+		expect(() => parseAPI('test_key', { retries })).toThrow(RangeError);
+	});
+
+	it.each([0, -1, 0.5, 2_147_483_648, Infinity, NaN])('rejects invalid timeout values before a request: %s', (timeoutMs) => {
+		expect(() => parseAPI('test_key', { timeoutMs })).toThrow(RangeError);
+	});
+
+	it('uses the environment key when the argument is empty', () => {
+		vi.stubEnv('PARSEAPI_KEY', 'test_environment_key');
+		try { expect(() => parseAPI('')).not.toThrow(); }
+		finally { vi.unstubAllEnvs(); }
+	});
+
+	it('accepts an HTTP-date Retry-After header', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-09-05T00:00:00Z'));
+		const { parse, fetchStub } = stubClient([
+			jsonResponse({}, 429, { 'Retry-After': 'Sat, 05 Sep 2026 00:00:02 GMT' }),
+			jsonResponse({ country: 'us' }),
+		], { retries: 1 });
+		const result = parse.country('US');
+		await vi.advanceTimersByTimeAsync(1999);
+		expect(fetchStub).toHaveBeenCalledTimes(1);
+		await vi.advanceTimersByTimeAsync(1);
+		await expect(result).resolves.toMatchObject({ country: 'us' });
+		expect(fetchStub).toHaveBeenCalledTimes(2);
 	});
 });

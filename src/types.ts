@@ -380,7 +380,7 @@ export interface NpiDeep {
 	enrollments?: NpiEnrollment[] | null;
 }
 
-export interface HtsMeasure {
+export interface TariffMeasure {
 	/** Chapter 99 heading, dotted (9903.01.24). */
 	heading: string;
 	/** The measure text verbatim. */
@@ -393,16 +393,16 @@ export interface HtsMeasure {
 	until: string | null;
 }
 
-export interface HtsDeep {
+export interface TariffDeep {
 	/** The origin country the measures were resolved for. */
 	origin?: string | null;
 	/** Composed ad valorem percent. Null when the components do not compose cleanly. */
 	effective_rate?: number | null;
 	/** Every Chapter 99 tariff measure that applies to this code from this origin. */
-	measures?: HtsMeasure[] | null;
+	measures?: TariffMeasure[] | null;
 }
 
-export interface Hts {
+export interface Tariff {
 	/** Normalized code with dots (8471.30.01.00). */
 	hts: string;
 	/** The schedule line verbatim. */
@@ -419,20 +419,20 @@ export interface Hts {
 	other: string | null;
 	/** The official release that answered (2026HTSRev17). */
 	revision: string;
-	deep?: Deep<HtsDeep>;
+	deep?: Deep<TariffDeep>;
 }
 
-export interface HtsSearchHit {
+export interface TariffSearchHit {
 	hts: string;
 	description: string;
 	general: string | null;
 }
 
-export interface HtsSearch {
+export interface TariffSearch {
 	q: string;
 	revision: string;
 	/** Up to 20 tariff lines, best match first. */
-	lines: HtsSearchHit[];
+	lines: TariffSearchHit[];
 }
 
 export interface VinRecall {
@@ -572,6 +572,23 @@ export interface Domain {
 	domain: string;
 	available: boolean;
 	deep?: Deep<DomainDeep>;
+}
+
+/** Network identity for an autonomous system number. */
+export interface Asn {
+	asn: number;
+	name: string | null;
+	country: string | null;
+	country_name: string | null;
+}
+
+/** A normalized 48-bit address. Vendor names the registered assignment holder. */
+export interface Mac {
+	mac: string;
+	valid: boolean;
+	vendor: string | null;
+	local: boolean | null;
+	multicast: boolean | null;
 }
 
 export interface Mx {
@@ -961,4 +978,83 @@ export interface Emoji {
 export interface EmojiSearch {
 	q: string;
 	emojis: Emoji[];
+}
+
+
+export interface Address {
+	address: string | null;
+	valid: boolean;
+	registered: boolean | null;
+	number: string | null;
+	street: string | null;
+	unit: string | null;
+	city: string | null;
+	district: string | null;
+	district_name: string | null;
+	state: string | null;
+	state_name: string | null;
+	postal: string | null;
+	country: string | null;
+	country_name: string | null;
+	latitude: number | null;
+	longitude: number | null;
+	deep?: Record<string, unknown>;
+}
+
+export interface AddressSuggestion {
+	address: string;
+	number: string | null;
+	street: string | null;
+	unit: string | null;
+	city: string | null;
+	state: string | null;
+	postal: string | null;
+	latitude: number | null;
+	longitude: number | null;
+}
+
+export interface AddressSearch {
+	q: string;
+	postal?: string | null;
+	city?: string | null;
+	state?: string | null;
+	country?: string | null;
+	addresses: AddressSuggestion[];
+}
+
+export interface CompanyCountry {
+	name: string | null;
+	blocs: string[];
+	tax: string | null;
+}
+
+export interface CompanyDeep {
+	country: CompanyCountry | null;
+	postal: Postal | null;
+	city: City | null;
+}
+
+export interface Company {
+	company: string | null;
+	valid: boolean;
+	registered: boolean | null;
+	country: string | null;
+	type: string | null;
+	name: string | null;
+	active: boolean | null;
+	activity: string | null;
+	address: string | null;
+	city: string | null;
+	state: string | null;
+	state_name: string | null;
+	postal: string | null;
+	country_name: string | null;
+	vat: string | null;
+	gst: boolean | null;
+	acn: string | null;
+	siren: string | null;
+	siege: boolean | null;
+	kind: string | null;
+	invoice: string | null;
+	deep?: Deep<CompanyDeep>;
 }

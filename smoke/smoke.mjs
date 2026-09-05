@@ -88,6 +88,9 @@ await expectOk('postal.nearby', parse.postal.nearby('28202', { country: 'US', ra
 await expectOk('postal.distance', parse.postal.distance('28202', '10001', { country: 'US' }), (r) =>
 	r.distance > 800 && r.distance < 1000 ? null : `distance ${r.distance}`
 );
+await expectOk('address junk', parse.address('junk'), (r) => r.valid === false ? null : 'expected invalid');
+await expectOk('address.search', parse.address.search('1600 Pennsylvania', { country: 'US', postal: '20500' }), (r) => Array.isArray(r.addresses) ? null : 'missing addresses');
+await expectOk('company junk', parse.company('junk'), (r) => r.valid === false ? null : 'expected invalid');
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
 await expectOk('vat', parse.vat('DE136695976'), (r) => (r.valid === true && r.country === 'DE' ? null : 'not valid DE'));
 await expectOk('iban', parse.iban('DE89370400440532013000'), (r) =>
@@ -104,6 +107,8 @@ await expectOk('carrier junk free', parse.carrier('555-0100'), (r) => (r.valid =
 await expectOk('caller junk free', parse.caller('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('hlr junk free', parse.hlr('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('domain', parse.domain('gmail.com'), (r) => (r.available === false ? null : 'gmail available?'));
+await expectOk('asn', parse.asn('AS13335'), (r) => r.asn === 13335 ? null : 'wrong ASN');
+await expectOk('mac', parse.mac('00:1B:63:84:45:E6'), (r) => r.valid && r.mac === '00:1B:63:84:45:E6' && r.local === false && r.multicast === false ? null : 'wrong MAC');
 await expectOk('mx', parse.mx('gmail.com'), (r) => (r.mx.length > 0 ? null : 'no mx'));
 await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), (r) =>
 	r.browser === 'Chrome' ? null : `browser ${r.browser}`
@@ -125,6 +130,11 @@ await expectOk('name', parse.name("BILLY O'SHALL"), (r) =>
 await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
 	r.offset_minutes === -240 || r.offset_minutes === -300 ? null : `offset ${r.offset_minutes}`
 );
+await expectOk('timezone.at', parse.timezone.at(39.77, -104.9), (r) => r.timezone === 'America/Denver' ? null : 'wrong timezone');
+await expectOk('date', parse.date('03/04/2026', { format: 'mdy' }), (r) => r.date === '2026-03-04' ? null : 'wrong date');
+await expectOk('date.today', parse.date.today(), (r) => r.valid === true ? null : 'invalid today');
+await expectOk('tariff', parse.tariff('8471.30.01.00'), (r) => r.hts ? null : 'missing hts');
+await expectOk('tariff.search', parse.tariff.search('sunglasses'), (r) => Array.isArray(r.lines) ? null : 'missing lines');
 await expectOk('holiday', parse.holiday('US'), (r) => (r.holidays.length > 5 ? null : 'too few holidays'));
 await expectOk('holiday.date', parse.holiday.date('US', '2026-12-25'), (r) =>
 	r.holiday?.name === 'Christmas Day' ? null : 'not christmas'
