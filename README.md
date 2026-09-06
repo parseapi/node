@@ -1,6 +1,6 @@
 # @parseapi/sdk
 
-Official parseAPI client for Node and TypeScript.
+Official ParseAPI client for Node and TypeScript.
 
 ```bash
 npm install @parseapi/sdk

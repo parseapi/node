@@ -1,5 +1,5 @@
 /**
- * Response types for the parseAPI public API.
+ * Response types for the ParseAPI public API.
  * Shapes are append-only upstream, so these only ever grow.
  * Every field inside a deep object is optional and nullable: the API ships
  * `deep: {}` when deep was requested but is not unlocked on the plan.

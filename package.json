@@ -1,7 +1,7 @@
 {
 	"name": "@parseapi/sdk",
 	"version": "0.3.1",
-	"description": "Official parseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
+	"description": "Official ParseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
 	"keywords": [
 		"parseapi",
 		"ip",
@@ -14,7 +14,7 @@
 		"weather"
 	],
 	"license": "MIT",
-	"author": "parseAPI <hello@parseapi.com> (https://parseapi.com)",
+	"author": "ParseAPI <hello@parseapi.com> (https://parseapi.com)",
 	"homepage": "https://parseapi.com",
 	"repository": {
 		"type": "git",
