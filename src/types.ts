@@ -217,6 +217,17 @@ export interface CityNearby {
 	nearby: CityNearest[];
 }
 
+/** An area's share of ZIP addresses, with category shares measured independently. */
+export interface PostalMetro {
+	code: string;
+	name: string;
+	type: string;
+	share: number | null;
+	residential_share: number | null;
+	business_share: number | null;
+	other_share: number | null;
+}
+
 export interface Postal {
 	postal: string;
 	city: string | null;
@@ -243,6 +254,8 @@ export interface Postal {
 	timezone: string | null;
 	currency: string | null;
 	neighbors: string[];
+	/** Missing/null is unknown; [] is an observed result outside all covered areas. */
+	metros?: PostalMetro[] | null;
 }
 
 export interface PostalNearbyItem {
@@ -252,6 +265,7 @@ export interface PostalNearbyItem {
 	country: string;
 	distance: number;
 	distance_mi: number;
+	metros?: PostalMetro[] | null;
 }
 
 export interface PostalNearby {
@@ -259,12 +273,14 @@ export interface PostalNearby {
 	country: string;
 	radius: number;
 	unit: string;
+	metros?: PostalMetro[] | null;
 	nearby: PostalNearbyItem[];
 }
 
 export interface PostalDistanceEnd {
 	postal: string;
 	city: string | null;
+	metros?: PostalMetro[] | null;
 }
 
 export interface PostalDistance {
