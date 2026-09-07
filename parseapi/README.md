@@ -1,18 +1,16 @@
-# parseapi
+# Pending npm name
 
-Official ParseAPI client for Node and TypeScript.
+This unpublished scaffold reserves the proposed `parseapi` package layout while npm reviews the name request. The supported package is [@parseapi/sdk](https://www.npmjs.com/package/@parseapi/sdk).
 
 ```bash
-npm install parseapi
+npm install @parseapi/sdk
 ```
 
 ```ts
-import { parseAPI } from 'parseapi';
+import { parseAPI } from '@parseapi/sdk';
 
 const parse = parseAPI('your-api-key');
 const country = await parse.country('US');
 ```
 
-This is the same client as [@parseapi/sdk](https://www.npmjs.com/package/@parseapi/sdk) under its short name. Same exports, same types, same versions.
-
-Get a key at [parseapi.com](https://parseapi.com). Full docs at [parseapi.com/docs](https://parseapi.com/docs).
+Publication and any package-name change wait for the npm name grant. Existing `@parseapi/sdk` installs retain their supported entry point.
