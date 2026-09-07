@@ -45,7 +45,7 @@
 		"node": ">=18"
 	},
 	"dependencies": {
-		"@parseapi/sdk": "^0.3.1"
+		"@parseapi/sdk": "^0.3.2"
 	},
 	"private": true
 }
