@@ -1,0 +1,50 @@
+{
+	"name": "parseapi",
+	"version": "0.1.2",
+	"description": "Official ParseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
+	"keywords": [
+		"parseapi",
+		"ip",
+		"geolocation",
+		"email validation",
+		"phone validation",
+		"postal",
+		"timezone",
+		"currency",
+		"weather"
+	],
+	"license": "MIT",
+	"author": "ParseAPI <hello@parseapi.com> (https://parseapi.com)",
+	"homepage": "https://parseapi.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/parseapi/node.git",
+		"directory": "parseapi"
+	},
+	"bugs": {
+		"url": "https://github.com/parseapi/node/issues"
+	},
+	"type": "module",
+	"main": "./index.cjs",
+	"module": "./index.js",
+	"types": "./index.d.ts",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./index.js",
+			"require": "./index.cjs"
+		}
+	},
+	"files": [
+		"index.js",
+		"index.cjs",
+		"index.d.ts"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=18"
+	},
+	"dependencies": {
+		"@parseapi/sdk": "^0.1.2"
+	}
+}
