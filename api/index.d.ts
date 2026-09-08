@@ -1010,6 +1010,7 @@ interface ParseAPIOptions {
     /** Custom fetch implementation (instrumentation, proxies). */
     fetch?: typeof fetch;
 }
+/** IP enrichment is included with a paid plan. `deep` does not use a separate check meter. */
 type IpOptions = DeepOption & RequestOptions;
 type IpSelfOptions = DeepOption & RequestOptions;
 type ContinentOptions = RequestOptions;
@@ -1046,6 +1047,7 @@ type CityNearbyOptions = {
     state?: string;
     limit?: number;
 } & RequestOptions;
+/** Pass country when known. Codes shared by multiple countries need it. */
 type PostalOptions = {
     country?: string;
 } & RequestOptions;
@@ -1070,7 +1072,9 @@ type AddressSearchOptions = {
 type CompanyOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
+/** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 type EmailOptions = DeepOption & RequestOptions;
+/** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 type VatOptions = {
     country?: string;
     from?: string;
@@ -1079,6 +1083,7 @@ type IbanOptions = {
     country?: string;
 } & RequestOptions;
 type NpiOptions = DeepOption & RequestOptions;
+/** Country resolves national-number ambiguity. `deep: true` returns an empty object. */
 type PhoneOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
@@ -1136,11 +1141,13 @@ type EmojiSearchOptions = {
     limit?: number;
 } & RequestOptions;
 interface DeepOption {
-    /** Request richer fields. Availability and usage depend on the endpoint. */
+    /** Request endpoint-specific enrichment. Email/VAT checks are metered, IP is plan-included, and phone adds no fields. See the operation's help. */
     deep?: boolean;
 }
 declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
+    /** Look up an IP. `deep: true` adds enrichment included with a paid plan, without a separate check meter. */
     ip: ((ip: string, opts?: IpOptions) => Promise<Ip>) & {
+        /** Look up the public IP making this request. On a server, this is the server's IP. */
         self: (opts?: IpSelfOptions) => Promise<Ip>;
     };
     continent: ((code: string, opts?: ContinentOptions) => Promise<Continent>) & {
@@ -1162,6 +1169,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         nearest: (lat: number, lon: number, opts?: CityNearestOptions) => Promise<CityNearest>;
         nearby: (name: string, opts?: CityNearbyOptions) => Promise<CityNearby>;
     };
+    /** Look up a postal area. Pass country when known. Check nullable latitude/longitude before another location lookup. */
     postal: ((code: string, opts?: PostalOptions) => Promise<Postal>) & {
         nearby: (code: string, opts?: PostalNearbyOptions) => Promise<PostalNearby>;
         distance: (from: string, to: string, opts?: PostalDistanceOptions) => Promise<PostalDistance>;
@@ -1170,13 +1178,23 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         search: (query: string, opts?: AddressSearchOptions) => Promise<AddressSearch>;
     };
     company: (number: string, opts?: CompanyOptions) => Promise<Company>;
+    /**
+     * Parse an email and check its format and domain.
+     * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
+     * Deep checks default to one attempt. An explicit retry count can repeat paid usage.
+     */
     email: (email: string, opts?: EmailOptions) => Promise<Email>;
+    /** Check VAT format and checksum. `deep: true` requests a metered registry check where supported, with no automatic retries by default. */
     vat: (number: string, opts?: VatOptions) => Promise<Vat>;
     iban: (iban: string, opts?: IbanOptions) => Promise<Iban>;
     npi: (npi: string, opts?: NpiOptions) => Promise<Npi>;
+    /** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds no fields. */
     phone: (number: string, opts?: PhoneOptions) => Promise<Phone>;
+    /** Request a metered carrier lookup. No automatic retries by default. */
     carrier: (number: string, opts?: CarrierOptions) => Promise<Carrier>;
+    /** Request a metered caller-name lookup for a NANP number. No automatic retries by default. */
     caller: (number: string, opts?: CallerOptions) => Promise<Caller>;
+    /** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
     hlr: (number: string, opts?: HlrOptions) => Promise<Hlr>;
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
@@ -1203,6 +1221,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
     elevation: (lat: number, lon: number, opts?: ElevationOptions) => Promise<Elevation>;
     point: (lat: number, lon: number, opts?: PointOptions) => Promise<Point>;
+    /** Get weather for a point. Both unit systems are returned. Pass known coordinates from a postal, city, or location result. */
     weather: (lat: number, lon: number, opts?: WeatherOptions) => Promise<Weather>;
     emoji: ((emoji: string, opts?: EmojiOptions) => Promise<Emoji>) & {
         search: (query: string, opts?: EmojiSearchOptions) => Promise<EmojiSearch>;

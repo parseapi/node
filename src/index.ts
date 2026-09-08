@@ -100,6 +100,7 @@ export interface ParseAPIOptions {
 	fetch?: typeof fetch;
 }
 
+/** IP enrichment is included with a paid plan. `deep` does not use a separate check meter. */
 export type IpOptions = DeepOption & RequestOptions;
 export type IpSelfOptions = DeepOption & RequestOptions;
 export type ContinentOptions = RequestOptions;
@@ -116,16 +117,20 @@ export type CityIdOptions = RequestOptions;
 export type CitySearchOptions = { country?: string; state?: string; limit?: number } & RequestOptions;
 export type CityNearestOptions = RequestOptions;
 export type CityNearbyOptions = { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & RequestOptions;
+/** Pass country when known. Codes shared by multiple countries need it. */
 export type PostalOptions = { country?: string } & RequestOptions;
 export type PostalNearbyOptions = { country?: string; radius?: number; unit?: 'km' | 'mi' } & RequestOptions;
 export type PostalDistanceOptions = { country?: string } & RequestOptions;
 export type AddressOptions = { country?: string } & DeepOption & RequestOptions;
 export type AddressSearchOptions = { country?: string; postal?: string; city?: string; state?: string; ip?: string } & RequestOptions;
 export type CompanyOptions = { country?: string } & DeepOption & RequestOptions;
+/** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
+/** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
 export type IbanOptions = { country?: string } & RequestOptions;
 export type NpiOptions = DeepOption & RequestOptions;
+/** Country resolves national-number ambiguity. `deep: true` returns an empty object. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 export type CarrierOptions = { country?: string } & RequestOptions;
 export type CallerOptions = { country?: string } & RequestOptions;
@@ -155,7 +160,7 @@ export type EmojiOptions = RequestOptions;
 export type EmojiSearchOptions = { limit?: number } & RequestOptions;
 
 interface DeepOption {
-	/** Request richer fields. Availability and usage depend on the endpoint. */
+	/** Request endpoint-specific enrichment. Email/VAT checks are metered, IP is plan-included, and phone adds no fields. See the operation's help. */
 	deep?: boolean;
 }
 
@@ -295,9 +300,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 
 	return {
+		/** Look up an IP. `deep: true` adds enrichment included with a paid plan, without a separate check meter. */
 		ip: Object.assign(
 			(ip: string, opts?: IpOptions): Promise<Ip> => request(`/ip/${enc(ip)}`, deepQuery(opts), undefined, opts),
 			{
+				/** Look up the public IP making this request. On a server, this is the server's IP. */
 				self: (opts?: IpSelfOptions): Promise<Ip> => request('/ip', deepQuery(opts), undefined, opts),
 			}
 		),
@@ -357,6 +364,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
+		/** Look up a postal area. Pass country when known. Check nullable latitude/longitude before another location lookup. */
 		postal: Object.assign(
 			(code: string, opts?: PostalOptions): Promise<Postal> =>
 				request(`/postal/${enc(code)}`, { country: opts?.country }, undefined, opts),
@@ -387,8 +395,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		company: (number: string, opts?: CompanyOptions): Promise<Company> =>
 			request(`/company/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
+		/**
+		 * Parse an email and check its format and domain.
+		 * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
+		 * Deep checks default to one attempt. An explicit retry count can repeat paid usage.
+		 */
 		email: (email: string, opts?: EmailOptions): Promise<Email> => request(`/email/${enc(email)}`, deepQuery(opts), undefined, opts),
 
+		/** Check VAT format and checksum. `deep: true` requests a metered registry check where supported, with no automatic retries by default. */
 		vat: (
 			number: string,
 			opts?: VatOptions
@@ -405,15 +419,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
 			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
+		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds no fields. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
+		/** Request a metered carrier lookup. No automatic retries by default. */
 		carrier: (number: string, opts?: CarrierOptions): Promise<Carrier> =>
 			request(`/carrier/${enc(number)}`, { country: opts?.country }, undefined, opts),
 
+		/** Request a metered caller-name lookup for a NANP number. No automatic retries by default. */
 		caller: (number: string, opts?: CallerOptions): Promise<Caller> =>
 			request(`/caller/${enc(number)}`, { country: opts?.country }, undefined, opts),
 
+		/** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
 		hlr: (number: string, opts?: HlrOptions): Promise<Hlr> =>
 			request(`/hlr/${enc(number)}`, { country: opts?.country }, undefined, opts),
 
@@ -490,6 +508,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 
+		/** Get weather for a point. Both unit systems are returned. Pass known coordinates from a postal, city, or location result. */
 		weather: (lat: number, lon: number, opts?: WeatherOptions): Promise<Weather> =>
 			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }, undefined, opts),
 
