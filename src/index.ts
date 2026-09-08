@@ -22,6 +22,7 @@ import type {
 	CurrencyRate,
 	DateInfo,
 	District,
+	Dns,
 	Domain,
 	Elevation,
 	Email,
@@ -143,6 +144,8 @@ export type MacOptions = RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
 export type MeasureUnitsOptions = { query?: string; type?: string; unit?: string } & RequestOptions;
+/** Published DNS records. Omit type to check all ten supported types. Values retain DNS presentation syntax. */
+export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
@@ -458,6 +461,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request('/measure/units', { q: opts?.query, type: opts?.type, unit: opts?.unit }, undefined, opts),
 			}
 		),
+
+		/** Look up DNS records with TTLs. Type selects the question and may include its CNAME chain. Pooled on every plan. */
+		dns: (domain: string, opts?: DnsOptions): Promise<Dns> =>
+			request(`/dns/${enc(domain)}`, { type: opts?.type }, undefined, opts),
 
 		mx: (domain: string, opts?: MxOptions): Promise<Mx> => request(`/mx/${enc(domain)}`, undefined, undefined, opts),
 

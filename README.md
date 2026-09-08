@@ -91,6 +91,8 @@ await parse.domain('example.com');
 await parse.asn('AS13335');
 await parse.mac('00:1B:63:84:45:E6');
 await parse.mx('example.com');
+await parse.dns('example.com');
+await parse.dns('_dmarc.example.com', { type: 'TXT' });
 await parse.useragent(uaString);
 await parse.vin('1HGCM82633A004352');
 await parse.tariff('8471.30.01.00');
@@ -100,6 +102,8 @@ await parse.emoji.search('fire');
 ```
 
 Responses are typed, plain JSON data. `country.states('US')` requests the states directly; it does not fetch a country first. Optional arguments go in the final options object, so new options can be added without changing your existing calls.
+
+DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV and PTR. Records contain `name`, `type`, `ttl` in seconds and a DNS presentation `value`. TXT values retain quoting and chunk boundaries. A selected question can include its CNAME chain. Empty records mean no records. Lookup failures remain errors.
 
 ## Measurements
 

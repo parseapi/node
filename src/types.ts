@@ -634,6 +634,20 @@ export interface Mac {
 	multicast: boolean | null;
 }
 
+/** A published DNS record. Value is DNS presentation text, including TXT quoting. */
+export interface DnsRecord {
+	name: string;
+	type: string;
+	/** Remaining cache lifetime in seconds. */
+	ttl: number;
+	value: string;
+}
+
+export interface Dns {
+	domain: string;
+	records: DnsRecord[];
+}
+
 export interface Mx {
 	domain: string;
 	mx: MxRecord[];
