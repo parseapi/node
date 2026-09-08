@@ -689,6 +689,10 @@ export interface Language {
 export interface Name {
 	name: string;
 	valid: boolean;
+	/** Name membership is independent of gender. */
+	known: boolean;
+	/** Associated countries, not the person's nationality. */
+	countries: string[];
 	prefix: string | null;
 	first: string | null;
 	middle: string | null;

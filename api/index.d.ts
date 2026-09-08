@@ -627,6 +627,10 @@ interface Language {
 interface Name {
     name: string;
     valid: boolean;
+    /** Name membership is independent of gender. */
+    known: boolean;
+    /** Associated countries, not the person's nationality. */
+    countries: string[];
     prefix: string | null;
     first: string | null;
     middle: string | null;
@@ -1112,7 +1116,10 @@ type CurrencyRateOptions = {
     amount?: number;
 } & RequestOptions;
 type LanguageOptions = RequestOptions;
-type NameOptions = RequestOptions;
+/** Country is an ISO2 context for the optional gender estimate. */
+type NameOptions = {
+    country?: string;
+} & RequestOptions;
 type TimezoneOptions = {
     at?: string;
     to?: string;

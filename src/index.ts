@@ -146,7 +146,8 @@ export type TariffSearchOptions = RequestOptions;
 export type CurrencyOptions = RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = RequestOptions;
-export type NameOptions = RequestOptions;
+/** Country is an ISO2 context for the optional gender estimate. */
+export type NameOptions = { country?: string } & RequestOptions;
 export type TimezoneOptions = { at?: string; to?: string } & RequestOptions;
 export type TimezoneAtOptions = { at?: string } & RequestOptions;
 export type DateOptions = { format?: 'mdy' | 'dmy'; to?: string } & RequestOptions;
@@ -475,7 +476,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, undefined, undefined, opts),
 
-		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, undefined, undefined, opts),
+		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country }, undefined, opts),
 
 		timezone: Object.assign(
 			(id: string, opts?: TimezoneOptions): Promise<Timezone> =>

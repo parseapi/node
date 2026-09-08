@@ -77,6 +77,7 @@ await parse.currency('USD');
 await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
 await parse.name('BILLY OSHALL');
+await parse.name('Andrea', { country: 'IT' });
 await parse.timezone('America/New_York');
 await parse.timezone.at(40.7128, -74.006);
 await parse.date('03/04/2026', { format: 'mdy' });
