@@ -109,6 +109,8 @@ await expectOk('hlr junk free', parse.hlr('555-0100'), (r) => (r.valid === false
 await expectOk('domain', parse.domain('gmail.com'), (r) => (r.available === false ? null : 'gmail available?'));
 await expectOk('asn', parse.asn('AS13335'), (r) => r.asn === 13335 ? null : 'wrong ASN');
 await expectOk('mac', parse.mac('00:1B:63:84:45:E6'), (r) => r.valid && r.mac === '00:1B:63:84:45:E6' && r.local === false && r.multicast === false ? null : 'wrong MAC');
+await expectOk('measure', parse.measure('5 ft 11 in', { to: 'cm' }), (r) => r.valid && r.amount === '180.34' && r.unit === 'cm' ? null : 'wrong conversion');
+await expectOk('measure.units', parse.measure.units({ unit: 'm' }), (r) => r.units.some((unit) => unit.unit === 'm') ? null : 'missing metre');
 await expectOk('mx', parse.mx('gmail.com'), (r) => (r.mx.length > 0 ? null : 'no mx'));
 await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), (r) =>
 	r.browser === 'Chrome' ? null : `browser ${r.browser}`

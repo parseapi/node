@@ -1,6 +1,8 @@
 import type {
 	Asn,
 	Mac,
+	Measure,
+	MeasureUnits,
 	Address,
 	AddressSearch,
 	Company,
@@ -138,6 +140,9 @@ export type HlrOptions = { country?: string } & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = RequestOptions;
 export type MacOptions = RequestOptions;
+/** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
+export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
+export type MeasureUnitsOptions = { query?: string; type?: string; unit?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
@@ -442,6 +447,17 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		asn: (asn: string, opts?: AsnOptions): Promise<Asn> => request(`/asn/${enc(asn)}`, undefined, undefined, opts),
 
 		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
+
+		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
+		measure: Object.assign(
+			(measure: string, opts?: MeasureOptions): Promise<Measure> =>
+				request(`/measure/${enc(measure)}`, { to: opts?.to, locale: opts?.locale, system: opts?.system }, undefined, opts),
+			{
+				/** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
+				units: (opts?: MeasureUnitsOptions): Promise<MeasureUnits> =>
+					request('/measure/units', { q: opts?.query, type: opts?.type, unit: opts?.unit }, undefined, opts),
+			}
+		),
 
 		mx: (domain: string, opts?: MxOptions): Promise<Mx> => request(`/mx/${enc(domain)}`, undefined, undefined, opts),
 

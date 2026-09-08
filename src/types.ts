@@ -8,6 +8,33 @@
 /** The `deep` key is omitted unless the request asked for it. */
 export type Deep<T> = Partial<{ [K in keyof T]: T[K] | null }>;
 
+export interface MeasureChoice {
+	unit: string;
+	name: string;
+}
+
+/** A parsed measurement. Amount is a decimal string, preserving the API's precision. */
+export interface Measure {
+	measure: string;
+	valid: boolean;
+	type: string | null;
+	amount: string | null;
+	unit: string | null;
+	reason: string | null;
+	choices: MeasureChoice[];
+}
+
+export interface MeasureUnit {
+	unit: string;
+	name: string;
+	type: string;
+	aliases: string[];
+}
+
+export interface MeasureUnits {
+	units: MeasureUnit[];
+}
+
 export interface IpDeep {
 	state: string;
 	city: string;
