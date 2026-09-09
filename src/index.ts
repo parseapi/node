@@ -1,5 +1,4 @@
 import type {
-	SwiftCode,
 	Asn,
 	Mac,
 	Bin,
@@ -148,7 +147,6 @@ export type CompanyOptions = { country?: string } & DeepOption & RequestOptions;
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
-export type SwiftOptions = RequestOptions;
 export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
 export type NpiOptions = DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
@@ -459,8 +457,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				...deepQuery(opts),
 			}, undefined, opts),
 
-		/** Check BIC syntax and look up a known institution. A null name means unknown, not invalid. */
-		swift: (code: string, opts?: SwiftOptions): Promise<SwiftCode> => request(`/swift/${enc(code)}`, undefined, undefined, opts),
 		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
 			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
