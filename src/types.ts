@@ -1140,6 +1140,27 @@ export interface NaicsChild {
 	name: string;
 }
 
+/** A classification exclusion. Generic exclusions can have no linked codes. */
+export interface NaicsExclusion {
+	description: string;
+	codes: NaicsChild[];
+}
+
+/** A query token corrected only during typo fallback. */
+export interface NaicsCorrection {
+	from: string;
+	to: string;
+}
+
+/** The actual title, activity term or code that matched a search. */
+export interface NaicsMatch {
+	/** Currently name, term or naics. Future fields remain decodable. */
+	field: string;
+	text: string;
+	/** Empty for exact, plural and prefix matches. */
+	corrections: NaicsCorrection[];
+}
+
 /** US NAICS 2022 definition and hierarchy, including two-digit sector ranges. */
 export interface Naics {
 	naics: string;
@@ -1150,6 +1171,10 @@ export interface Naics {
 	parent: string | null;
 	parent_name: string | null;
 	children: NaicsChild[];
+	/** Classification exclusions. Omitted or null on older responses. */
+	exclusions?: NaicsExclusion[] | null;
+	/** Search evidence. Omitted on direct lookup and older responses. */
+	match?: NaicsMatch | null;
 	year: number;
 	country: string;
 }
