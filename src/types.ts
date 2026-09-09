@@ -102,7 +102,7 @@ export interface BlocCountries {
 export interface Country {
 	country: string;
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	continent: string;
 	currency: string | null;
 	currency_name: string | null;
@@ -129,7 +129,7 @@ export interface CountryStates {
 export interface State {
 	state: string;
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	type: string | null;
 	country: string;
 	country_name: string | null;
@@ -180,7 +180,7 @@ export interface District {
 
 export interface City {
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	type: string | null;
 	state: string | null;
 	state_name: string | null;
@@ -666,7 +666,7 @@ export interface Currency {
 export interface Language {
 	language: string;
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	script: string | null;
 	direction: 'ltr' | 'rtl' | string;
 	deep?: Deep<LanguageDeep>;
@@ -753,7 +753,7 @@ export interface DateInfo {
 export interface Holiday {
 	date: string;
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	/** 'public' for an official day off, 'observance' for cultural days. */
 	type: string;
 	regions: string[] | null;
@@ -1323,7 +1323,7 @@ export interface PostalMetrosDeep {
 
 export interface PointCity {
 	name: string;
-	local_name: string | null;
+	name_local: string | null;
 	type: string | null;
 	state: string | null;
 	state_name: string | null;
