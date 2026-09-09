@@ -1,5 +1,5 @@
 import { expect, expectTypeOf, it, vi } from 'vitest';
-import { parseAPI, type Naics, type NaicsOptions } from '../src/index.js';
+import { parseAPI, type Naics, type NaicsDeep, type NaicsOptions } from '../src/index.js';
 
 const record = { naics: '31-33', name: 'Manufacturing', description: null, level: 2, parent: null, parent_name: null, children: [{ naics: '311', name: 'Food Manufacturing' }], country: 'US', year: 2022, future: true };
 
@@ -10,8 +10,8 @@ it('looks up ranged sectors and preserves hierarchy, nulls and unknown fields', 
  await parse.naics('54/11');
  expect(urls).toEqual(['https://api.parseapi.com/naics/31-33', 'https://api.parseapi.com/naics/54%2F11']);
  expectTypeOf<Naics['parent']>().toEqualTypeOf<string | null>();
- expectTypeOf<Naics['description']>().toEqualTypeOf<string | null>();
- expectTypeOf<'deep'>().not.toMatchTypeOf<keyof NaicsOptions>();
+ expectTypeOf<NaicsDeep['description']>().toEqualTypeOf<string | null>();
+ expectTypeOf<'deep'>().toMatchTypeOf<keyof NaicsOptions>();
 });
 
 it('searches with encoded keywords and optional limits, preserving empty results', async () => {
@@ -32,16 +32,21 @@ it('keeps honest code misses on the API error path without retrying 404', async 
 
 
 it('preserves classification exclusions and search evidence without requiring new fields', async () => {
- const legacy: Naics = {"naics":"541511","name":"Custom Computer Programming Services","description":null,"level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","children":[],"year":2022,"country":"US"};
+ const legacy: Naics = {"naics":"541511","name":"Custom Computer Programming Services","level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","year":2022,"country":"US"};
  const records = [{"naics":"541511","name":"Custom Computer Programming Services","description":null,"level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","children":[],"year":2022,"country":"US"},{"naics":"541511","name":"Custom Computer Programming Services","description":null,"level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","children":[],"year":2022,"country":"US","exclusions":null,"match":null},{"naics":"541511","name":"Custom Computer Programming Services","description":null,"level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","children":[],"year":2022,"country":"US","exclusions":[],"match":{"field":"future-field","text":"Future matching evidence","corrections":[],"future":true}},{"naics":"541511","name":"Custom Computer Programming Services","description":null,"level":6,"parent":"54151","parent_name":"Computer Systems Design and Related Services","children":[],"year":2022,"country":"US","exclusions":[{"description":"Designing integrated computer systems","codes":[{"naics":"541512","name":"Computer Systems Design Services"}]},{"description":"Activities classified elsewhere","codes":[]}],"match":{"field":"term","text":"Computer software programming services","corrections":[{"from":"sofware","to":"software"}]},"future":true}];
+ for (const row of records) {
+  const data = row as Record<string, unknown>;
+  data.deep = { description: data.description, children: data.children, ...("exclusions" in data ? { exclusions: data.exclusions } : {}) };
+  delete data.description; delete data.children; delete data.exclusions;
+ }
  const parse = parseAPI('test_key', { fetch: async () => new Response(JSON.stringify({ q: 'sofware', year: 2022, country: 'US', results: records })) });
  const search = await parse.naics.search('sofware');
  expect(search.results).toEqual(records);
  expect(search.results[0]?.match).toBeUndefined();
- expect(search.results[1]?.exclusions).toBeNull();
+ expect(search.results[1]?.deep?.exclusions).toBeNull();
  expect(search.results[2]?.match?.field).toBe('future-field');
  expect(search.results[2]?.match?.corrections).toEqual([]);
- expect(search.results[3]?.exclusions?.[1]).toEqual({ description: 'Activities classified elsewhere', codes: [] });
+ expect(search.results[3]?.deep?.exclusions?.[1]).toEqual({ description: 'Activities classified elsewhere', codes: [] });
  expect(search.results[3]?.match?.corrections[0]).toEqual({ from: 'sofware', to: 'software' });
  expect(legacy.naics).toBe('541511');
 });

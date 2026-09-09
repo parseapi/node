@@ -1,6 +1,6 @@
 /**
  * Response types for the ParseAPI public API.
- * Shapes are append-only upstream, so these only ever grow.
+ * Core answers the common task; optional deep reveals the reviewed detail.
  * Every field inside a deep object is optional and nullable: the API ships
  * `deep: {}` when deep was requested but is not unlocked on the plan.
  */
@@ -87,30 +87,18 @@ interface BlocCountries {
 }
 interface Country {
     country: string;
-    iso3: string;
-    numeric: number;
     name: string;
-    full_name: string | null;
     local_name: string | null;
-    demonym: string | null;
-    capital: string | null;
-    capital_lat: number | null;
-    capital_lon: number | null;
     continent: string;
-    region: string | null;
-    subregion: string | null;
-    population: number | null;
-    area: number | null;
     currency: string | null;
     currency_name: string | null;
     currency_symbol: string | null;
-    tld: string | null;
     calling_code: string | null;
     emoji: string | null;
     languages: string[];
-    borders: string[];
-    /** Bloc memberships (EU, SCHENGEN, NATO, ...). Empty when none. */
-    blocs: string[];
+    deep?: Deep<CountryDeep>;
+    /** IANA timezones used by the country. */
+    timezones: string[] | null;
 }
 interface CountryStateItem {
     state: string;
@@ -130,22 +118,19 @@ interface State {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    population: number | null;
-    /** Total area in km2. */
-    area: number | null;
     timezone: string | null;
     timezones: string[];
     iso_3166_2: string | null;
-    fips: string | null;
-    capital: string | null;
-    area_codes: string[];
-    tax: string | null;
-    tax_rate: number | null;
+    deep?: Deep<StateDeep>;
 }
 interface StateDistrictItem {
-    district: string;
-    name: string;
+    district: string | null;
+    name: string | null;
     type: string | null;
+    deep?: Deep<StateDistrictDeep>;
+}
+interface StateDistrictDeep {
+    population: number | null;
 }
 interface StateDistricts {
     state: string;
@@ -164,23 +149,14 @@ interface District {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    population: number | null;
-    /** Total area in km2 (land + water, or the official total). */
-    area: number | null;
-    /** Land area in km2. Null when the source publishes total only. */
-    land_area: number | null;
-    /** Water area in km2. Null when the source publishes total only. */
-    water_area: number | null;
-    seat: string | null;
     timezone: string | null;
     timezones: string[];
+    deep?: Deep<DistrictDeep>;
 }
 interface City {
     name: string;
     local_name: string | null;
     type: string | null;
-    /** What this city is the capital of: country, state, or null. */
-    capital_of: 'country' | 'state' | null;
     state: string | null;
     state_name: string | null;
     district: string | null;
@@ -189,18 +165,10 @@ interface City {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    elevation: number | null;
-    elevation_ft: number | null;
-    population: number | null;
-    /** Total area in km2 (land + water, or the official total). */
-    area: number | null;
-    /** Land area in km2. Null when the source publishes total only. */
-    land_area: number | null;
-    /** Water area in km2. Null when the source publishes total only. */
-    water_area: number | null;
     timezone: string | null;
     /** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
     id: string;
+    deep?: Deep<CityDeep>;
 }
 /** Nearest-city lookups add the distance from the query point. */
 interface CityNearest extends City {
@@ -245,20 +213,8 @@ interface Postal {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    elevation: number | null;
-    elevation_ft: number | null;
-    population: number | null;
-    /** Total area in km2. Null when the source has no water split. */
-    area: number | null;
-    /** Land area in km2. Null where the source has none. */
-    land_area: number | null;
-    /** Water area in km2. Null where the source has none. */
-    water_area: number | null;
     timezone: string | null;
-    currency: string | null;
-    neighbors: string[];
-    /** Missing/null is unknown; [] is an observed result outside all covered areas. */
-    metros?: PostalMetro[] | null;
+    deep?: Deep<PostalDeep>;
 }
 interface PostalNearbyItem {
     postal: string;
@@ -267,20 +223,20 @@ interface PostalNearbyItem {
     country: string;
     distance: number;
     distance_mi: number;
-    metros?: PostalMetro[] | null;
+    deep?: Deep<PostalMetrosDeep>;
 }
 interface PostalNearby {
     postal: string;
     country: string;
     radius: number;
     unit: string;
-    metros?: PostalMetro[] | null;
     nearby: PostalNearbyItem[];
+    deep?: Deep<PostalMetrosDeep>;
 }
 interface PostalDistanceEnd {
     postal: string;
     city: string | null;
-    metros?: PostalMetro[] | null;
+    deep?: Deep<PostalMetrosDeep>;
 }
 interface PostalDistance {
     country: string;
@@ -330,17 +286,13 @@ interface Iban {
     country: string | null;
     /** Print form in groups of four, for display. Null when invalid. */
     formatted: string | null;
-    /** Two check digits as a string, keeping a leading zero. */
-    checksum: string | null;
     /** Bank identifier parsed from the number, not a name. */
     bank: string | null;
     /** Institution name from the national bank-code directory. Null when unsourced. */
     bank_name: string | null;
     /** BIC from that same directory. Null when unsourced or missing. */
     bic: string | null;
-    /** Branch identifier when that country has one. */
-    branch: string | null;
-    account: string | null;
+    deep?: Deep<IbanDeep>;
 }
 interface Npi {
     /** Normalized 10-digit NPI. Invalid input still echoes the fold. */
@@ -349,8 +301,6 @@ interface Npi {
     /** Exists in the CMS NPPES registry. */
     registered: boolean | null;
     active: boolean | null;
-    /** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
-    deactivated_at: string | null;
     /** On the OIG exclusion list. */
     excluded: boolean | null;
     /** individual or organization. */
@@ -384,6 +334,8 @@ interface NpiDeep {
     opt_out?: boolean | null;
     /** Enrollment rows. [] when medicare is false. */
     enrollments?: NpiEnrollment[] | null;
+    /** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+    deactivated_at: string | null;
 }
 interface TariffMeasure {
     /** Chapter 99 heading, dotted (9903.01.24). */
@@ -396,6 +348,8 @@ interface TariffMeasure {
     from: string | null;
     /** Expires, ISO YYYY-MM-DD. Null when open-ended. */
     until: string | null;
+    /** True when the published measure has additional eligibility conditions. */
+    conditional?: boolean | null;
 }
 interface TariffDeep {
     /** The origin country the measures were resolved for. */
@@ -404,6 +358,12 @@ interface TariffDeep {
     effective_rate?: number | null;
     /** Every Chapter 99 tariff measure that applies to this code from this origin. */
     measures?: TariffMeasure[] | null;
+    /** Units of quantity (No., kg). */
+    units: string[];
+    /** Column 1 special rate, verbatim. */
+    special: string | null;
+    /** Column 2 rate, verbatim. */
+    other: string | null;
 }
 interface Tariff {
     /** Normalized code with dots (8471.30.01.00). */
@@ -412,14 +372,8 @@ interface Tariff {
     description: string;
     /** Parent descriptions from the schedule outline, outermost first. */
     lineage: string[];
-    /** Units of quantity (No., kg). */
-    units: string[];
     /** Column 1 general rate, verbatim. */
     general: string | null;
-    /** Column 1 special rate, verbatim. */
-    special: string | null;
-    /** Column 2 rate, verbatim. */
-    other: string | null;
     /** The official release that answered (2026HTSRev17). */
     revision: string;
     deep?: Deep<TariffDeep>;
@@ -447,20 +401,7 @@ interface VinRecall {
 interface VinDeep {
     /** Open recall campaigns for the decoded vehicle. [] when none, null when the registry did not answer. */
     recalls?: VinRecall[] | null;
-}
-interface Vin {
-    /** Normalized VIN, uppercase, no spaces. Invalid input still echoes the fold. */
-    vin: string | null;
-    valid: boolean;
-    year: number | null;
-    make: string | null;
-    model: string | null;
-    trim: string | null;
     series: string | null;
-    /** Body style (sedan, coupe, suv, pickup). */
-    body: string | null;
-    /** Vehicle type (passenger car, truck, motorcycle, bus, trailer). */
-    type: string | null;
     doors: number | null;
     cylinders: number | null;
     /** Engine displacement in liters. */
@@ -477,6 +418,19 @@ interface Vin {
     plant_country: string | null;
     /** Gross vehicle weight rating class as filed. */
     gvwr: string | null;
+}
+interface Vin {
+    /** Normalized VIN, uppercase, no spaces. Invalid input still echoes the fold. */
+    vin: string | null;
+    valid: boolean;
+    year: number | null;
+    make: string | null;
+    model: string | null;
+    trim: string | null;
+    /** Body style (sedan, coupe, suv, pickup). */
+    body: string | null;
+    /** Vehicle type (passenger car, truck, motorcycle, bus, trailer). */
+    type: string | null;
     deep?: Deep<VinDeep>;
 }
 interface Phone {
@@ -485,15 +439,9 @@ interface Phone {
     country: string | null;
     /** What the numbering plan can see. Never voip (that is the carrier field's word). Null when invalid. */
     type: 'mobile' | 'landline' | 'toll_free' | 'unknown' | null;
-    /** NPA-derived state code (US/CA). */
-    state: string | null;
-    state_name: string | null;
-    /** Numbering-plan IANA zone. Null when the prefix covers more than one zone, or invalid. Not the handset. */
-    timezone: string | null;
     national: string | null;
     international: string | null;
-    /** Always empty. The metered proves are their own endpoints: carrier, caller, hlr. */
-    deep?: Record<string, never>;
+    deep?: Deep<PhoneDeep>;
 }
 interface Carrier {
     phone: string | null;
@@ -505,10 +453,7 @@ interface Carrier {
     carrier: string | null;
     /** Carrier is a known burner number app. Null when carrier is unknown. */
     burner: boolean | null;
-    /** Issuing rate-center city. */
-    city: string | null;
-    state: string | null;
-    state_name: string | null;
+    deep?: Deep<CarrierDeep>;
 }
 interface Caller {
     phone: string | null;
@@ -525,16 +470,7 @@ interface Hlr {
     live: boolean | null;
     /** Handset reachable right now. Null means unconfirmed, never no. */
     connected: boolean | null;
-    /** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
-    roaming: boolean | null;
-    roaming_network: string | null;
-    /** ISO2, uppercase. */
-    roaming_country: string | null;
-    /** Current serving network name. */
-    network: string | null;
-    original_network: string | null;
-    mcc: string | null;
-    mnc: string | null;
+    deep?: Deep<HlrDeep>;
 }
 interface MxRecord {
     priority: number;
@@ -550,12 +486,6 @@ interface DomainRegistration {
     dnssec: boolean;
 }
 interface DomainDeep {
-    a: string[];
-    aaaa: string[];
-    ns: string[];
-    mx: MxRecord[];
-    txt: string[];
-    mailhost: string;
     registration: DomainRegistration;
 }
 interface Domain {
@@ -652,39 +582,31 @@ interface Useragent {
 }
 interface Currency {
     currency: string;
-    numeric: number | null;
     name: string;
-    name_plural: string | null;
     symbol: string | null;
     symbol_native: string | null;
     digits: number | null;
-    countries: string[];
+    deep?: Deep<CurrencyDeep>;
 }
 /** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
 interface Language {
     language: string;
-    iso3: string | null;
     name: string;
     local_name: string | null;
     script: string | null;
     direction: 'ltr' | 'rtl' | string;
-    countries: string[];
+    deep?: Deep<LanguageDeep>;
 }
 /** A parsed person name. Junk input returns valid: false, never an error. Gender comes from dictionary data and is null when the data does not decide. */
 interface Name {
     name: string;
     valid: boolean;
-    /** Name membership is independent of gender. */
-    known: boolean;
-    /** Associated countries, not the person's nationality. */
-    countries: string[];
     prefix: string | null;
     first: string | null;
     middle: string | null;
     last: string | null;
     suffix: string | null;
-    gender: 'male' | 'female' | null;
-    salutation: 'Mr' | 'Ms' | null;
+    deep?: Deep<NameDeep>;
 }
 interface CurrencyRate {
     base: string;
@@ -707,39 +629,29 @@ interface Timezone {
     latitude?: number;
     longitude?: number;
     timezone: string | null;
-    name: string | null;
     abbreviation: string | null;
     offset: string | null;
-    /** Whole minutes, truncated toward zero for historical second offsets. */
-    offset_minutes: number | null;
-    offset_seconds?: number | null;
     dst: boolean | null;
-    next_dst: TimezoneNextDst | null;
     /** Resolved local ISO time with its UTC offset. */
-    at?: string;
+    at: string | null;
     /** Unix seconds for the resolved instant. */
-    unix?: number | null;
+    unix: number | null;
     /** With to= only: the other zone at the same instant. to.at is the converted time. */
-    to?: TimezoneConversionTarget;
+    to?: TimezoneConversionTarget | null;
+    deep?: Deep<TimezoneDeep>;
 }
 /** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
-interface Time extends Omit<Timezone, 'at' | 'unix' | 'to'> {
-    at: string | null;
-    unix: number | null;
-    offset_seconds: number | null;
-    to?: TimezoneConversionTarget | null;
+interface Time extends Timezone {
 }
 /** The other side of a timezone conversion. `at` is the converted wall time. */
 interface TimezoneConversionTarget {
     timezone: string;
-    name: string | null;
     abbreviation: string | null;
     offset: string;
-    offset_minutes: number;
-    offset_seconds?: number;
     dst: boolean;
     at: string;
-    unix?: number;
+    unix: number;
+    deep?: Deep<TimezoneConversionTargetDeep>;
 }
 /**
  * Calendar facts for one date. Junk or ambiguous input returns valid: false,
@@ -748,27 +660,13 @@ interface TimezoneConversionTarget {
 interface DateInfo {
     date: string;
     valid: boolean;
-    year: number | null;
-    month: number | null;
-    month_name: string | null;
-    day: number | null;
-    /** ISO weekday, Monday 1 to Sunday 7. */
-    weekday: number | null;
-    weekday_name: string | null;
-    /** ISO 8601 week number. */
-    week: number | null;
-    /** The year that ISO week belongs to. Differs from year around January 1. */
-    week_year: number | null;
-    day_of_year: number | null;
-    quarter: number | null;
-    leap: boolean | null;
-    days_in_month: number | null;
     /** Unix time at midnight UTC of that date, seconds. */
     unix: number | null;
     /** With to= only: the other date, normalized ISO. */
     to?: string;
     /** With to= only: signed days to the other date. Future positive. */
     days?: number | null;
+    deep?: Deep<DateInfoDeep>;
 }
 interface Holiday {
     date: string;
@@ -797,8 +695,10 @@ interface Elevation {
     resolution: number | null;
 }
 interface PointDeep {
-    city: CityNearest | null;
-    timezone: Timezone | null;
+    city: PointCity | null;
+    elevation: number | null;
+    elevation_ft: number | null;
+    resolution: number | null;
 }
 interface Point {
     latitude: number;
@@ -809,10 +709,8 @@ interface Point {
     state_name: string | null;
     district: string | null;
     district_name: string | null;
-    elevation: number | null;
-    elevation_ft: number | null;
-    resolution: number | null;
     deep?: Deep<PointDeep>;
+    timezone: string | null;
 }
 interface WeatherForecastPeriod {
     name: string;
@@ -908,24 +806,18 @@ interface WeatherDeep {
     air: WeatherAir | null;
     /** Only present when the call carried ?date=. */
     history?: WeatherHistory | null;
+    /** Specialist measurements for the same observed current conditions. */
+    current: WeatherCurrentDeep;
 }
 interface WeatherCurrent {
     temperature: number | null;
     temperature_f: number | null;
     feels_like: number | null;
     feels_like_f: number | null;
-    dewpoint: number | null;
-    dewpoint_f: number | null;
     humidity: number | null;
     wind_speed: number | null;
     wind_speed_mph: number | null;
-    wind_gust: number | null;
-    wind_gust_mph: number | null;
     wind_direction: number | null;
-    pressure: number | null;
-    pressure_inhg: number | null;
-    visibility: number | null;
-    visibility_mi: number | null;
     condition: string | null;
     condition_name: string | null;
     condition_emoji: string | null;
@@ -954,13 +846,8 @@ interface Emoji {
     emoji: string;
     name: string;
     shortcodes: string[];
-    codepoints: string[];
-    hex: string;
     category: string | null;
-    status: string | null;
-    version: string | null;
-    keywords: string[];
-    skins: EmojiSkin[];
+    deep?: Deep<EmojiDeep>;
 }
 interface EmojiSearch {
     q: string;
@@ -1010,9 +897,16 @@ interface CompanyCountry {
     tax: string | null;
 }
 interface CompanyDeep {
-    country: CompanyCountry | null;
-    postal: Postal | null;
-    city: City | null;
+    activity: string | null;
+    state_name: string | null;
+    country_name: string | null;
+    vat: string | null;
+    gst: boolean | null;
+    acn: string | null;
+    siren: string | null;
+    siege: boolean | null;
+    kind: string | null;
+    invoice: string | null;
 }
 interface Company {
     company: string | null;
@@ -1022,20 +916,10 @@ interface Company {
     type: string | null;
     name: string | null;
     active: boolean | null;
-    activity: string | null;
     address: string | null;
     city: string | null;
     state: string | null;
-    state_name: string | null;
     postal: string | null;
-    country_name: string | null;
-    vat: string | null;
-    gst: boolean | null;
-    acn: string | null;
-    siren: string | null;
-    siege: boolean | null;
-    kind: string | null;
-    invoice: string | null;
     deep?: Deep<CompanyDeep>;
 }
 /** A direct child industry code. */
@@ -1065,24 +949,23 @@ interface NaicsMatch {
 interface Naics {
     naics: string;
     name: string;
-    description: string | null;
     /** Hierarchy depth, from 2 (sector) to 6 (national industry). */
     level: number;
     parent: string | null;
     parent_name: string | null;
-    children: NaicsChild[];
-    /** Classification exclusions. Omitted or null on older responses. */
-    exclusions?: NaicsExclusion[] | null;
     /** Search evidence. Omitted on direct lookup and older responses. */
     match?: NaicsMatch | null;
     year: number;
     country: string;
+    deep?: Deep<NaicsDeep>;
 }
+/** Search records inherit country and revision from their envelope. */
+type NaicsSearchItem = Omit<Naics, 'country' | 'year'>;
 interface NaicsSearch {
     q: string;
     year: number;
     country: string;
-    results: Naics[];
+    results: NaicsSearchItem[];
 }
 /** Normalized SWIFT/BIC syntax and available institution identity. */
 interface SwiftCode {
@@ -1093,6 +976,229 @@ interface SwiftCode {
     country: string | null;
     /** Institution name. Null when unknown or ambiguous; may include a branch qualifier. */
     name: string | null;
+}
+interface CountryDeep {
+    iso3: string;
+    numeric: number;
+    full_name: string | null;
+    demonym: string | null;
+    capital: string | null;
+    capital_lat: number | null;
+    capital_lon: number | null;
+    region: string | null;
+    subregion: string | null;
+    population: number | null;
+    area: number | null;
+    tld: string | null;
+    /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
+    tax?: string | null;
+    /** Standard country reference rate in percent (19 means 19%). Null is unknown, zero is known zero. */
+    tax_rate?: number | null;
+    /** Tax registration number mask (9 is a digit, A is a letter). Describes format only. */
+    tax_id_format?: string | null;
+    /** Anchored tax registration number format regex. A match does not establish registration. */
+    tax_id_regex?: string | null;
+    borders: string[];
+    /** Bloc memberships (EU, SCHENGEN, NATO, ...). Empty when none. */
+    blocs: string[];
+    week_start: string | null;
+    units: string | null;
+    driving_side: string | null;
+    plugs: string[] | null;
+    voltage: number | null;
+    frequency: number | null;
+    emergency: CountryEmergency | null;
+    postal_format: string | null;
+    postal_regex: string | null;
+    ioc: string | null;
+    fifa: string | null;
+    plate: string | null;
+}
+interface StateDeep {
+    population: number | null;
+    /** Total area in km2. */
+    area: number | null;
+    fips: string | null;
+    capital: string | null;
+    area_codes: string[];
+    /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
+    tax: string | null;
+    /** State or province reference rate in percent. Country, state and postal rates are alternative references, not additive. */
+    tax_rate: number | null;
+}
+interface DistrictDeep {
+    population: number | null;
+    /** Total area in km2 (land + water, or the official total). */
+    area: number | null;
+    /** Land area in km2. Null when the source publishes total only. */
+    land_area: number | null;
+    /** Water area in km2. Null when the source publishes total only. */
+    water_area: number | null;
+    seat: string | null;
+}
+interface CityDeep {
+    /** What this city is the capital of: country, state, or null. */
+    capital_of: 'country' | 'state' | null;
+    elevation: number | null;
+    elevation_ft: number | null;
+    population: number | null;
+    /** Total area in km2 (land + water, or the official total). */
+    area: number | null;
+    /** Land area in km2. Null when the source publishes total only. */
+    land_area: number | null;
+    /** Water area in km2. Null when the source publishes total only. */
+    water_area: number | null;
+}
+interface PostalDeep {
+    elevation: number | null;
+    elevation_ft: number | null;
+    population: number | null;
+    /** Total area in km2. Null when the source has no water split. */
+    area: number | null;
+    /** Land area in km2. Null where the source has none. */
+    land_area: number | null;
+    /** Water area in km2. Null where the source has none. */
+    water_area: number | null;
+    currency: string | null;
+    /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
+    tax?: string | null;
+    /** Combined US ZIP reference rate in percent (7.9 means 7.9%). An exact address can differ. Null is unknown, zero is known zero. */
+    tax_rate?: number | null;
+    /** State component of the ZIP reference rate, in percent. Null when unknown. */
+    tax_rate_state?: number | null;
+    /** County component of the ZIP reference rate, in percent. Null when unknown. */
+    tax_rate_county?: number | null;
+    /** City component of the ZIP reference rate, in percent. Null when unknown. */
+    tax_rate_city?: number | null;
+    /** Special component of the ZIP reference rate, in percent. Null when unknown. */
+    tax_rate_special?: number | null;
+    neighbors: string[];
+    /** Missing/null is unknown; [] is an observed result outside all covered areas. */
+    metros?: PostalMetro[] | null;
+}
+interface IbanDeep {
+    /** Two check digits as a string, keeping a leading zero. */
+    checksum: string | null;
+    /** Branch identifier when that country has one. */
+    branch: string | null;
+    account: string | null;
+}
+interface PhoneDeep {
+    /** NPA-derived state code (US/CA). */
+    state: string | null;
+    state_name: string | null;
+    /** Numbering-plan IANA zone. Null when the prefix covers more than one zone, or invalid. Not the handset. */
+    timezone: string | null;
+}
+interface CarrierDeep {
+    /** Issuing rate-center city. */
+    city: string | null;
+    state: string | null;
+    state_name: string | null;
+}
+interface HlrDeep {
+    /** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
+    roaming: boolean | null;
+    roaming_network: string | null;
+    /** ISO2, uppercase. */
+    roaming_country: string | null;
+    /** Current serving network name. */
+    network: string | null;
+    original_network: string | null;
+    mcc: string | null;
+    mnc: string | null;
+}
+interface CurrencyDeep {
+    numeric: number | null;
+    name_plural: string | null;
+    countries: string[];
+}
+interface LanguageDeep {
+    iso3: string | null;
+    countries: string[];
+}
+interface NameDeep {
+    /** Name membership is independent of gender. */
+    known: boolean;
+    /** Associated countries, not the person's nationality. */
+    countries: string[];
+    gender: 'male' | 'female' | null;
+    salutation: 'Mr' | 'Ms' | null;
+}
+interface TimezoneDeep {
+    name: string | null;
+    /** Whole minutes, truncated toward zero for historical second offsets. */
+    offset_minutes: number | null;
+    offset_seconds?: number | null;
+    next_dst: TimezoneNextDst | null;
+}
+interface TimezoneConversionTargetDeep {
+    name: string | null;
+    offset_minutes: number;
+    offset_seconds?: number;
+}
+interface DateInfoDeep {
+    year: number | null;
+    month: number | null;
+    month_name: string | null;
+    day: number | null;
+    /** ISO weekday, Monday 1 to Sunday 7. */
+    weekday: number | null;
+    weekday_name: string | null;
+    /** ISO 8601 week number. */
+    week: number | null;
+    /** The year that ISO week belongs to. Differs from year around January 1. */
+    week_year: number | null;
+    day_of_year: number | null;
+    quarter: number | null;
+    leap: boolean | null;
+    days_in_month: number | null;
+}
+interface EmojiDeep {
+    codepoints: string[];
+    hex: string;
+    status: string | null;
+    version: string | null;
+    keywords: string[];
+    skins: EmojiSkin[];
+}
+interface NaicsDeep {
+    description: string | null;
+    children: NaicsChild[];
+    /** Classification exclusions. Omitted or null on older responses. */
+    exclusions?: NaicsExclusion[] | null;
+}
+interface CountryEmergency {
+    police: string | null;
+    ambulance: string | null;
+    fire: string | null;
+}
+interface PostalMetrosDeep {
+    metros?: PostalMetro[] | null;
+}
+interface PointCity {
+    name: string;
+    local_name: string | null;
+    type: string | null;
+    state: string | null;
+    state_name: string | null;
+    country: string;
+    country_name: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    distance: number;
+    distance_mi: number;
+    id: string;
+}
+interface WeatherCurrentDeep {
+    dewpoint: number | null;
+    dewpoint_f: number | null;
+    wind_gust: number | null;
+    wind_gust_mph: number | null;
+    pressure: number | null;
+    pressure_inhg: number | null;
+    visibility: number | null;
+    visibility_mi: number | null;
 }
 
 /** Every non-2xx response from the API. Branch on `code`, never on `message`. */
@@ -1132,48 +1238,48 @@ type ContinentOptions = RequestOptions;
 type ContinentCountriesOptions = RequestOptions;
 type BlocOptions = RequestOptions;
 type BlocCountriesOptions = RequestOptions;
-type CountryOptions = RequestOptions;
+type CountryOptions = DeepOption & RequestOptions;
 type CountryStatesOptions = RequestOptions;
 type StateOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type StateDistrictsOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type DistrictOptions = {
     country?: string;
     state?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type CityOptions = {
     country?: string;
     state?: string;
-} & RequestOptions;
-type CityIdOptions = RequestOptions;
+} & DeepOption & RequestOptions;
+type CityIdOptions = DeepOption & RequestOptions;
 type CitySearchOptions = {
     country?: string;
     state?: string;
     limit?: number;
-} & RequestOptions;
-type CityNearestOptions = RequestOptions;
+} & DeepOption & RequestOptions;
+type CityNearestOptions = DeepOption & RequestOptions;
 type CityNearbyOptions = {
     radius?: number;
     unit?: 'km' | 'mi';
     country?: string;
     state?: string;
     limit?: number;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
 type PostalOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type PostalNearbyOptions = {
     country?: string;
     radius?: number;
     unit?: 'km' | 'mi';
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type PostalDistanceOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type AddressOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
@@ -1197,21 +1303,23 @@ type VatOptions = {
 type SwiftOptions = RequestOptions;
 type IbanOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type NpiOptions = DeepOption & RequestOptions;
-/** Country resolves national-number ambiguity. `deep: true` returns an empty object. */
+/** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 type PhoneOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
+/** Deep discloses location detail within the same carrier unit. */
 type CarrierOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type CallerOptions = {
     country?: string;
 } & RequestOptions;
+/** Deep discloses network diagnostics within the same HLR unit. */
 type HlrOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type DomainOptions = DeepOption & RequestOptions;
 type AsnOptions = RequestOptions;
 type MacOptions = RequestOptions;
@@ -1236,47 +1344,47 @@ type MxOptions = RequestOptions;
 type UseragentOptions = DeepOption & RequestOptions;
 type VinOptions = DeepOption & RequestOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
-type NaicsOptions = RequestOptions;
+type NaicsOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
 type NaicsSearchOptions = {
     limit?: number;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type TariffOptions = {
     origin?: string;
 } & DeepOption & RequestOptions;
 type TariffSearchOptions = RequestOptions;
-type CurrencyOptions = RequestOptions;
+type CurrencyOptions = DeepOption & RequestOptions;
 type CurrencyRateOptions = {
     date?: string;
     amount?: number;
 } & RequestOptions;
-type LanguageOptions = RequestOptions;
-/** Country is an ISO2 context for the optional gender estimate. */
+type LanguageOptions = DeepOption & RequestOptions;
+/** Country is an ISO2 context for paid deep name evidence. */
 type NameOptions = {
     country?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type TimeOptions = {
     at?: string;
     to?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type TimeAtOptions = {
     at?: string;
     to?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type TimezoneOptions = {
     at?: string;
     to?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type TimezoneAtOptions = {
     at?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type DateOptions = {
     format?: 'mdy' | 'dmy';
     to?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type DateTodayOptions = {
     to?: string;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 type HolidayOptions = {
     year?: number;
 } & RequestOptions;
@@ -1286,12 +1394,12 @@ type PointOptions = DeepOption & RequestOptions;
 type WeatherOptions = DeepOption & {
     date?: string;
 } & RequestOptions;
-type EmojiOptions = RequestOptions;
+type EmojiOptions = DeepOption & RequestOptions;
 type EmojiSearchOptions = {
     limit?: number;
-} & RequestOptions;
+} & DeepOption & RequestOptions;
 interface DeepOption {
-    /** Request endpoint-specific enrichment. Email/VAT checks are metered, IP is plan-included, and phone adds no fields. See the operation's help. */
+    /** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
     deep?: boolean;
 }
 declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
@@ -1340,7 +1448,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     swift: (code: string, opts?: SwiftOptions) => Promise<SwiftCode>;
     iban: (iban: string, opts?: IbanOptions) => Promise<Iban>;
     npi: (npi: string, opts?: NpiOptions) => Promise<Npi>;
-    /** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds no fields. */
+    /** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
     phone: (number: string, opts?: PhoneOptions) => Promise<Phone>;
     /** Request a metered carrier lookup. No automatic retries by default. */
     carrier: (number: string, opts?: CarrierOptions) => Promise<Carrier>;
@@ -1348,6 +1456,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     caller: (number: string, opts?: CallerOptions) => Promise<Caller>;
     /** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
     hlr: (number: string, opts?: HlrOptions) => Promise<Hlr>;
+    /** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
     mac: (mac: string, opts?: MacOptions) => Promise<Mac>;
@@ -1398,4 +1507,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierOptions, type City, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchOptions, type Name, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneOptions, type Point, type PointDeep, type PointOptions, type Postal, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type SwiftCode, type SwiftOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type SwiftCode, type SwiftOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

@@ -115,20 +115,20 @@ export type ContinentOptions = RequestOptions;
 export type ContinentCountriesOptions = RequestOptions;
 export type BlocOptions = RequestOptions;
 export type BlocCountriesOptions = RequestOptions;
-export type CountryOptions = RequestOptions;
+export type CountryOptions = DeepOption & RequestOptions;
 export type CountryStatesOptions = RequestOptions;
-export type StateOptions = { country?: string } & RequestOptions;
-export type StateDistrictsOptions = { country?: string } & RequestOptions;
-export type DistrictOptions = { country?: string; state?: string } & RequestOptions;
-export type CityOptions = { country?: string; state?: string } & RequestOptions;
-export type CityIdOptions = RequestOptions;
-export type CitySearchOptions = { country?: string; state?: string; limit?: number } & RequestOptions;
-export type CityNearestOptions = RequestOptions;
-export type CityNearbyOptions = { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & RequestOptions;
+export type StateOptions = { country?: string } & DeepOption & RequestOptions;
+export type StateDistrictsOptions = { country?: string } & DeepOption & RequestOptions;
+export type DistrictOptions = { country?: string; state?: string } & DeepOption & RequestOptions;
+export type CityOptions = { country?: string; state?: string } & DeepOption & RequestOptions;
+export type CityIdOptions = DeepOption & RequestOptions;
+export type CitySearchOptions = { country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
+export type CityNearestOptions = DeepOption & RequestOptions;
+export type CityNearbyOptions = { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
-export type PostalOptions = { country?: string } & RequestOptions;
-export type PostalNearbyOptions = { country?: string; radius?: number; unit?: 'km' | 'mi' } & RequestOptions;
-export type PostalDistanceOptions = { country?: string } & RequestOptions;
+export type PostalOptions = { country?: string } & DeepOption & RequestOptions;
+export type PostalNearbyOptions = { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
+export type PostalDistanceOptions = { country?: string } & DeepOption & RequestOptions;
 export type AddressOptions = { country?: string } & DeepOption & RequestOptions;
 export type AddressSearchOptions = { country?: string; postal?: string; city?: string; state?: string; ip?: string } & RequestOptions;
 export type CompanyOptions = { country?: string } & DeepOption & RequestOptions;
@@ -137,14 +137,15 @@ export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
 export type SwiftOptions = RequestOptions;
-
-export type IbanOptions = { country?: string } & RequestOptions;
+export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
 export type NpiOptions = DeepOption & RequestOptions;
-/** Country resolves national-number ambiguity. `deep: true` returns an empty object. */
+/** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
-export type CarrierOptions = { country?: string } & RequestOptions;
+/** Deep discloses location detail within the same carrier unit. */
+export type CarrierOptions = { country?: string } & DeepOption & RequestOptions;
 export type CallerOptions = { country?: string } & RequestOptions;
-export type HlrOptions = { country?: string } & RequestOptions;
+/** Deep discloses network diagnostics within the same HLR unit. */
+export type HlrOptions = { country?: string } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = RequestOptions;
 export type MacOptions = RequestOptions;
@@ -159,32 +160,32 @@ export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
-export type NaicsOptions = RequestOptions;
+export type NaicsOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
-export type NaicsSearchOptions = { limit?: number } & RequestOptions;
+export type NaicsSearchOptions = { limit?: number } & DeepOption & RequestOptions;
 export type TariffOptions = { origin?: string } & DeepOption & RequestOptions;
 export type TariffSearchOptions = RequestOptions;
-export type CurrencyOptions = RequestOptions;
+export type CurrencyOptions = DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
-export type LanguageOptions = RequestOptions;
-/** Country is an ISO2 context for the optional gender estimate. */
-export type NameOptions = { country?: string } & RequestOptions;
-export type TimeOptions = { at?: string; to?: string } & RequestOptions;
-export type TimeAtOptions = { at?: string; to?: string } & RequestOptions;
-export type TimezoneOptions = { at?: string; to?: string } & RequestOptions;
-export type TimezoneAtOptions = { at?: string } & RequestOptions;
-export type DateOptions = { format?: 'mdy' | 'dmy'; to?: string } & RequestOptions;
-export type DateTodayOptions = { to?: string } & RequestOptions;
+export type LanguageOptions = DeepOption & RequestOptions;
+/** Country is an ISO2 context for paid deep name evidence. */
+export type NameOptions = { country?: string } & DeepOption & RequestOptions;
+export type TimeOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimeAtOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimezoneOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimezoneAtOptions = { at?: string } & DeepOption & RequestOptions;
+export type DateOptions = { format?: 'mdy' | 'dmy'; to?: string } & DeepOption & RequestOptions;
+export type DateTodayOptions = { to?: string } & DeepOption & RequestOptions;
 export type HolidayOptions = { year?: number } & RequestOptions;
 export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
 export type PointOptions = DeepOption & RequestOptions;
 export type WeatherOptions = DeepOption & { date?: string } & RequestOptions;
-export type EmojiOptions = RequestOptions;
-export type EmojiSearchOptions = { limit?: number } & RequestOptions;
+export type EmojiOptions = DeepOption & RequestOptions;
+export type EmojiSearchOptions = { limit?: number } & DeepOption & RequestOptions;
 
 interface DeepOption {
-	/** Request endpoint-specific enrichment. Email/VAT checks are metered, IP is plan-included, and phone adds no fields. See the operation's help. */
+	/** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
 	deep?: boolean;
 }
 
@@ -348,7 +349,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		),
 
 		country: Object.assign(
-			(code: string, opts?: CountryOptions): Promise<Country> => request(`/country/${enc(code)}`, undefined, undefined, opts),
+			(code: string, opts?: CountryOptions): Promise<Country> => request(`/country/${enc(code)}`, deepQuery(opts), undefined, opts),
 			{
 				states: (code: string, opts?: CountryStatesOptions): Promise<CountryStates> => request(`/country/${enc(code)}/states`, undefined, undefined, opts),
 			}
@@ -356,24 +357,24 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		state: Object.assign(
 			(code: string, opts?: StateOptions): Promise<State> =>
-				request(`/state/${enc(code)}`, { country: opts?.country }, undefined, opts),
+				request(`/state/${enc(code)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			{
 				districts: (code: string, opts?: StateDistrictsOptions): Promise<StateDistricts> =>
-					request(`/state/${enc(code)}/districts`, { country: opts?.country }, undefined, opts),
+					request(`/state/${enc(code)}/districts`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
 		district: (code: string, opts?: DistrictOptions): Promise<District> =>
-			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state }, undefined, opts),
+			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 
 		city: Object.assign(
 			(name: string, opts?: CityOptions): Promise<City> =>
-				request(`/city/${enc(name)}`, { country: opts?.country, state: opts?.state }, undefined, opts),
+				request(`/city/${enc(name)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 			{
-				id: (id: string, opts?: CityIdOptions): Promise<City> => request(`/city/id/${enc(id)}`, undefined, undefined, opts),
+				id: (id: string, opts?: CityIdOptions): Promise<City> => request(`/city/id/${enc(id)}`, deepQuery(opts), undefined, opts),
 				search: (query: string, opts?: CitySearchOptions): Promise<CitySearch> =>
-					request('/city', { q: query, country: opts?.country, state: opts?.state, limit: opts?.limit }, undefined, opts),
-				nearest: (lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest> => request('/city', { lat, lon }, undefined, opts),
+					request('/city', { q: query, country: opts?.country, state: opts?.state, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+				nearest: (lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest> => request('/city', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 				nearby: (
 					name: string,
 					opts?: CityNearbyOptions
@@ -383,15 +384,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						unit: opts?.unit,
 						country: opts?.country,
 						state: opts?.state,
-						limit: opts?.limit,
-					}, undefined, opts),
+						limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
 		/** Look up a postal area. Pass country when known. Check nullable latitude/longitude before another location lookup. */
 		postal: Object.assign(
 			(code: string, opts?: PostalOptions): Promise<Postal> =>
-				request(`/postal/${enc(code)}`, { country: opts?.country }, undefined, opts),
+				request(`/postal/${enc(code)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			{
 				nearby: (
 					code: string,
@@ -400,10 +400,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request(`/postal/${enc(code)}/nearby`, {
 						country: opts?.country,
 						radius: opts?.radius,
-						unit: opts?.unit,
-					}, undefined, opts),
+						unit: opts?.unit, ...deepQuery(opts) }, undefined, opts),
 				distance: (from: string, to: string, opts?: PostalDistanceOptions): Promise<PostalDistance> =>
-					request(`/postal/${enc(from)}/distance/${enc(to)}`, { country: opts?.country }, undefined, opts),
+					request(`/postal/${enc(from)}/distance/${enc(to)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
@@ -439,20 +438,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** Check BIC syntax and look up a known institution. A null name means unknown, not invalid. */
 		swift: (code: string, opts?: SwiftOptions): Promise<SwiftCode> => request(`/swift/${enc(code)}`, undefined, undefined, opts),
-
 		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
-			request(`/iban/${enc(iban)}`, { country: opts?.country }, undefined, opts),
+			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
 		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
 			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
-		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds no fields. */
+		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
 			request(`/phone/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
 		/** Request a metered carrier lookup. No automatic retries by default. */
 		carrier: (number: string, opts?: CarrierOptions): Promise<Carrier> =>
-			request(`/carrier/${enc(number)}`, { country: opts?.country }, undefined, opts),
+			request(`/carrier/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
 		/** Request a metered caller-name lookup for a NANP number. No automatic retries by default. */
 		caller: (number: string, opts?: CallerOptions): Promise<Caller> =>
@@ -460,8 +458,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
 		hlr: (number: string, opts?: HlrOptions): Promise<Hlr> =>
-			request(`/hlr/${enc(number)}`, { country: opts?.country }, undefined, opts),
+			request(`/hlr/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
+		/** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
 		domain: (domain: string, opts?: DomainOptions): Promise<Domain> =>
 			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
 
@@ -498,10 +497,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** US NAICS 2022 definitions and hierarchy. */
 		naics: Object.assign(
-			(code: string, opts?: NaicsOptions): Promise<Naics> => request(`/naics/${enc(code)}`, undefined, undefined, opts),
+			(code: string, opts?: NaicsOptions): Promise<Naics> => request(`/naics/${enc(code)}`, deepQuery(opts), undefined, opts),
 			{
 				search: (query: string, opts?: NaicsSearchOptions): Promise<NaicsSearch> =>
-					request('/naics', { q: query, limit: opts?.limit }, undefined, opts),
+					request('/naics', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 		tariff: Object.assign(
@@ -513,7 +512,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		),
 
 		currency: Object.assign(
-			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, undefined, undefined, opts),
+			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, deepQuery(opts), undefined, opts),
 			{
 				rate: (
 					base: string,
@@ -527,34 +526,34 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, undefined, undefined, opts),
+		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, deepQuery(opts), undefined, opts),
 
-		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country }, undefined, opts),
+		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
 		/** Current local time, UTC by default. With to, offsetless at is source wall time. */
 		time: Object.assign(
 			(timezone?: string, opts?: TimeOptions): Promise<Time> =>
-				request(timezone === undefined ? '/time' : `/time/${enc(timezone)}`, { at: opts?.at, to: opts?.to }, undefined, opts),
+				request(timezone === undefined ? '/time' : `/time/${enc(timezone)}`, { at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
 			{
 				at: (lat: number, lon: number, opts?: TimeAtOptions): Promise<Time> =>
-					request('/time', { lat, lon, at: opts?.at, to: opts?.to }, undefined, opts),
+					request('/time', { lat, lon, at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
 		timezone: Object.assign(
 			(id: string, opts?: TimezoneOptions): Promise<Timezone> =>
-				request(`/timezone/${enc(id)}`, { at: opts?.at, to: opts?.to }, undefined, opts),
+				request(`/timezone/${enc(id)}`, { at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
 			{
 				at: (lat: number, lon: number, opts?: TimezoneAtOptions): Promise<Timezone> =>
-					request('/timezone', { lat, lon, at: opts?.at }, undefined, opts),
+					request('/timezone', { lat, lon, at: opts?.at, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
 		date: Object.assign(
 			(date: string, opts?: DateOptions): Promise<DateInfo> =>
-				request(`/date/${enc(date)}`, { format: opts?.format, to: opts?.to }, undefined, opts),
+				request(`/date/${enc(date)}`, { format: opts?.format, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
 			{
-				today: (opts?: DateTodayOptions): Promise<DateInfo> => request('/date', { to: opts?.to }, undefined, opts),
+				today: (opts?: DateTodayOptions): Promise<DateInfo> => request('/date', { to: opts?.to, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
@@ -577,10 +576,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }, undefined, opts),
 
 		emoji: Object.assign(
-			(emoji: string, opts?: EmojiOptions): Promise<Emoji> => request(`/emoji/${enc(emoji)}`, undefined, undefined, opts),
+			(emoji: string, opts?: EmojiOptions): Promise<Emoji> => request(`/emoji/${enc(emoji)}`, deepQuery(opts), undefined, opts),
 			{
 				search: (query: string, opts?: EmojiSearchOptions): Promise<EmojiSearch> =>
-					request('/emoji', { q: query, limit: opts?.limit }, undefined, opts),
+					request('/emoji', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 	};

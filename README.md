@@ -79,7 +79,7 @@ await parse.currency('USD');
 await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
 await parse.name('BILLY OSHALL');
-await parse.name('Andrea', { country: 'IT' });
+await parse.name('Andrea', { country: 'IT', deep: true });
 await parse.time(); // UTC now
 await parse.time('America/New_York');
 await parse.time('America/New_York', { at: '2026-09-05T15:00:00', to: 'Asia/Tokyo' });
@@ -107,7 +107,7 @@ await parse.emoji('rocket');
 await parse.emoji.search('fire');
 ```
 
-NAICS records include classification `exclusions`, each with a description and linked codes. Generic exclusions can have no linked codes. Omitted or null exclusions in older responses remain unknown. Search results also include `match`: the matched `field` (`name`, `term` or `naics`) and `text`, plus `corrections` with `from` and `to` tokens for typo fallback. Corrections are empty for exact, plural and prefix matches. Direct code lookups omit `match`. Older responses may omit it.
+NAICS paid deep records include classification `deep.exclusions`, each with a description and linked codes. Generic exclusions can have no linked codes. Omitted or null exclusions in older responses remain unknown. Search results also include `match`: the matched `field` (`name`, `term` or `naics`) and `text`, plus `corrections` with `from` and `to` tokens for typo fallback. Corrections are empty for exact, plural and prefix matches. Direct code lookups omit `match`. Older responses may omit it.
 
 Responses are typed, plain JSON data. `country.states('US')` requests the states directly; it does not fetch a country first. Optional arguments go in the final options object, so new options can be added without changing your existing calls.
 
@@ -115,7 +115,7 @@ DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX,
 
 ## Time
 
-`time` returns local ISO `at` with its UTC offset and integer Unix seconds in `unix`. `offset_seconds` is the exact offset, while `offset_minutes` is whole minutes. Historical offsets and ISO times can include offset seconds. Omitted `at` means now. With `to`, an offsetless `at` is source wall time. Otherwise it is UTC. Include an offset for repeated local times around a clock change. Current time and conversion use pooled requests on every plan. Coordinate clock fields can be null when the timezone is unknown. Existing `timezone` methods remain supported.
+`time` returns local ISO `at` with its UTC offset and integer Unix seconds in `unix`. The core `offset` preserves exact precision. Optional `deep.offset_seconds` gives the numeric offset, while `deep.offset_minutes` gives whole minutes. Historical offsets and ISO times can include offset seconds. Omitted `at` means now. With `to`, an offsetless `at` is source wall time. Otherwise it is UTC. Include an offset for repeated local times around a clock change. Current time and conversion use pooled requests on every plan. Coordinate clock fields can be null when the timezone is unknown. Existing `timezone` methods remain supported.
 
 ## Measurements
 
@@ -135,9 +135,15 @@ Choose enrichment for the question you need answered.
 | Operation | What `deep` requests |
 |---|---|
 | IP | Richer IP fields included with a paid plan. No separate check meter. |
+| Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered deliverability check, using included email checks or enabled on-demand usage. |
 | VAT | A metered registry check where supported, using included VAT checks or enabled on-demand usage. |
-| Phone | An empty object. Number parsing and formats are already in the core response. |
+| Phone, Time, Date, Currency, Language, Emoji, IBAN, Point | Optional detail in the same pooled request on every plan. |
+| Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
+| Name, NAICS | Name evidence or the industry definition profile on paid plans. |
+| VIN, NPI, Tariff, Company | The complete product detail bag on paid plans. |
+| Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
+| Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |
 
 Carrier, caller, and HLR are separate metered operations. Choose them explicitly when you need their answers. Ordinary lookups retry twice by default. Metered checks use one attempt by default. Setting retries explicitly can repeat paid usage.
 
@@ -192,3 +198,14 @@ An explicit `retries` setting on the client or call overrides those defaults. An
 Full field reference for every endpoint: [parseapi.com/docs](https://parseapi.com/docs)
 
 BIN lookup accepts 6-11 digits as a string, including leading zeros. Spaces and hyphens are accepted. `prefix` is the actual longest match and can be shorter than the input. Unknown reference fields are null. `deep` adds an empty object on every plan.
+
+
+## Optional detail
+
+The default response answers the common task. Ask for `deep` when you need more detail about that same result. Core fields stay equal. City, NAICS and Emoji searches put detail inside each result. Postal nearby and distance put metropolitan detail beside the entity it describes. Time conversion keeps target detail in `to.deep`; only the source has `deep.next_dst`.
+
+```ts
+const basic = await parse.time('America/New_York');
+const detail = await parse.time('America/New_York', { deep: true });
+console.log(basic.at, detail.deep?.next_dst);
+```

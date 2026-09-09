@@ -129,10 +129,10 @@ await expectOk('language', parse.language('en'), (r) =>
 	r.language === 'en' && r.name === 'English' ? null : 'wrong language'
 );
 await expectOk('name', parse.name("BILLY O'SHALL"), (r) =>
-	r.name === "Billy O'Shall" && r.valid === true && r.gender === 'male' ? null : 'wrong name'
+	r.name === "Billy O'Shall" && r.valid === true ? null : 'wrong name'
 );
 await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
-	r.offset_minutes === -240 || r.offset_minutes === -300 ? null : `offset ${r.offset_minutes}`
+	r.offset === '-04:00' || r.offset === '-05:00' ? null : `offset ${r.offset}`
 );
 await expectOk('timezone.at', parse.timezone.at(39.77, -104.9), (r) => r.timezone === 'America/Denver' ? null : 'wrong timezone');
 await expectOk('date', parse.date('03/04/2026', { format: 'mdy' }), (r) => r.date === '2026-03-04' ? null : 'wrong date');
