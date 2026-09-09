@@ -37,6 +37,9 @@ afterEach(() => {
 
 describe('url mapping', () => {
 	const table: [string, (parse: ReturnType<typeof parseAPI>) => Promise<unknown>, string][] = [
+		['time default UTC', (p) => p.time(), 'https://api.parseapi.com/time'],
+		['time conversion', (p) => p.time('America/New_York', { at: '2026-09-05T15:00:00', to: 'Asia/Tokyo' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-09-05T15%3A00%3A00&to=Asia%2FTokyo'],
+		['time coordinates conversion', (p) => p.time.at(0, 0, { at: '1970-01-01T00:00:00Z', to: 'UTC' }), 'https://api.parseapi.com/time?lat=0&lon=0&at=1970-01-01T00%3A00%3A00Z&to=UTC'],
 		['ip', (p) => p.ip('8.8.8.8'), 'https://api.parseapi.com/ip/8.8.8.8'],
 		['ip.self', (p) => p.ip.self(), 'https://api.parseapi.com/ip'],
 		['ip deep', (p) => p.ip('8.8.8.8', { deep: true }), 'https://api.parseapi.com/ip/8.8.8.8?deep=true'],
@@ -387,4 +390,12 @@ describe('configuration and backoff', () => {
 		await expect(result).resolves.toMatchObject({ country: 'us' });
 		expect(fetchStub).toHaveBeenCalledTimes(2);
 	});
+});
+
+it('time preserves Unix epoch zero and unresolved coordinate nulls', async () => {
+	const data = { offset_seconds: 0, offset_minutes: 0, timezone: 'UTC', at: '1970-01-01T00:00:00+00:00', unix: 0, to: { timezone: 'Asia/Tokyo', at: '1970-01-01T09:00:00+09:00', unix: 0 } };
+	const { parse } = stubClient([jsonResponse(data), jsonResponse({ timezone: null, at: null, unix: null, to: null }), jsonResponse({ offset_seconds: -17762, offset_minutes: -296, at: '1880-01-01T00:00:00-04:56:02' })]);
+	expect(await parse.time('UTC', { at: '1970-01-01T00:00:00Z', to: 'Asia/Tokyo' })).toEqual(data);
+	expect(await parse.time.at(0, 0, { to: 'UTC' })).toEqual({ timezone: null, at: null, unix: null, to: null });
+	expect(await parse.time('America/New_York', { at: '1880-01-01T04:56:02Z' })).toMatchObject({ offset_seconds: -17762, offset_minutes: -296, at: '1880-01-01T00:00:00-04:56:02' });
 });

@@ -698,13 +698,24 @@ interface Timezone {
     name: string | null;
     abbreviation: string | null;
     offset: string | null;
+    /** Whole minutes, truncated toward zero for historical second offsets. */
     offset_minutes: number | null;
+    offset_seconds?: number | null;
     dst: boolean | null;
     next_dst: TimezoneNextDst | null;
-    /** With to= only: the resolved wall time in the from zone, ISO with its UTC offset. */
+    /** Resolved local ISO time with its UTC offset. */
     at?: string;
+    /** Unix seconds for the resolved instant. */
+    unix?: number | null;
     /** With to= only: the other zone at the same instant. to.at is the converted time. */
     to?: TimezoneConversionTarget;
+}
+/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+interface Time extends Omit<Timezone, 'at' | 'unix' | 'to'> {
+    at: string | null;
+    unix: number | null;
+    offset_seconds: number | null;
+    to?: TimezoneConversionTarget | null;
 }
 /** The other side of a timezone conversion. `at` is the converted wall time. */
 interface TimezoneConversionTarget {
@@ -713,8 +724,10 @@ interface TimezoneConversionTarget {
     abbreviation: string | null;
     offset: string;
     offset_minutes: number;
+    offset_seconds?: number;
     dst: boolean;
     at: string;
+    unix?: number;
 }
 /**
  * Calendar facts for one date. Junk or ambiguous input returns valid: false,
@@ -1200,6 +1213,14 @@ type LanguageOptions = RequestOptions;
 type NameOptions = {
     country?: string;
 } & RequestOptions;
+type TimeOptions = {
+    at?: string;
+    to?: string;
+} & RequestOptions;
+type TimeAtOptions = {
+    at?: string;
+    to?: string;
+} & RequestOptions;
 type TimezoneOptions = {
     at?: string;
     to?: string;
@@ -1308,6 +1329,10 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
     language: (code: string, opts?: LanguageOptions) => Promise<Language>;
     name: (name: string, opts?: NameOptions) => Promise<Name>;
+    /** Current local time, UTC by default. With to, offsetless at is source wall time. */
+    time: ((timezone?: string, opts?: TimeOptions) => Promise<Time>) & {
+        at: (lat: number, lon: number, opts?: TimeAtOptions) => Promise<Time>;
+    };
     timezone: ((id: string, opts?: TimezoneOptions) => Promise<Timezone>) & {
         at: (lat: number, lon: number, opts?: TimezoneAtOptions) => Promise<Timezone>;
     };
@@ -1327,4 +1352,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierOptions, type City, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsOptions, type NaicsSearch, type NaicsSearchOptions, type Name, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneOptions, type Point, type PointDeep, type PointOptions, type Postal, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherSource, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierOptions, type City, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsOptions, type NaicsSearch, type NaicsSearchOptions, type Name, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneOptions, type Point, type PointDeep, type PointOptions, type Postal, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherSource, type WeatherStation, parseAPI };

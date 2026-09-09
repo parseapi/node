@@ -78,8 +78,10 @@ await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
 await parse.name('BILLY OSHALL');
 await parse.name('Andrea', { country: 'IT' });
-await parse.timezone('America/New_York');
-await parse.timezone.at(40.7128, -74.006);
+await parse.time(); // UTC now
+await parse.time('America/New_York');
+await parse.time('America/New_York', { at: '2026-09-05T15:00:00', to: 'Asia/Tokyo' });
+await parse.time.at(40.7128, -74.006);
 await parse.date('03/04/2026', { format: 'mdy' });
 await parse.date.today();
 await parse.holiday('US', { year: 2026 });
@@ -106,6 +108,10 @@ await parse.emoji.search('fire');
 Responses are typed, plain JSON data. `country.states('US')` requests the states directly; it does not fetch a country first. Optional arguments go in the final options object, so new options can be added without changing your existing calls.
 
 DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV and PTR. Records contain `name`, `type`, `ttl` in seconds and a DNS presentation `value`. TXT values retain quoting and chunk boundaries. A selected question can include its CNAME chain. Empty records mean no records. Lookup failures remain errors.
+
+## Time
+
+`time` returns local ISO `at` with its UTC offset and integer Unix seconds in `unix`. `offset_seconds` is the exact offset, while `offset_minutes` is whole minutes. Historical offsets and ISO times can include offset seconds. Omitted `at` means now. With `to`, an offsetless `at` is source wall time. Otherwise it is UTC. Include an offset for repeated local times around a clock change. Current time and conversion use pooled requests on every plan. Coordinate clock fields can be null when the timezone is unknown. Existing `timezone` methods remain supported.
 
 ## Measurements
 

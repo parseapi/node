@@ -769,13 +769,25 @@ export interface Timezone {
 	name: string | null;
 	abbreviation: string | null;
 	offset: string | null;
+	/** Whole minutes, truncated toward zero for historical second offsets. */
 	offset_minutes: number | null;
+	offset_seconds?: number | null;
 	dst: boolean | null;
 	next_dst: TimezoneNextDst | null;
-	/** With to= only: the resolved wall time in the from zone, ISO with its UTC offset. */
+	/** Resolved local ISO time with its UTC offset. */
 	at?: string;
+	/** Unix seconds for the resolved instant. */
+	unix?: number | null;
 	/** With to= only: the other zone at the same instant. to.at is the converted time. */
 	to?: TimezoneConversionTarget;
+}
+
+/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+export interface Time extends Omit<Timezone, 'at' | 'unix' | 'to'> {
+	at: string | null;
+	unix: number | null;
+	offset_seconds: number | null;
+	to?: TimezoneConversionTarget | null;
 }
 
 /** The other side of a timezone conversion. `at` is the converted wall time. */
@@ -785,8 +797,10 @@ export interface TimezoneConversionTarget {
 	abbreviation: string | null;
 	offset: string;
 	offset_minutes: number;
+	offset_seconds?: number;
 	dst: boolean;
 	at: string;
+	unix?: number;
 }
 
 /**

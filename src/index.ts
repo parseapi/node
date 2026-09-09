@@ -50,6 +50,7 @@ import type {
 	State,
 	StateDistricts,
 	Timezone,
+	Time,
 	Useragent,
 	Vin,
 	Weather,
@@ -162,6 +163,8 @@ export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOp
 export type LanguageOptions = RequestOptions;
 /** Country is an ISO2 context for the optional gender estimate. */
 export type NameOptions = { country?: string } & RequestOptions;
+export type TimeOptions = { at?: string; to?: string } & RequestOptions;
+export type TimeAtOptions = { at?: string; to?: string } & RequestOptions;
 export type TimezoneOptions = { at?: string; to?: string } & RequestOptions;
 export type TimezoneAtOptions = { at?: string } & RequestOptions;
 export type DateOptions = { format?: 'mdy' | 'dmy'; to?: string } & RequestOptions;
@@ -514,6 +517,16 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, undefined, undefined, opts),
 
 		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country }, undefined, opts),
+
+		/** Current local time, UTC by default. With to, offsetless at is source wall time. */
+		time: Object.assign(
+			(timezone?: string, opts?: TimeOptions): Promise<Time> =>
+				request(timezone === undefined ? '/time' : `/time/${enc(timezone)}`, { at: opts?.at, to: opts?.to }, undefined, opts),
+			{
+				at: (lat: number, lon: number, opts?: TimeAtOptions): Promise<Time> =>
+					request('/time', { lat, lon, at: opts?.at, to: opts?.to }, undefined, opts),
+			}
+		),
 
 		timezone: Object.assign(
 			(id: string, opts?: TimezoneOptions): Promise<Timezone> =>
