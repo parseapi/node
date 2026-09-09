@@ -1029,17 +1029,11 @@ export interface WeatherStation {
 	distance_mi: number | null;
 }
 
-export interface WeatherSource {
-	id: string;
-	name: string | null;
-}
-
 export interface Weather {
 	latitude: number;
 	longitude: number;
 	current: WeatherCurrent;
 	station: WeatherStation | null;
-	source: WeatherSource;
 	deep?: Deep<WeatherDeep>;
 }
 
