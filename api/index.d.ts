@@ -56,6 +56,8 @@ interface Continent {
     region: string;
     subregion: string;
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     area: number | null;
     emoji: string;
 }
@@ -131,6 +133,8 @@ interface StateDistrictItem {
 }
 interface StateDistrictDeep {
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
 }
 interface StateDistricts {
     state: string;
@@ -466,9 +470,9 @@ interface Hlr {
     phone: string | null;
     valid: boolean;
     country: string | null;
-    /** Assigned to a subscriber. Null when invalid. */
+    /** Assigned to a subscriber at the last check. Null means unconfirmed. */
     live: boolean | null;
-    /** Handset reachable right now. Null means unconfirmed, never no. */
+    /** Handset reachable at the last check. Null means unconfirmed, never no. */
     connected: boolean | null;
     deep?: Deep<HlrDeep>;
 }
@@ -890,6 +894,8 @@ interface AddressSearch {
     state?: string | null;
     country?: string | null;
     addresses: AddressSuggestion[];
+    /** Why suggestions are empty: more_input, missing_context or no_matches. Null with suggestions. Open to future values. Operational failures are errors. */
+    reason?: string | null;
 }
 interface CompanyCountry {
     name: string | null;
@@ -988,6 +994,8 @@ interface CountryDeep {
     region: string | null;
     subregion: string | null;
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     area: number | null;
     tld: string | null;
     /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
@@ -1016,6 +1024,8 @@ interface CountryDeep {
 }
 interface StateDeep {
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     /** Total area in km2. */
     area: number | null;
     fips: string | null;
@@ -1028,6 +1038,8 @@ interface StateDeep {
 }
 interface DistrictDeep {
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     /** Total area in km2 (land + water, or the official total). */
     area: number | null;
     /** Land area in km2. Null when the source publishes total only. */
@@ -1035,6 +1047,8 @@ interface DistrictDeep {
     /** Water area in km2. Null when the source publishes total only. */
     water_area: number | null;
     seat: string | null;
+    /** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
+    property_tax?: PropertyTax | null;
 }
 interface CityDeep {
     /** What this city is the capital of: country, state, or null. */
@@ -1042,6 +1056,8 @@ interface CityDeep {
     elevation: number | null;
     elevation_ft: number | null;
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     /** Total area in km2 (land + water, or the official total). */
     area: number | null;
     /** Land area in km2. Null when the source publishes total only. */
@@ -1053,6 +1069,8 @@ interface PostalDeep {
     elevation: number | null;
     elevation_ft: number | null;
     population: number | null;
+    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    population_period?: string | null;
     /** Total area in km2. Null when the source has no water split. */
     area: number | null;
     /** Land area in km2. Null where the source has none. */
@@ -1075,6 +1093,8 @@ interface PostalDeep {
     neighbors: string[];
     /** Missing/null is unknown; [] is an observed result outside all covered areas. */
     metros?: PostalMetro[] | null;
+    /** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
+    property_tax?: PropertyTax | null;
 }
 interface IbanDeep {
     /** Two check digits as a string, keeping a leading zero. */
@@ -1097,12 +1117,12 @@ interface CarrierDeep {
     state_name: string | null;
 }
 interface HlrDeep {
-    /** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
+    /** Network diagnostics available from the last check. Null when unconfirmed. */
     roaming: boolean | null;
     roaming_network: string | null;
     /** ISO2, uppercase. */
     roaming_country: string | null;
-    /** Current serving network name. */
+    /** Serving network name at the last check. */
     network: string | null;
     original_network: string | null;
     mcc: string | null;
@@ -1200,6 +1220,15 @@ interface WeatherCurrentDeep {
     visibility: number | null;
     visibility_mi: number | null;
 }
+/** Property-tax estimate for an area, not a specific property. */
+interface PropertyTax {
+    /** Median annual tax payable, in currency units adjusted to the final year of period. Not a tax rate or an individual property bill. */
+    annual_median: number;
+    /** ISO 4217 currency code, currently USD. */
+    currency: string;
+    /** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
+    period: string;
+}
 
 /** Every non-2xx response from the API. Branch on `code`, never on `message`. */
 declare class ParseAPIError extends Error {
@@ -1283,11 +1312,17 @@ type PostalDistanceOptions = {
 type AddressOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
+/** Address suggestions report why a result is empty. Operational failures remain errors. */
 type AddressSearchOptions = {
+    /** Country scope. Pass the country known by the form. */
     country?: string;
+    /** Postal-code scope from the form. */
     postal?: string;
+    /** City scope, paired with state for US searches when no postal code is available. */
     city?: string;
+    /** State scope for US searches. */
     state?: string;
+    /** Actual end-user IP as an optional locality hint for server-side calls. */
     ip?: string;
 } & RequestOptions;
 type CompanyOptions = {
@@ -1316,7 +1351,7 @@ type CarrierOptions = {
 type CallerOptions = {
     country?: string;
 } & RequestOptions;
-/** Deep discloses network diagnostics within the same HLR unit. */
+/** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 type HlrOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
@@ -1349,7 +1384,9 @@ type NaicsOptions = DeepOption & RequestOptions;
 type NaicsSearchOptions = {
     limit?: number;
 } & DeepOption & RequestOptions;
+/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 type TariffOptions = {
+    /** Origin country (ISO2). With paid deep, resolves country-specific measures. */
     origin?: string;
 } & DeepOption & RequestOptions;
 type TariffSearchOptions = RequestOptions;
@@ -1390,8 +1427,11 @@ type HolidayOptions = {
 } & RequestOptions;
 type HolidayDateOptions = RequestOptions;
 type ElevationOptions = RequestOptions;
+/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 type PointOptions = DeepOption & RequestOptions;
+/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
 type WeatherOptions = DeepOption & {
+    /** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
     date?: string;
 } & RequestOptions;
 type EmojiOptions = DeepOption & RequestOptions;
@@ -1433,6 +1473,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         distance: (from: string, to: string, opts?: PostalDistanceOptions) => Promise<PostalDistance>;
     };
     address: ((address: string, opts?: AddressOptions) => Promise<Address>) & {
+        /** Find address suggestions using the context supplied. Prefer postal, or city and state, from the form. ip is an optional end-user locality hint for server-side calls. An empty result has reason more_input, missing_context or no_matches. Suggestions have reason null. Operational failures are errors. */
         search: (query: string, opts?: AddressSearchOptions) => Promise<AddressSearch>;
     };
     company: (number: string, opts?: CompanyOptions) => Promise<Company>;
@@ -1454,7 +1495,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     carrier: (number: string, opts?: CarrierOptions) => Promise<Carrier>;
     /** Request a metered caller-name lookup for a NANP number. No automatic retries by default. */
     caller: (number: string, opts?: CallerOptions) => Promise<Caller>;
-    /** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
+    /** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
     hlr: (number: string, opts?: HlrOptions) => Promise<Hlr>;
     /** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
@@ -1476,6 +1517,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     naics: ((code: string, opts?: NaicsOptions) => Promise<Naics>) & {
         search: (query: string, opts?: NaicsSearchOptions) => Promise<NaicsSearch>;
     };
+    /** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
     tariff: ((code: string, opts?: TariffOptions) => Promise<Tariff>) & {
         search: (query: string, opts?: TariffSearchOptions) => Promise<TariffSearch>;
     };
@@ -1498,8 +1540,9 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         date: (country: string, date: string, opts?: HolidayDateOptions) => Promise<HolidayDate>;
     };
     elevation: (lat: number, lon: number, opts?: ElevationOptions) => Promise<Elevation>;
+    /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
     point: (lat: number, lon: number, opts?: PointOptions) => Promise<Point>;
-    /** Get weather for a point. Both unit systems are returned. Pass known coordinates from a postal, city, or location result. */
+    /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
     weather: (lat: number, lon: number, opts?: WeatherOptions) => Promise<Weather>;
     emoji: ((emoji: string, opts?: EmojiOptions) => Promise<Emoji>) & {
         search: (query: string, opts?: EmojiSearchOptions) => Promise<EmojiSearch>;
@@ -1507,4 +1550,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type SwiftCode, type SwiftOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PropertyTax, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type SwiftCode, type SwiftOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

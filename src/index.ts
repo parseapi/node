@@ -130,7 +130,19 @@ export type PostalOptions = { country?: string } & DeepOption & RequestOptions;
 export type PostalNearbyOptions = { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
 export type PostalDistanceOptions = { country?: string } & DeepOption & RequestOptions;
 export type AddressOptions = { country?: string } & DeepOption & RequestOptions;
-export type AddressSearchOptions = { country?: string; postal?: string; city?: string; state?: string; ip?: string } & RequestOptions;
+/** Address suggestions report why a result is empty. Operational failures remain errors. */
+export type AddressSearchOptions = {
+	/** Country scope. Pass the country known by the form. */
+	country?: string;
+	/** Postal-code scope from the form. */
+	postal?: string;
+	/** City scope, paired with state for US searches when no postal code is available. */
+	city?: string;
+	/** State scope for US searches. */
+	state?: string;
+	/** Actual end-user IP as an optional locality hint for server-side calls. */
+	ip?: string;
+} & RequestOptions;
 export type CompanyOptions = { country?: string } & DeepOption & RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
@@ -144,7 +156,7 @@ export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
 export type CarrierOptions = { country?: string } & DeepOption & RequestOptions;
 export type CallerOptions = { country?: string } & RequestOptions;
-/** Deep discloses network diagnostics within the same HLR unit. */
+/** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 export type HlrOptions = { country?: string } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = RequestOptions;
@@ -163,7 +175,11 @@ export type VinOptions = DeepOption & RequestOptions;
 export type NaicsOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
 export type NaicsSearchOptions = { limit?: number } & DeepOption & RequestOptions;
-export type TariffOptions = { origin?: string } & DeepOption & RequestOptions;
+/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
+export type TariffOptions = {
+	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
+	origin?: string;
+} & DeepOption & RequestOptions;
 export type TariffSearchOptions = RequestOptions;
 export type CurrencyOptions = DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
@@ -179,8 +195,13 @@ export type DateTodayOptions = { to?: string } & DeepOption & RequestOptions;
 export type HolidayOptions = { year?: number } & RequestOptions;
 export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
+/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 export type PointOptions = DeepOption & RequestOptions;
-export type WeatherOptions = DeepOption & { date?: string } & RequestOptions;
+/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
+export type WeatherOptions = DeepOption & {
+	/** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
+	date?: string;
+} & RequestOptions;
 export type EmojiOptions = DeepOption & RequestOptions;
 export type EmojiSearchOptions = { limit?: number } & DeepOption & RequestOptions;
 
@@ -410,6 +431,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			(address: string, opts?: AddressOptions): Promise<Address> =>
 				request(`/address/${enc(address)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			{
+				/** Find address suggestions using the context supplied. Prefer postal, or city and state, from the form. ip is an optional end-user locality hint for server-side calls. An empty result has reason more_input, missing_context or no_matches. Suggestions have reason null. Operational failures are errors. */
 				search: (query: string, opts?: AddressSearchOptions): Promise<AddressSearch> =>
 					request('/address', { q: query, country: opts?.country, postal: opts?.postal, city: opts?.city, state: opts?.state, ip: opts?.ip }, undefined, opts),
 			}
@@ -456,7 +478,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		caller: (number: string, opts?: CallerOptions): Promise<Caller> =>
 			request(`/caller/${enc(number)}`, { country: opts?.country }, undefined, opts),
 
-		/** Request a metered live-status lookup. Null status means unconfirmed. No automatic retries by default. */
+		/** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 		hlr: (number: string, opts?: HlrOptions): Promise<Hlr> =>
 			request(`/hlr/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
@@ -503,6 +525,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request('/naics', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
+		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
 				request(`/tariff/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }, undefined, opts),
@@ -568,10 +591,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		elevation: (lat: number, lon: number, opts?: ElevationOptions): Promise<Elevation> => request('/elevation', { lat, lon }, undefined, opts),
 
+		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 
-		/** Get weather for a point. Both unit systems are returned. Pass known coordinates from a postal, city, or location result. */
+		/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
 		weather: (lat: number, lon: number, opts?: WeatherOptions): Promise<Weather> =>
 			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }, undefined, opts),
 

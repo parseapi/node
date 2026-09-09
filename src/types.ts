@@ -62,6 +62,8 @@ export interface Continent {
 	region: string;
 	subregion: string;
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	area: number | null;
 	emoji: string;
 }
@@ -148,6 +150,9 @@ export interface StateDistrictItem {
 
 export interface StateDistrictDeep {
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
+
 }
 
 export interface StateDistricts {
@@ -516,9 +521,9 @@ export interface Hlr {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
-	/** Assigned to a subscriber. Null when invalid. */
+	/** Assigned to a subscriber at the last check. Null means unconfirmed. */
 	live: boolean | null;
-	/** Handset reachable right now. Null means unconfirmed, never no. */
+	/** Handset reachable at the last check. Null means unconfirmed, never no. */
 	connected: boolean | null;
 	deep?: Deep<HlrDeep>;
 }
@@ -990,6 +995,8 @@ export interface AddressSearch {
 	state?: string | null;
 	country?: string | null;
 	addresses: AddressSuggestion[];
+	/** Why suggestions are empty: more_input, missing_context or no_matches. Null with suggestions. Open to future values. Operational failures are errors. */
+	reason?: string | null;
 }
 
 export interface CompanyCountry {
@@ -1100,6 +1107,8 @@ export interface CountryDeep {
 	region: string | null;
 	subregion: string | null;
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	area: number | null;
 	tld: string | null;
 	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
@@ -1129,6 +1138,8 @@ export interface CountryDeep {
 
 export interface StateDeep {
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	/** Total area in km2. */
 	area: number | null;
 	fips: string | null;
@@ -1142,6 +1153,8 @@ export interface StateDeep {
 
 export interface DistrictDeep {
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	/** Total area in km2 (land + water, or the official total). */
 	area: number | null;
 	/** Land area in km2. Null when the source publishes total only. */
@@ -1149,6 +1162,8 @@ export interface DistrictDeep {
 	/** Water area in km2. Null when the source publishes total only. */
 	water_area: number | null;
 	seat: string | null;
+	/** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
+	property_tax?: PropertyTax | null;
 }
 
 export interface CityDeep {
@@ -1157,6 +1172,8 @@ export interface CityDeep {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	/** Total area in km2 (land + water, or the official total). */
 	area: number | null;
 	/** Land area in km2. Null when the source publishes total only. */
@@ -1169,6 +1186,8 @@ export interface PostalDeep {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
+	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	population_period?: string | null;
 	/** Total area in km2. Null when the source has no water split. */
 	area: number | null;
 	/** Land area in km2. Null where the source has none. */
@@ -1191,6 +1210,8 @@ export interface PostalDeep {
 	neighbors: string[];
 	/** Missing/null is unknown; [] is an observed result outside all covered areas. */
 	metros?: PostalMetro[] | null;
+	/** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
+	property_tax?: PropertyTax | null;
 }
 
 export interface IbanDeep {
@@ -1217,12 +1238,12 @@ export interface CarrierDeep {
 }
 
 export interface HlrDeep {
-	/** The six network extras fill on live HLR dips only. Null elsewhere (NANP, failover). */
+	/** Network diagnostics available from the last check. Null when unconfirmed. */
 	roaming: boolean | null;
 	roaming_network: string | null;
 	/** ISO2, uppercase. */
 	roaming_country: string | null;
-	/** Current serving network name. */
+	/** Serving network name at the last check. */
 	network: string | null;
 	original_network: string | null;
 	mcc: string | null;
@@ -1335,4 +1356,14 @@ export interface WeatherCurrentDeep {
 	pressure_inhg: number | null;
 	visibility: number | null;
 	visibility_mi: number | null;
+}
+
+/** Property-tax estimate for an area, not a specific property. */
+export interface PropertyTax {
+	/** Median annual tax payable, in currency units adjusted to the final year of period. Not a tax rate or an individual property bill. */
+	annual_median: number;
+	/** ISO 4217 currency code, currently USD. */
+	currency: string;
+	/** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
+	period: string;
 }
