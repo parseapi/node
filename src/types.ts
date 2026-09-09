@@ -1119,3 +1119,30 @@ export interface Company {
 	invoice: string | null;
 	deep?: Deep<CompanyDeep>;
 }
+
+/** A direct child industry code. */
+export interface NaicsChild {
+	naics: string;
+	name: string;
+}
+
+/** US NAICS 2022 definition and hierarchy, including two-digit sector ranges. */
+export interface Naics {
+	naics: string;
+	name: string;
+	description: string | null;
+	/** Hierarchy depth, from 2 (sector) to 6 (national industry). */
+	level: number;
+	parent: string | null;
+	parent_name: string | null;
+	children: NaicsChild[];
+	year: number;
+	country: string;
+}
+
+export interface NaicsSearch {
+	q: string;
+	year: number;
+	country: string;
+	results: Naics[];
+}

@@ -95,6 +95,8 @@ await parse.dns('example.com');
 await parse.dns('_dmarc.example.com', { type: 'TXT' });
 await parse.useragent(uaString);
 await parse.vin('1HGCM82633A004352');
+await parse.naics('541511');
+await parse.naics.search('coffee shop', { limit: 5 });
 await parse.tariff('8471.30.01.00');
 await parse.tariff.search('sunglasses');
 await parse.emoji('rocket');

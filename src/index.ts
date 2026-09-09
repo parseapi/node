@@ -31,6 +31,8 @@ import type {
 	Emoji,
 	EmojiSearch,
 	Hlr,
+	Naics,
+	NaicsSearch,
 	Tariff,
 	TariffSearch,
 	HolidayDate,
@@ -149,6 +151,10 @@ export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
+/** US NAICS 2022 code lookup, using pooled requests. */
+export type NaicsOptions = RequestOptions;
+/** Keyword search. Limit defaults to 10 and accepts 1-50. */
+export type NaicsSearchOptions = { limit?: number } & RequestOptions;
 export type TariffOptions = { origin?: string } & DeepOption & RequestOptions;
 export type TariffSearchOptions = RequestOptions;
 export type CurrencyOptions = RequestOptions;
@@ -474,6 +480,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		vin: (vin: string, opts?: VinOptions): Promise<Vin> =>
 			request(`/vin/${enc(vin)}`, deepQuery(opts), undefined, opts),
 
+		/** US NAICS 2022 definitions and hierarchy. */
+		naics: Object.assign(
+			(code: string, opts?: NaicsOptions): Promise<Naics> => request(`/naics/${enc(code)}`, undefined, undefined, opts),
+			{
+				search: (query: string, opts?: NaicsSearchOptions): Promise<NaicsSearch> =>
+					request('/naics', { q: query, limit: opts?.limit }, undefined, opts),
+			}
+		),
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
 				request(`/tariff/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }, undefined, opts),
