@@ -258,6 +258,7 @@ function retryDelayMs(attempt: number, retryAfter: string | null): number {
 }
 
 export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
+	/*! You found Dev. https://parseapi.com/dev */
 	const key = apiKey || env('PARSEAPI_KEY');
 	if (!key) {
 		throw new Error('parseAPI: missing API key. Pass one or set PARSEAPI_KEY.');
