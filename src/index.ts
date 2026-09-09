@@ -1,6 +1,7 @@
 import type {
 	Asn,
 	Mac,
+	Bin,
 	Measure,
 	MeasureUnits,
 	Address,
@@ -144,6 +145,8 @@ export type HlrOptions = { country?: string } & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = RequestOptions;
 export type MacOptions = RequestOptions;
+/** Card-prefix reference lookup. Deep returns an empty object on every plan. */
+export type BinOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
 export type MeasureUnitsOptions = { query?: string; type?: string; unit?: string } & RequestOptions;
@@ -459,6 +462,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		asn: (asn: string, opts?: AsnOptions): Promise<Asn> => request(`/asn/${enc(asn)}`, undefined, undefined, opts),
 
 		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
+
+		/** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
+		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
+			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
 
 		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
 		measure: Object.assign(

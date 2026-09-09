@@ -634,6 +634,19 @@ export interface Mac {
 	multicast: boolean | null;
 }
 
+/** Card-prefix reference data. Null means unknown, not an invalid payment card. */
+export interface Bin {
+	bin: string;
+	/** Actual longest matched prefix. May be shorter than the input. */
+	prefix: string | null;
+	country: string | null;
+	issuer: string | null;
+	brand: string | null;
+	type: string | null;
+	prepaid: boolean | null;
+	deep?: Record<string, never>;
+}
+
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 export interface DnsRecord {
 	name: string;

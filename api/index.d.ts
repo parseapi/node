@@ -578,6 +578,18 @@ interface Mac {
     local: boolean | null;
     multicast: boolean | null;
 }
+/** Card-prefix reference data. Null means unknown, not an invalid payment card. */
+interface Bin {
+    bin: string;
+    /** Actual longest matched prefix. May be shorter than the input. */
+    prefix: string | null;
+    country: string | null;
+    issuer: string | null;
+    brand: string | null;
+    type: string | null;
+    prepaid: boolean | null;
+    deep?: Record<string, never>;
+}
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 interface DnsRecord {
     name: string;
@@ -1197,6 +1209,8 @@ type HlrOptions = {
 type DomainOptions = DeepOption & RequestOptions;
 type AsnOptions = RequestOptions;
 type MacOptions = RequestOptions;
+/** Card-prefix reference lookup. Deep returns an empty object on every plan. */
+type BinOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 type MeasureOptions = {
     to?: string;
@@ -1329,6 +1343,8 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
     mac: (mac: string, opts?: MacOptions) => Promise<Mac>;
+    /** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
+    bin: (bin: string, opts?: BinOptions) => Promise<Bin>;
     /** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
     measure: ((measure: string, opts?: MeasureOptions) => Promise<Measure>) & {
         /** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
@@ -1374,4 +1390,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierOptions, type City, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchOptions, type Name, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneOptions, type Point, type PointDeep, type PointOptions, type Postal, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherSource, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierOptions, type City, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchOptions, type Name, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneOptions, type Point, type PointDeep, type PointOptions, type Postal, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type RequestOptions, type State, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherSource, type WeatherStation, parseAPI };

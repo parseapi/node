@@ -45,6 +45,7 @@ await parse.ip.self();
 await parse.email('hello@gmail.com');
 await parse.vat('DE136695976');
 await parse.iban('DE89370400440532013000');
+await parse.bin('424242');
 await parse.npi('1881018208');
 await parse.phone('+14155552671');
 await parse.carrier('+14155552671');
@@ -188,3 +189,5 @@ An explicit `retries` setting on the client or call overrides those defaults. An
 ## Docs
 
 Full field reference for every endpoint: [parseapi.com/docs](https://parseapi.com/docs)
+
+BIN lookup accepts 6-11 digits as a string, including leading zeros. Spaces and hyphens are accepted. `prefix` is the actual longest match and can be shorter than the input. Unknown reference fields are null. `deep` adds an empty object on every plan.
