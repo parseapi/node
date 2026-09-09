@@ -1198,3 +1198,14 @@ export interface NaicsSearch {
 	country: string;
 	results: Naics[];
 }
+
+/** Normalized SWIFT/BIC syntax and available institution identity. */
+export interface SwiftCode {
+	swift: string;
+	/** Syntax only, not registration or payment reachability. */
+	valid: boolean;
+	/** Country letters in the code. Null when the format is invalid. */
+	country: string | null;
+	/** Institution name. Null when unknown or ambiguous; may include a branch qualifier. */
+	name: string | null;
+}
