@@ -308,7 +308,7 @@ export interface VatDeep {
 	name: string | null;
 	address: VatAddress | null;
 	consultation: string | null;
-	/** Registry timestamp of this check, ISO. */
+	/** Registry-provided check time, or null when unavailable. */
 	consulted_at: string | null;
 }
 
@@ -582,6 +582,7 @@ export interface Bin {
 	prepaid: boolean | null;
 	deep?: Record<string, never>;
 }
+
 
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 export interface DnsRecord {
@@ -1002,6 +1003,7 @@ export interface AddressSearch {
 export interface CompanyCountry {
 	name: string | null;
 	blocs: string[];
+	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
 	tax: string | null;
 }
 

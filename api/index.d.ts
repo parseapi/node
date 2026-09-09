@@ -274,7 +274,7 @@ interface VatDeep {
     name: string | null;
     address: VatAddress | null;
     consultation: string | null;
-    /** Registry timestamp of this check, ISO. */
+    /** Registry-provided check time, or null when unavailable. */
     consulted_at: string | null;
 }
 interface Vat {
@@ -900,6 +900,7 @@ interface AddressSearch {
 interface CompanyCountry {
     name: string | null;
     blocs: string[];
+    /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
     tax: string | null;
 }
 interface CompanyDeep {
