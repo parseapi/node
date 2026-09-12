@@ -250,14 +250,16 @@ interface PostalDistance {
     distance_mi: number;
 }
 interface EmailDeep {
-    deliverable: boolean;
-    catchall: boolean;
+    deliverable: boolean | null;
+    catchall: boolean | null;
 }
 interface Email {
     email: string;
     didyoumean: string | null;
     valid: boolean;
+    free: boolean;
     domain: string | null;
+    domain_type: 'academic' | 'government' | 'military' | null;
     domain_valid: boolean | null;
     role: boolean;
     disposable: boolean;
