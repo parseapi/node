@@ -1255,8 +1255,6 @@ export interface LanguageDeep {
 export interface NameDeep {
 	/** Name membership is independent of gender. */
 	known: boolean;
-	/** Associated countries, not the person's nationality. */
-	countries: string[];
 	gender: 'male' | 'female' | null;
 	salutation: 'Mr' | 'Ms' | null;
 }
