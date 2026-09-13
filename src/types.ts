@@ -579,7 +579,10 @@ export interface Bin {
 	prefix: string | null;
 	country: string | null;
 	issuer: string | null;
+	/** Network key (visa, amex) or co-branded combination. */
 	brand: string | null;
+	/** Display name for brand (American Express). */
+	brand_name: string | null;
 	type: string | null;
 	prepaid: boolean | null;
 	deep?: Record<string, never>;

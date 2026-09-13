@@ -522,6 +522,7 @@ interface Bin {
     country: string | null;
     issuer: string | null;
     brand: string | null;
+    brand_name: string | null;
     type: string | null;
     prepaid: boolean | null;
     deep?: Record<string, never>;
