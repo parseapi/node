@@ -1106,6 +1106,16 @@ export interface CountryDeep {
 	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
 	population_period?: string | null;
 	area: number | null;
+	/** Land area in km2. */
+	land_area?: number | null;
+	/** Water area in km2. */
+	water_area?: number | null;
+	/** Coastline length in km. Zero is a known landlocked coastline. */
+	coastline?: number | null;
+	/** Mean elevation in metres above sea level. */
+	elevation?: number | null;
+	lowest_point?: CountryElevationPoint | null;
+	highest_point?: CountryElevationPoint | null;
 	tld: string | null;
 	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
 	tax?: string | null;
@@ -1130,6 +1140,12 @@ export interface CountryDeep {
 	ioc: string | null;
 	fifa: string | null;
 	plate: string | null;
+}
+
+export interface CountryElevationPoint {
+	name: string | null;
+	/** Elevation in metres above sea level. Values below sea level are negative. */
+	elevation: number;
 }
 
 export interface StateDeep {
