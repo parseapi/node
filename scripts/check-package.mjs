@@ -14,7 +14,12 @@ try {
   execFileSync('tar', ['-xzf', join(consumer, packed.filename), '--strip-components=1', '-C', installed]);
   const body = `
 async function main() {
-  const parse = parseAPI('fixture', { fetch: async () => new Response('{"country":"US"}') });
+  const parse = parseAPI('fixture', { fetch: async (_input, init) => {
+    const headers = new Headers(init?.headers);
+    if (headers.get('Parse-Version') !== '2.0.0') throw new Error('Packaged SDK must pin API 2.0.0');
+    if (headers.get('X-API-Key') !== 'fixture') throw new Error('Packaged SDK must preserve credentials');
+    return new Response('{"country":"US"}');
+  } });
   await parse.country('US');
   await parse.country.states('US', { signal: new AbortController().signal });
   await parse.timezone.at(0, 0);

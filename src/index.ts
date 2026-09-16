@@ -60,6 +60,7 @@ import type {
 export * from './types.js';
 
 const VERSION = '0.5.0';
+const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -303,7 +304,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				try {
 					res = await doFetch(url, {
 						redirect: 'manual',
-						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...headers },
+						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...headers, 'Parse-Version': API_VERSION },
 						signal: controller.signal,
 					});
 				} catch (error) {
