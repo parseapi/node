@@ -36,6 +36,22 @@ afterEach(() => {
 });
 
 describe('url mapping', () => {
+	it('shares an explicit output language without changing other options or later calls', async () => {
+		const { parse, calls } = stubClient(() => jsonResponse({ name: 'Allemagne' }));
+		const options = Object.freeze({ lang: 'fr-CA', deep: true as const });
+		await parse.country('DE', options);
+		await parse.country('DE');
+		await parse.date('03/04/2026', { lang: 'de', format: 'mdy', deep: true });
+		await parse.measure.units({ lang: 'ja', type: 'length' });
+		await parse.emoji.search('cœur', { lang: 'fr', limit: 4 });
+		expect(new URL(calls[0]!.url).searchParams.get('lang')).toBe('fr-CA');
+		expect(new URL(calls[0]!.url).searchParams.get('deep')).toBe('true');
+		expect(new URL(calls[1]!.url).search).toBe('');
+		expect(new URL(calls[2]!.url).searchParams.get('format')).toBe('mdy');
+		expect(new URL(calls[3]!.url).searchParams.get('type')).toBe('length');
+		expect(new URL(calls[4]!.url).searchParams.get('q')).toBe('cœur');
+		expect(calls).toHaveLength(5);
+	});
 	const table: [string, (parse: ReturnType<typeof parseAPI>) => Promise<unknown>, string][] = [
 		['time default UTC', (p) => p.time(), 'https://api.parseapi.com/time'],
 		['time conversion', (p) => p.time('America/New_York', { at: '2026-09-05T15:00:00', to: 'Asia/Tokyo' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-09-05T15%3A00%3A00&to=Asia%2FTokyo'],

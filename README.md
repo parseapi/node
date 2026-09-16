@@ -19,7 +19,7 @@ Get a key at [parseapi.com](https://parseapi.com). The client also reads `PARSEA
 
 Choose your team's API version in [Dashboard → API version](https://parseapi.com/dashboard/versions). One setting applies to every key, including new and replacement keys. Existing teams keep `1.0.0`; new teams start on `2.0.0`. Keep the same keys and lookup URLs. Installing or upgrading the package does not change the team's setting.
 
-Published SDK `0.3.2` matches API `1.0.0`. The examples and response types in this source tree target API `2.0.0`, including changes that are not in `0.3.2`. Use a package release documented for your team's version. These types do not model every historical response; moving to `2.0.0` may require updating code that reads renamed, moved or removed fields.
+SDK `0.3.2` targets API `1.0.0`. SDK `0.4.0` and the examples and response types in this source tree target API `2.0.0`. Use a package release documented for your team's version. These types do not model every historical response; moving to `2.0.0` may require updating code that reads renamed, moved or removed fields.
 
 Test the target contract in a separate development team before changing your production team's version. A change applies to every integration in that team. See [API versions and migration](https://parseapi.com/docs/versioning).
 
@@ -44,6 +44,21 @@ Pass `country` when a postal code or national phone number needs disambiguation.
 Results are plain data. Pass a returned code or coordinate to another operation when the task needs it. Check nullable values before composing the next call.
 
 Name paid deep includes flat `short`, `directory`, and `initials` fields beside `gender` and `salutation`. `name_locale` selects CLDR formatting rules and defaults to `en`. It changes formatting only. Country remains gender context, and unavailable formatting is null. Older responses may omit these fields.
+
+## Display language
+
+This source candidate accepts an optional per-request `lang` on supported
+operations. It requires the matching API localization release and data.
+
+```ts
+const country = await parse.country('DE', { lang: 'fr' });
+// country: 'DE', name: 'Allemagne', name_local: 'Deutschland'
+```
+
+Only supported display fields change. Missing translations keep their source
+names. IDs, native-name fields, numeric facts, Date input `format`, and Measure
+input `locale` retain their meaning. Omitting `lang` preserves the existing
+behavior and does not inherit a previous request's choice.
 
 ## Calls
 
@@ -147,7 +162,7 @@ const place = await parse.postal('28202', { country: 'US', deep: true });
 const propertyTax = place.deep?.property_tax;
 ```
 
-Read `population_period` alongside `population`: a reporting year (`YYYY`) or period (`YYYY-YYYY`), null when unknown or unverifiable. Keep missing or null values unknown and preserve a known zero. These fields belong to full place profiles. State district lists include each district's population and period. Postal nearby and distance detail remains metropolitan associations only. Continent population and its period remain in core.
+Read `population_period` alongside `population`: a reporting year (`YYYY`) or period (`YYYY-YYYY`), null when unknown or unverifiable. Keep missing or null values unknown and preserve a known zero. These fields belong to full place profiles. State district lists include each district's population and period. Postal nearby and distance detail remains metropolitan associations only. Continent population stays in core; Continent has no `population_period` field.
 
 Point returns the timezone ID with the core location. Its optional deep detail adds terrain and compact nearest-city context on every plan. A nearest city is null when none is within 200 km.
 

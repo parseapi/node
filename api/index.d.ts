@@ -1255,6 +1255,10 @@ declare class ParseAPIError extends Error {
     readonly requestId: string | null;
     constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null);
 }
+/** Optional output language for supported display fields. Input parsing stays unchanged. */
+interface LanguageOption {
+    lang?: string;
+}
 interface RequestOptions {
     /** Cancel this call, including any retry wait. */
     signal?: AbortSignal;
@@ -1274,36 +1278,36 @@ interface ParseAPIOptions {
     fetch?: typeof fetch;
 }
 /** IP enrichment is included with a paid plan. `deep` does not use a separate check meter. */
-type IpOptions = DeepOption & RequestOptions;
-type IpSelfOptions = DeepOption & RequestOptions;
-type ContinentOptions = RequestOptions;
-type ContinentCountriesOptions = RequestOptions;
+type IpOptions = LanguageOption & DeepOption & RequestOptions;
+type IpSelfOptions = LanguageOption & DeepOption & RequestOptions;
+type ContinentOptions = LanguageOption & RequestOptions;
+type ContinentCountriesOptions = LanguageOption & RequestOptions;
 type BlocOptions = RequestOptions;
-type BlocCountriesOptions = RequestOptions;
-type CountryOptions = DeepOption & RequestOptions;
-type CountryStatesOptions = RequestOptions;
-type StateOptions = {
+type BlocCountriesOptions = LanguageOption & RequestOptions;
+type CountryOptions = LanguageOption & DeepOption & RequestOptions;
+type CountryStatesOptions = LanguageOption & RequestOptions;
+type StateOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
-type StateDistrictsOptions = {
+type StateDistrictsOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
-type DistrictOptions = {
-    country?: string;
-    state?: string;
-} & DeepOption & RequestOptions;
-type CityOptions = {
+type DistrictOptions = LanguageOption & {
     country?: string;
     state?: string;
 } & DeepOption & RequestOptions;
-type CityIdOptions = DeepOption & RequestOptions;
-type CitySearchOptions = {
+type CityOptions = LanguageOption & {
+    country?: string;
+    state?: string;
+} & DeepOption & RequestOptions;
+type CityIdOptions = LanguageOption & DeepOption & RequestOptions;
+type CitySearchOptions = LanguageOption & {
     country?: string;
     state?: string;
     limit?: number;
 } & DeepOption & RequestOptions;
-type CityNearestOptions = DeepOption & RequestOptions;
-type CityNearbyOptions = {
+type CityNearestOptions = LanguageOption & DeepOption & RequestOptions;
+type CityNearbyOptions = LanguageOption & {
     radius?: number;
     unit?: 'km' | 'mi';
     country?: string;
@@ -1311,15 +1315,15 @@ type CityNearbyOptions = {
     limit?: number;
 } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
-type PostalOptions = {
+type PostalOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
-type PostalNearbyOptions = {
+type PostalNearbyOptions = LanguageOption & {
     country?: string;
     radius?: number;
     unit?: 'km' | 'mi';
 } & DeepOption & RequestOptions;
-type PostalDistanceOptions = {
+type PostalDistanceOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
 type AddressOptions = {
@@ -1338,7 +1342,7 @@ type AddressSearchOptions = {
     /** Actual end-user IP as an optional locality hint for server-side calls. */
     ip?: string;
 } & RequestOptions;
-type CompanyOptions = {
+type CompanyOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
@@ -1351,7 +1355,7 @@ type VatOptions = {
 type IbanOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
-type NpiOptions = DeepOption & RequestOptions;
+type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 type PhoneOptions = {
     country?: string;
@@ -1368,7 +1372,7 @@ type HlrOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
 type DomainOptions = DeepOption & RequestOptions;
-type AsnOptions = RequestOptions;
+type AsnOptions = LanguageOption & RequestOptions;
 type MacOptions = RequestOptions;
 /** Card-prefix reference lookup. Deep returns an empty object on every plan. */
 type BinOptions = DeepOption & RequestOptions;
@@ -1378,7 +1382,7 @@ type MeasureOptions = {
     locale?: string;
     system?: 'us' | 'imperial';
 } & RequestOptions;
-type MeasureUnitsOptions = {
+type MeasureUnitsOptions = LanguageOption & {
     query?: string;
     type?: string;
     unit?: string;
@@ -1402,38 +1406,38 @@ type TariffOptions = {
     origin?: string;
 } & DeepOption & RequestOptions;
 type TariffSearchOptions = RequestOptions;
-type CurrencyOptions = DeepOption & RequestOptions;
+type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 type CurrencyRateOptions = {
     date?: string;
     amount?: number;
 } & RequestOptions;
-type LanguageOptions = DeepOption & RequestOptions;
+type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 type NameOptions = {
     country?: string;
     /** CLDR name-formatting locale, such as en or ja. Defaults to en. */
     name_locale?: string;
 } & DeepOption & RequestOptions;
-type TimeOptions = {
+type TimeOptions = LanguageOption & {
     at?: string;
     to?: string;
 } & DeepOption & RequestOptions;
-type TimeAtOptions = {
+type TimeAtOptions = LanguageOption & {
     at?: string;
     to?: string;
 } & DeepOption & RequestOptions;
-type TimezoneOptions = {
+type TimezoneOptions = LanguageOption & {
     at?: string;
     to?: string;
 } & DeepOption & RequestOptions;
-type TimezoneAtOptions = {
+type TimezoneAtOptions = LanguageOption & {
     at?: string;
 } & DeepOption & RequestOptions;
-type DateOptions = {
+type DateOptions = LanguageOption & {
     format?: 'mdy' | 'dmy';
     to?: string;
 } & DeepOption & RequestOptions;
-type DateTodayOptions = {
+type DateTodayOptions = LanguageOption & {
     to?: string;
 } & DeepOption & RequestOptions;
 type HolidayOptions = {
@@ -1442,14 +1446,14 @@ type HolidayOptions = {
 type HolidayDateOptions = RequestOptions;
 type ElevationOptions = RequestOptions;
 /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
-type PointOptions = DeepOption & RequestOptions;
+type PointOptions = LanguageOption & DeepOption & RequestOptions;
 /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
 type WeatherOptions = DeepOption & {
     /** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
     date?: string;
 } & RequestOptions;
-type EmojiOptions = DeepOption & RequestOptions;
-type EmojiSearchOptions = {
+type EmojiOptions = LanguageOption & DeepOption & RequestOptions;
+type EmojiSearchOptions = LanguageOption & {
     limit?: number;
 } & DeepOption & RequestOptions;
 interface DeepOption {
@@ -1562,4 +1566,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PropertyTax, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PropertyTax, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

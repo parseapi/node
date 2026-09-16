@@ -59,7 +59,7 @@ import type {
 
 export * from './types.js';
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -87,6 +87,11 @@ export class ParseAPIError extends Error {
 	}
 }
 
+/** Optional output language for supported display fields. Input parsing stays unchanged. */
+export interface LanguageOption {
+	lang?: string;
+}
+
 export interface RequestOptions {
 	/** Cancel this call, including any retry wait. */
 	signal?: AbortSignal;
@@ -108,26 +113,26 @@ export interface ParseAPIOptions {
 }
 
 /** IP enrichment is included with a paid plan. `deep` does not use a separate check meter. */
-export type IpOptions = DeepOption & RequestOptions;
-export type IpSelfOptions = DeepOption & RequestOptions;
-export type ContinentOptions = RequestOptions;
-export type ContinentCountriesOptions = RequestOptions;
+export type IpOptions = LanguageOption & DeepOption & RequestOptions;
+export type IpSelfOptions = LanguageOption & DeepOption & RequestOptions;
+export type ContinentOptions = LanguageOption & RequestOptions;
+export type ContinentCountriesOptions = LanguageOption & RequestOptions;
 export type BlocOptions = RequestOptions;
-export type BlocCountriesOptions = RequestOptions;
-export type CountryOptions = DeepOption & RequestOptions;
-export type CountryStatesOptions = RequestOptions;
-export type StateOptions = { country?: string } & DeepOption & RequestOptions;
-export type StateDistrictsOptions = { country?: string } & DeepOption & RequestOptions;
-export type DistrictOptions = { country?: string; state?: string } & DeepOption & RequestOptions;
-export type CityOptions = { country?: string; state?: string } & DeepOption & RequestOptions;
-export type CityIdOptions = DeepOption & RequestOptions;
-export type CitySearchOptions = { country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
-export type CityNearestOptions = DeepOption & RequestOptions;
-export type CityNearbyOptions = { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
+export type BlocCountriesOptions = LanguageOption & RequestOptions;
+export type CountryOptions = LanguageOption & DeepOption & RequestOptions;
+export type CountryStatesOptions = LanguageOption & RequestOptions;
+export type StateOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+export type StateDistrictsOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+export type DistrictOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
+export type CityOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
+export type CityIdOptions = LanguageOption & DeepOption & RequestOptions;
+export type CitySearchOptions = LanguageOption & { country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
+export type CityNearestOptions = LanguageOption & DeepOption & RequestOptions;
+export type CityNearbyOptions = LanguageOption & { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
-export type PostalOptions = { country?: string } & DeepOption & RequestOptions;
-export type PostalNearbyOptions = { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
-export type PostalDistanceOptions = { country?: string } & DeepOption & RequestOptions;
+export type PostalOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+export type PostalNearbyOptions = LanguageOption & { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
+export type PostalDistanceOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type AddressOptions = { country?: string } & DeepOption & RequestOptions;
 /** Address suggestions report why a result is empty. Operational failures remain errors. */
 export type AddressSearchOptions = {
@@ -142,13 +147,13 @@ export type AddressSearchOptions = {
 	/** Actual end-user IP as an optional locality hint for server-side calls. */
 	ip?: string;
 } & RequestOptions;
-export type CompanyOptions = { country?: string } & DeepOption & RequestOptions;
+export type CompanyOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
 export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
-export type NpiOptions = DeepOption & RequestOptions;
+export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
@@ -157,13 +162,13 @@ export type CallerOptions = { country?: string } & RequestOptions;
 /** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 export type HlrOptions = { country?: string } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
-export type AsnOptions = RequestOptions;
+export type AsnOptions = LanguageOption & RequestOptions;
 export type MacOptions = RequestOptions;
 /** Card-prefix reference lookup. Deep returns an empty object on every plan. */
 export type BinOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
-export type MeasureUnitsOptions = { query?: string; type?: string; unit?: string } & RequestOptions;
+export type MeasureUnitsOptions = LanguageOption & { query?: string; type?: string; unit?: string } & RequestOptions;
 /** Published DNS records. Omit type to check all ten supported types. Values retain DNS presentation syntax. */
 export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
@@ -179,33 +184,33 @@ export type TariffOptions = {
 	origin?: string;
 } & DeepOption & RequestOptions;
 export type TariffSearchOptions = RequestOptions;
-export type CurrencyOptions = DeepOption & RequestOptions;
+export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
-export type LanguageOptions = DeepOption & RequestOptions;
+export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 export type NameOptions = {
 	country?: string;
 	/** CLDR name-formatting locale, such as en or ja. Defaults to en. */
 	name_locale?: string;
 } & DeepOption & RequestOptions;
-export type TimeOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
-export type TimeAtOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
-export type TimezoneOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
-export type TimezoneAtOptions = { at?: string } & DeepOption & RequestOptions;
-export type DateOptions = { format?: 'mdy' | 'dmy'; to?: string } & DeepOption & RequestOptions;
-export type DateTodayOptions = { to?: string } & DeepOption & RequestOptions;
+export type TimeOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimeAtOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimezoneOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
+export type TimezoneAtOptions = LanguageOption & { at?: string } & DeepOption & RequestOptions;
+export type DateOptions = LanguageOption & { format?: 'mdy' | 'dmy'; to?: string } & DeepOption & RequestOptions;
+export type DateTodayOptions = LanguageOption & { to?: string } & DeepOption & RequestOptions;
 export type HolidayOptions = { year?: number } & RequestOptions;
 export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
 /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
-export type PointOptions = DeepOption & RequestOptions;
+export type PointOptions = LanguageOption & DeepOption & RequestOptions;
 /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
 export type WeatherOptions = DeepOption & {
 	/** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
 	date?: string;
 } & RequestOptions;
-export type EmojiOptions = DeepOption & RequestOptions;
-export type EmojiSearchOptions = { limit?: number } & DeepOption & RequestOptions;
+export type EmojiOptions = LanguageOption & DeepOption & RequestOptions;
+export type EmojiSearchOptions = LanguageOption & { limit?: number } & DeepOption & RequestOptions;
 
 interface DeepOption {
 	/** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
@@ -273,7 +278,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	validateRetries(configuredRetries);
 	const doFetch = options.fetch ?? fetch;
 
-	async function request<T>(path: string, query?: Query, headers?: Record<string, string>, controls: RequestOptions = {}): Promise<T> {
+	async function request<T>(path: string, query?: Query, headers?: Record<string, string>, controls: RequestOptions & LanguageOption = {}): Promise<T> {
 		const signal = controls.signal;
 		signal?.throwIfAborted();
 		const attemptTimeout = controls.timeoutMs ?? timeoutMs;
@@ -281,6 +286,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		validateTimeout(attemptTimeout);
 		validateRetries(retries);
 		const url = new URL(baseUrl + path);
+		if (controls.lang !== undefined) url.searchParams.set('lang', controls.lang);
 		for (const [name, value] of Object.entries(query ?? {})) {
 			if (value !== undefined) url.searchParams.set(name, String(value));
 		}
