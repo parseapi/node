@@ -1274,10 +1274,14 @@ export interface LanguageDeep {
 }
 
 export interface NameDeep {
-	/** Name membership is independent of gender. */
-	known: boolean;
 	gender: 'male' | 'female' | null;
 	salutation: 'Mr' | 'Ms' | null;
+	/** Compact name using CLDR formatting rules. */
+	short?: string | null;
+	/** Name formatted for a directory listing. */
+	directory?: string | null;
+	/** Name initials using CLDR formatting rules. */
+	initials?: string | null;
 }
 
 export interface TimezoneDeep {

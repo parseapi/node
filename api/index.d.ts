@@ -1149,10 +1149,14 @@ interface LanguageDeep {
     countries: string[];
 }
 interface NameDeep {
-    /** Name membership is independent of gender. */
-    known: boolean;
     gender: 'male' | 'female' | null;
     salutation: 'Mr' | 'Ms' | null;
+    /** Compact name using CLDR formatting rules. */
+    short?: string | null;
+    /** Name formatted for a directory listing. */
+    directory?: string | null;
+    /** Name initials using CLDR formatting rules. */
+    initials?: string | null;
 }
 interface TimezoneDeep {
     name: string | null;
@@ -1404,9 +1408,11 @@ type CurrencyRateOptions = {
     amount?: number;
 } & RequestOptions;
 type LanguageOptions = DeepOption & RequestOptions;
-/** Country is an ISO2 context for paid deep name evidence. */
+/** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 type NameOptions = {
     country?: string;
+    /** CLDR name-formatting locale, such as en or ja. Defaults to en. */
+    name_locale?: string;
 } & DeepOption & RequestOptions;
 type TimeOptions = {
     at?: string;

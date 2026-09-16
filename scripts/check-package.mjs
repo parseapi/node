@@ -20,6 +20,10 @@ async function main() {
   await parse.timezone.at(0, 0);
   await parse.city.search('den', { country: 'US' });
   await parse.address.search('1600 Penn', { country: 'US' });
+  const oldName = parse.name;
+  await oldName('Andrea');
+  const name = await parse.name('Robert James Smith', { deep: true, name_locale: 'en-GB' });
+  const initials: string | null | undefined = name.deep?.initials;
   const company = await parse.company(' ');
   const number: string | null = company.company;
   const tariff: Promise<Tariff> = parse.tariff('8471.30.01.00');

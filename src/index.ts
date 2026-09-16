@@ -182,8 +182,12 @@ export type TariffSearchOptions = RequestOptions;
 export type CurrencyOptions = DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = DeepOption & RequestOptions;
-/** Country is an ISO2 context for paid deep name evidence. */
-export type NameOptions = { country?: string } & DeepOption & RequestOptions;
+/** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
+export type NameOptions = {
+	country?: string;
+	/** CLDR name-formatting locale, such as en or ja. Defaults to en. */
+	name_locale?: string;
+} & DeepOption & RequestOptions;
 export type TimeOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
 export type TimeAtOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
 export type TimezoneOptions = { at?: string; to?: string } & DeepOption & RequestOptions;
@@ -548,7 +552,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, deepQuery(opts), undefined, opts),
 
-		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country, ...deepQuery(opts), name_locale: opts?.name_locale }, undefined, opts),
 
 		/** Current local time, UTC by default. With to, offsetless at is source wall time. */
 		time: Object.assign(
