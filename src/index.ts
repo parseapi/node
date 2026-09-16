@@ -59,7 +59,7 @@ import type {
 
 export * from './types.js';
 
-const VERSION = '0.5.0';
+const VERSION = '1.0.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
