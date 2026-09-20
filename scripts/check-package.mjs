@@ -24,9 +24,15 @@ async function main() {
       if (task.operations[0].operation !== 'email' || task.budget_usd !== '2.50') throw new Error('Preflight task was changed');
       return new Response('{"estimate_only":true,"cost":{"maximum_usd":null},"budget":{"enforced":false}}');
     }
+    if (String(_input).includes('/email/')) return new Response(JSON.stringify({ email: 'jane+news@example.com', valid: true, deep: { deliverable: null, catchall: false, first_name: 'Jane', no_reply: false, tag: 'news', mail_provider: null, status: null, reason: null } }));
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
+  const email = await parse.email('jane+news@example.com', { deep: true });
+  const suggestedName: string | null | undefined = email.deep?.first_name;
+  const noReply: boolean | null | undefined = email.deep?.no_reply;
+  const verificationReason: string | null | undefined = email.deep?.reason;
+  if (suggestedName !== 'Jane' || noReply !== false || verificationReason !== null || email.deep?.tag !== 'news' || email.deep?.mail_provider !== null) throw new Error('Packed Email deep fields must preserve known, false and null values');
   const estimate = await parse.preflight({ operations: [{ operation: 'email', count: 100, deep: true }], budget_usd: '2.50' });
   const maximum: string | null = estimate.cost.maximum_usd;
   if (maximum !== null || estimate.budget?.enforced !== false) throw new Error('Preflight must preserve unknowns and advisory budgets');

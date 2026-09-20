@@ -281,8 +281,19 @@ export interface PostalDistance {
 }
 
 export interface EmailDeep {
+	/** Suggested first name. Not a verified identity. */
+	first_name?: string | null;
+	no_reply?: boolean | null;
+	/** Plus-address tag, without the plus sign. */
+	tag?: string | null;
+	/** Mail service handling the address, such as Google or Microsoft. */
+	mail_provider?: string | null;
 	deliverable: boolean | null;
 	catchall: boolean | null;
+	/** Mailbox status: deliverable, undeliverable or risky. Null when unavailable. */
+	status?: string | null;
+	/** Why the address received this result, such as mailbox_full or mailbox_not_found. Null when unavailable. */
+	reason?: string | null;
 }
 
 export interface Email {
