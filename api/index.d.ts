@@ -1243,6 +1243,102 @@ interface PropertyTax {
     period: string;
 }
 
+/** A proposed task contains operation counts, never lookup inputs. */
+interface PreflightOperation {
+    operation: 'email' | 'domain' | 'dns' | 'mx' | 'country';
+    /** Positive integer, at most 100000. */
+    count: number;
+    deep?: boolean;
+}
+interface PreflightTask {
+    /** One to twenty rows, totaling at most 100000 lookups. */
+    operations: PreflightOperation[];
+    /** Nonnegative USD decimal string with at most two fractional digits. Advisory, never an enforced cap. */
+    budget_usd?: string;
+}
+interface PreflightOperationEstimate {
+    operation: string;
+    count: number;
+    deep: boolean;
+    permitted: boolean;
+    reason: string | null;
+    /** Attempts per lookup under the default SDK retry policy. */
+    max_http_attempts: number;
+    pooled_requests_max: number;
+    metered_units_max: number;
+}
+interface PreflightCost {
+    currency: string;
+    status: string;
+    minimum_usd: string;
+    /** Additional charges assuming included units are exhausted. Null when the effective rate is unknown. */
+    maximum_usd: string | null;
+    /** Additional charges using currently unallocated included units. */
+    projected_maximum_usd: string | null;
+    on_demand_unit_price_usd: string | null;
+}
+interface PreflightPooledCapacity {
+    advisory: true;
+    required_max: number;
+    policy: string | null;
+    limit: number | null;
+    used_at_snapshot: number | null;
+    remaining_at_snapshot: number | null;
+    /** Unix seconds, or null when no active grace deadline is known. */
+    grace_until: number | null;
+    /** Unix seconds. */
+    reset_at: number;
+    allowed_at_snapshot: boolean | null;
+    status: string;
+}
+interface PreflightEmailCapacity {
+    advisory: true;
+    required_max: number;
+    included_limit: number;
+    reserved_at_snapshot: number | null;
+    unallocated_included_at_snapshot: number | null;
+    projected_overage_units_max: number | null;
+    on_demand_enabled: boolean | null;
+    fits_unallocated_capacity: boolean | null;
+    /** Unix seconds. */
+    reset_at: number;
+}
+interface PreflightSpendCapacity {
+    advisory: true;
+    currency: string;
+    cap_usd: string | null;
+    cap_status: string;
+    reserved_usd_at_snapshot: string | null;
+    unallocated_usd_at_snapshot: string | null;
+    /** Unix seconds. */
+    reset_at: number;
+}
+/** A credential-specific estimate. Counters are advisory and can change during execution. */
+interface Preflight {
+    schema_version: string;
+    api_version: string;
+    /** ISO 8601 evaluation time. */
+    evaluated_at: string;
+    estimate_only: true;
+    supported: boolean;
+    /** Permission for the requested features, separate from available capacity. */
+    permitted: boolean;
+    operations: PreflightOperationEstimate[];
+    cost: PreflightCost;
+    capacity: {
+        pooled_requests: PreflightPooledCapacity;
+        email_verifications: PreflightEmailCapacity;
+        shared_on_demand_spend: PreflightSpendCapacity;
+    };
+    budget?: {
+        amount_usd: string;
+        within_maximum: boolean | null;
+        enforced: false;
+    };
+    assumptions: string[];
+    warnings: string[];
+}
+
 /** Every non-2xx response from the API. Branch on `code`, never on `message`. */
 declare class ParseAPIError extends Error {
     /** HTTP status */
@@ -1461,6 +1557,8 @@ interface DeepOption {
     deep?: boolean;
 }
 declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
+    /** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
+    preflight: (task: PreflightTask, opts?: RequestOptions) => Promise<Preflight>;
     /** Look up an IP. `deep: true` adds enrichment included with a paid plan, without a separate check meter. */
     ip: ((ip: string, opts?: IpOptions) => Promise<Ip>) & {
         /** Look up the public IP making this request. On a server, this is the server's IP. */
@@ -1566,4 +1664,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PropertyTax, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

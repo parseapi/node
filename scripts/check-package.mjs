@@ -18,9 +18,18 @@ async function main() {
     const headers = new Headers(init?.headers);
     if (headers.get('Parse-Version') !== '2.0.0') throw new Error('Packaged SDK must pin API 2.0.0');
     if (headers.get('X-API-Key') !== 'fixture') throw new Error('Packaged SDK must preserve credentials');
+    if (String(_input).endsWith('/preflight')) {
+      if (init?.method !== 'POST' || headers.get('Content-Type') !== 'application/json') throw new Error('Preflight must use JSON POST');
+      const task = JSON.parse(String(init?.body));
+      if (task.operations[0].operation !== 'email' || task.budget_usd !== '2.50') throw new Error('Preflight task was changed');
+      return new Response('{"estimate_only":true,"cost":{"maximum_usd":null},"budget":{"enforced":false}}');
+    }
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
+  const estimate = await parse.preflight({ operations: [{ operation: 'email', count: 100, deep: true }], budget_usd: '2.50' });
+  const maximum: string | null = estimate.cost.maximum_usd;
+  if (maximum !== null || estimate.budget?.enforced !== false) throw new Error('Preflight must preserve unknowns and advisory budgets');
   await parse.country.states('US', { signal: new AbortController().signal });
   await parse.timezone.at(0, 0);
   await parse.city.search('den', { country: 'US' });

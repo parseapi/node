@@ -56,10 +56,12 @@ import type {
 	Vin,
 	Weather,
 } from './types.js';
+import type { Preflight, PreflightTask } from './preflight.js';
 
 export * from './types.js';
+export * from './preflight.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -279,13 +281,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	validateRetries(configuredRetries);
 	const doFetch = options.fetch ?? fetch;
 
-	async function request<T>(path: string, query?: Query, headers?: Record<string, string>, controls: RequestOptions & LanguageOption = {}): Promise<T> {
+	async function request<T>(path: string, query?: Query, headers?: Record<string, string>, controls: RequestOptions & LanguageOption = {}, json?: unknown): Promise<T> {
 		const signal = controls.signal;
 		signal?.throwIfAborted();
 		const attemptTimeout = controls.timeoutMs ?? timeoutMs;
 		const retries = controls.retries ?? configuredRetries ?? (metered(path, query) ? 0 : DEFAULT_RETRIES);
 		validateTimeout(attemptTimeout);
 		validateRetries(retries);
+		const body = json === undefined ? undefined : JSON.stringify(json);
 		const url = new URL(baseUrl + path);
 		if (controls.lang !== undefined) url.searchParams.set('lang', controls.lang);
 		for (const [name, value] of Object.entries(query ?? {})) {
@@ -304,7 +307,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				try {
 					res = await doFetch(url, {
 						redirect: 'manual',
-						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...headers, 'Parse-Version': API_VERSION },
+						...(body === undefined ? {} : { method: 'POST', body }),
+						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers, 'Parse-Version': API_VERSION },
 						signal: controller.signal,
 					});
 				} catch (error) {
@@ -356,6 +360,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 
 	return {
+		/** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
+		preflight: (task: PreflightTask, opts?: RequestOptions): Promise<Preflight> =>
+			request('/preflight', undefined, undefined, opts, task),
+
 		/** Look up an IP. `deep: true` adds enrichment included with a paid plan, without a separate check meter. */
 		ip: Object.assign(
 			(ip: string, opts?: IpOptions): Promise<Ip> => request(`/ip/${enc(ip)}`, deepQuery(opts), undefined, opts),

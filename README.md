@@ -17,13 +17,29 @@ Get a key at [parseapi.com](https://parseapi.com). The client also reads `PARSEA
 
 ## API versions
 
-Version 1.0.0 explicitly selects the API contract supported by this SDK. It sends `Parse-Version: 2.0.0` on every lookup so responses match the API contract supported by the package. Your key and the team's saved default stay the same.
+Version 1.1.0 explicitly selects the API contract supported by this SDK. It sends `Parse-Version: 2.0.0` on every lookup so responses match the API contract supported by the package. Your key and the team's saved default stay the same.
 
 Upgrade the dependency in staging, review the [release notes](https://parseapi.com/docs/releases), and test the application before deploying the same code and dependency version to production. Commit your dependency lockfile so the tested package travels with your deployment. Future major SDK upgrades can select a newer API contract.
 
 Previously published SDKs keep their existing behavior and use the team's default. Requests without `Parse-Version` also use that default, managed in [Dashboard API version](https://parseapi.com/dashboard/versions). Keep it unchanged while older applications depend on it. Rolling back to an SDK without a version header restores the team default, so rollback only restores the old contract when that default has stayed unchanged.
 
 The package owns its supported API version. For direct HTTP integrations, an explicit `Parse-Version` header selects a supported contract. See [API versions and migration](https://parseapi.com/docs/versioning).
+
+## Task preflight
+
+Use a secret key to estimate access, advisory capacity and additional charges before a task. Preflight is available with API contract `2.0.0`.
+
+```ts
+const estimate = await parse.preflight({
+  operations: [{ operation: 'email', count: 100, deep: true }],
+  budget_usd: '2.50',
+});
+console.log(estimate.permitted, estimate.cost, estimate.capacity, estimate.budget);
+```
+
+Preflight accepts Email, Domain, DNS, MX and Country, with at most 20 rows and 100,000 total lookups. Supply operation counts without personal data or lookup inputs. Monetary values use decimal strings. The maximum assumes included Email checks are exhausted. The projection uses currently unallocated included checks. Rates come from the credential's accepted terms.
+
+Check `permitted`, `cost.status`, `capacity` and the optional `budget.within_maximum` together. Unknown values remain null. Capacity can change with concurrent work. Preflight reserves no units or money, performs no paid checks and does not enforce the supplied budget. It uses the normal request rate limit. Estimates allow up to three attempts per ordinary lookup and one per Email Deep lookup. Extra retries or calls require a new estimate. Subscription fees, tax and model costs are excluded.
 
 ## Weather from a postal code
 
