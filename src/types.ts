@@ -546,6 +546,35 @@ export interface MxRecord {
 	host: string;
 }
 
+export interface StackTechnology {
+	technology: string;
+	name: string;
+	version: string | null;
+}
+
+export interface Stack {
+	domain: string;
+	url: string;
+	/** Time of the check, or null when no HTML page could be checked. */
+	checked_at: string | null;
+	scope: 'homepage' | 'site';
+	/** Number of successfully checked HTML pages. */
+	pages: number;
+	/** True for homepage-only or incomplete bounded checks; null when no HTML page could be checked. False never guarantees every page was visited. */
+	partial: boolean | null;
+	/** Collections are null when no HTML page could be checked and empty when no matches were found. */
+	cms: StackTechnology[] | null;
+	servers: StackTechnology[] | null;
+	frameworks: StackTechnology[] | null;
+	ecommerce: StackTechnology[] | null;
+	analytics: StackTechnology[] | null;
+	chat: StackTechnology[] | null;
+	payments: StackTechnology[] | null;
+	hosting: StackTechnology[] | null;
+	/** Empty only when the generic deep compatibility flag was requested. */
+	deep?: Record<string, never>;
+}
+
 export interface DomainRegistration {
 	registered: boolean;
 	created: string | null;

@@ -24,6 +24,7 @@ import type {
 	DateInfo,
 	District,
 	Dns,
+	Stack,
 	Domain,
 	Elevation,
 	Email,
@@ -107,7 +108,7 @@ export interface RequestOptions {
 export interface ParseAPIOptions {
 	/** Override https://api.parseapi.com (tests, canaries). Also read from PARSEAPI_BASE_URL. */
 	baseUrl?: string;
-	/** Per-attempt timeout in milliseconds. Default 10000. */
+	/** Per-attempt timeout in milliseconds. Defaults to 35000 for Stack and 10000 otherwise. An explicit value applies to every operation. */
 	timeoutMs?: number;
 	/** Retries after the first attempt on network errors / 429 / 5xx. Default 2 for ordinary calls, 0 for paid checks. An explicit count overrides both. */
 	retries?: number;
@@ -164,6 +165,8 @@ export type CarrierOptions = { country?: string } & DeepOption & RequestOptions;
 export type CallerOptions = { country?: string } & RequestOptions;
 /** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 export type HlrOptions = { country?: string } & DeepOption & RequestOptions;
+/** Public website hostname only. Optional formatting and request controls. */
+export type StackOptions = { pretty?: boolean } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = LanguageOption & RequestOptions;
 export type MacOptions = RequestOptions;
@@ -275,7 +278,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	}
 
 	const baseUrl = (options.baseUrl ?? env('PARSEAPI_BASE_URL') ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
-	const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+	const configuredTimeoutMs = options.timeoutMs;
+	const timeoutMs = configuredTimeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const configuredRetries = options.retries;
 	validateTimeout(timeoutMs);
 	validateRetries(configuredRetries);
@@ -284,7 +288,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	async function request<T>(path: string, query?: Query, headers?: Record<string, string>, controls: RequestOptions & LanguageOption = {}, json?: unknown): Promise<T> {
 		const signal = controls.signal;
 		signal?.throwIfAborted();
-		const attemptTimeout = controls.timeoutMs ?? timeoutMs;
+		const attemptTimeout = controls.timeoutMs ?? configuredTimeoutMs ?? (path.startsWith('/stack/') ? 35000 : timeoutMs);
 		const retries = controls.retries ?? configuredRetries ?? (metered(path, query) ? 0 : DEFAULT_RETRIES);
 		validateTimeout(attemptTimeout);
 		validateRetries(retries);
@@ -497,6 +501,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		/** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
 		hlr: (number: string, opts?: HlrOptions): Promise<Hlr> =>
 			request(`/hlr/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+
+		/** Identify website technologies by category, with homepage or bounded site coverage metadata. */
+		stack: (domain: string, opts?: StackOptions): Promise<Stack> =>
+			request(`/stack/${enc(domain)}`, { ...deepQuery(opts), pretty: opts?.pretty }, undefined, opts),
 
 		/** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
 		domain: (domain: string, opts?: DomainOptions): Promise<Domain> =>
