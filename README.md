@@ -88,7 +88,7 @@ await parse.ip.self();
 await parse.email('hello@gmail.com');
 await parse.vat('DE136695976');
 await parse.iban('DE89370400440532013000');
-await parse.bin('424242');
+await parse.card('424242');
 await parse.npi('1881018208');
 await parse.phone('+14155552671');
 await parse.carrier('+14155552671');
@@ -273,11 +273,33 @@ Ordinary lookups retry network failures, 429, and 500/502/503/504 responses twic
 
 An explicit `retries` setting on the client or call overrides those defaults. Another attempt can consume additional usage if the earlier response was lost. Cancellation stops the request and any retry wait. Automatic redirects are disabled.
 
+Automatic retries wait at most five seconds per attempt. A longer valid `Retry-After` returns the original API error immediately without retrying early. Read `retryAfter` on the error for the original header, or null when absent.
+
 ## Docs
 
 Full field reference for every endpoint: [parseapi.com/docs](https://parseapi.com/docs)
 
-BIN lookup accepts 6-11 digits as a string, including leading zeros. Spaces and hyphens are accepted. `prefix` is the actual longest match and can be shorter than the input. Unknown reference fields are null. `deep` adds an empty object on every plan.
+## Card
+
+Card looks up issuer, network and type from a BIN/IIN. It accepts 6-11 digits as a string, including leading zeros. Spaces and hyphens are accepted. `prefix` is the actual longest match and can be shorter than the input. Unknown reference fields are null. The client rejects malformed or full card numbers before sending a request. Valid input is forwarded unchanged.
+
+Compare `prefix` with the normalized response `bin`. A matched row can still have all metadata unknown. Keep unknown prepaid status separate from true and false.
+
+```javascript
+const card = await parse.card('4242 42-99');
+let match;
+if (card.prefix === null) {
+  match = 'No reference match';
+} else if (card.prefix === card.bin) {
+  match = 'Exact prefix match';
+} else {
+  match = 'Broader prefix match';
+}
+const prepaid = card.prepaid === null
+  ? 'Unknown prepaid status'
+  : card.prepaid === true ? 'Prepaid' : 'Not prepaid';
+console.log(match, prepaid);
+```
 
 
 ## Optional detail

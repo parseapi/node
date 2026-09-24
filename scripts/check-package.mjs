@@ -14,6 +14,7 @@ try {
   execFileSync('tar', ['-xzf', join(consumer, packed.filename), '--strip-components=1', '-C', installed]);
   const body = `
 async function main() {
+	let cardRequests = 0;
   const parse = parseAPI('fixture', { fetch: async (_input, init) => {
     const headers = new Headers(init?.headers);
     if (headers.get('Parse-Version') !== '2.0.0') throw new Error('Packaged SDK must pin API 2.0.0');
@@ -27,9 +28,25 @@ async function main() {
     if (String(_input).includes('/stack/unavailable.example')) return new Response(JSON.stringify({ domain: 'unavailable.example', url: 'https://unavailable.example/', checked_at: null, scope: 'homepage', pages: 0, partial: null, cms: null, servers: null, frameworks: null, ecommerce: null, analytics: null, chat: null, payments: null, hosting: null, deep: {} }));
     if (String(_input).includes('/stack/')) return new Response(JSON.stringify({ domain: 'example.com', url: 'https://example.com/', checked_at: '2026-09-21T12:00:00Z', scope: 'site', pages: 6, partial: false, cms: [{ technology: 'wordpress', name: 'WordPress', version: '6.8.2' }, { technology: 'ghost', name: 'Ghost', version: null }], servers: [{ technology: 'nginx', name: 'nginx', version: null }, { technology: 'apache', name: 'Apache', version: null }], frameworks: [{ technology: 'nextjs', name: 'Next.js', version: null }], ecommerce: [], analytics: [], chat: [], payments: [], hosting: [], deep: {} }));
     if (String(_input).includes('/email/')) return new Response(JSON.stringify({ email: 'jane+news@example.com', valid: true, deep: { deliverable: null, catchall: false, first_name: 'Jane', no_reply: false, tag: 'news', mail_provider: null, status: null, reason: null } }));
+    const url = new URL(String(_input));
+    if (url.pathname.startsWith('/card/')) {
+      cardRequests++;
+      if (url.pathname !== '/card/00%201234-56' || url.search !== '') throw new Error('Packed Card must preserve and encode the BIN once');
+      return new Response(JSON.stringify({ bin: '00123456', prefix: '001234', country: null, issuer: null, brand: null, brand_name: null, type: null, prepaid: false }));
+    }
+    if (url.pathname === '/country/RETRY') return new Response('{"code":"rate_limited","message":"Wait","request_id":"req_fixture"}', { status: 429, headers: { 'Retry-After': '60' } });
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
+  const card: Card = await parse.card('00 1234-56');
+  if (card.bin !== '00123456' || card.prefix !== '001234' || card.prepaid !== false || card.country !== null || 'bin' in parse) throw new Error('Packed Card must preserve BIN fields with only the card method');
+  try { await parse.card('4242424242424242'); throw new Error('Card accepted a full number'); }
+  catch (error) { if (!(error instanceof TypeError)) throw error; }
+  if (cardRequests !== 1) throw new Error('Packed Card dispatched a rejected input');
+  try { await parse.country('RETRY'); throw new Error('Expected rate limit'); }
+  catch (error) {
+    if (!(error instanceof ParseAPIError) || error.retryAfter !== '60' || error.requestId !== 'req_fixture') throw error;
+  }
   const email = await parse.email('jane+news@example.com', { deep: true });
   const suggestedName: string | null | undefined = email.deep?.first_name;
   const noReply: boolean | null | undefined = email.deep?.no_reply;
@@ -59,8 +76,8 @@ async function main() {
 }
 main().catch(error => { throw error; });
 `;
-  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, type Tariff } from '@parseapi/sdk';\n" + body);
-  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI } = sdk;\ntype Tariff = sdk.Tariff;\n" + body);
+  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Tariff, type Card } from '@parseapi/sdk';\n" + body);
+  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Tariff = sdk.Tariff;\ntype Card = sdk.Card;\n" + body);
   execFileSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--strict', '--skipLibCheck', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--lib', 'ES2022,DOM', 'esm.mts', 'commonjs.cts'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['esm.mjs'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['commonjs.cjs'], { cwd: consumer, stdio: 'inherit' });

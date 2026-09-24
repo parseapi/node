@@ -1,7 +1,7 @@
 import type {
 	Asn,
 	Mac,
-	Bin,
+	Card,
 	Measure,
 	MeasureUnits,
 	Address,
@@ -80,14 +80,17 @@ export class ParseAPIError extends Error {
 	readonly docs: string | null;
 	/** Send this if you contact support */
 	readonly requestId: string | null;
+	/** Original Retry-After response header, when supplied. */
+	readonly retryAfter: string | null;
 
-	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null) {
+	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter: string | null = null) {
 		super(message);
 		this.name = 'ParseAPIError';
 		this.status = status;
 		this.code = code;
 		this.docs = docs;
 		this.requestId = requestId;
+		this.retryAfter = retryAfter;
 	}
 }
 
@@ -170,8 +173,8 @@ export type StackOptions = { pretty?: boolean } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = LanguageOption & RequestOptions;
 export type MacOptions = RequestOptions;
-/** Card-prefix reference lookup. Deep returns an empty object on every plan. */
-export type BinOptions = DeepOption & RequestOptions;
+/** Request controls for a card-prefix reference lookup. */
+export type CardOptions = RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
 export type MeasureUnitsOptions = LanguageOption & { query?: string; type?: string; unit?: string } & RequestOptions;
@@ -256,18 +259,23 @@ function metered(path: string, query?: Query): boolean {
 		|| (['email', 'vat', 'address'].includes(product ?? '') && query?.deep === true);
 }
 
-function retryDelayMs(attempt: number, retryAfter: string | null): number {
+// Null means the server's requested wait exceeds our automatic retry budget.
+function retryDelayMs(attempt: number, retryAfter: string | null): number | null {
 	if (retryAfter) {
-		const seconds = Number(retryAfter);
-		if (Number.isFinite(seconds) && seconds >= 0) {
-			return Math.min(seconds * 1000, RETRY_AFTER_CAP_MS);
+		const value = retryAfter.trim();
+		if (/^[0-9]+(?:\.[0-9]+)?$/.test(value)) {
+			const seconds = Number(value);
+			return seconds > RETRY_AFTER_CAP_MS / 1000 ? null : seconds * 1000;
 		}
-		if (Number.isNaN(seconds)) {
-			const date = Date.parse(retryAfter);
-			if (Number.isFinite(date)) return Math.min(Math.max(date - Date.now(), 0), RETRY_AFTER_CAP_MS);
+		if (/^[A-Za-z]{3,9},? /.test(value)) {
+			const date = Date.parse(value);
+			if (Number.isFinite(date)) {
+				const delay = Math.max(date - Date.now(), 0);
+				return delay > RETRY_AFTER_CAP_MS ? null : delay;
+			}
 		}
 	}
-	return Math.random() * 250 * 2 ** attempt;
+	return Math.random() * Math.min(250 * 2 ** Math.min(attempt, 16), RETRY_AFTER_CAP_MS);
 }
 
 export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
@@ -305,7 +313,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			const onAbort = () => controller.abort(signal!.reason);
 			signal?.addEventListener('abort', onAbort, { once: true });
 			const timer = setTimeout(() => controller.abort(new DOMException('Request timed out', 'TimeoutError')), attemptTimeout);
-			let retryAfter: string | null = null;
+			let retryDelay: number | null | undefined;
 			try {
 				let res: Response | undefined;
 				try {
@@ -331,8 +339,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						res = undefined;
 					}
 				}
-				if (res && RETRY_STATUS.has(res.status) && attempt < retries) {
-					retryAfter = res.headers.get('Retry-After');
+				if (res) retryDelay = retryDelayMs(attempt, res.headers.get('Retry-After'));
+				if (res && RETRY_STATUS.has(res.status) && attempt < retries && retryDelay !== null) {
 					await res.body?.cancel().catch(() => {});
 				} else if (res) {
 					let body: Record<string, unknown> = {};
@@ -348,14 +356,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						typeof body.code === 'string' ? body.code : 'unknown_error',
 						typeof body.message === 'string' ? body.message : `Request failed with status ${res.status}`,
 						typeof body.docs === 'string' ? body.docs : null,
-						typeof body.request_id === 'string' ? body.request_id : null
+						typeof body.request_id === 'string' ? body.request_id : null,
+						res.headers.get('Retry-After')
 					);
 				}
 			} finally {
 				clearTimeout(timer);
 				signal?.removeEventListener('abort', onAbort);
 			}
-			await sleep(retryDelayMs(attempt, retryAfter), signal);
+			await sleep(retryDelay ?? retryDelayMs(attempt, null)!, signal);
 		}
 	}
 
@@ -515,8 +524,12 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
 
 		/** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
-		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
-			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
+		card: async (bin: string, opts?: CardOptions): Promise<Card> => {
+			if (typeof bin !== 'string' || bin.length > 64 || !/^[0-9]{6,11}$/.test(bin.replace(/[ \t\r\n-]/g, ''))) {
+				throw new TypeError('parseAPI: Card requires a string containing 6 to 11 digits. Send a prefix only.');
+			}
+			return request(`/card/${enc(bin)}`, undefined, undefined, opts);
+		},
 
 		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
 		measure: Object.assign(

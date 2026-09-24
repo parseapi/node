@@ -622,7 +622,7 @@ export interface Mac {
 }
 
 /** Card-prefix reference data. Null means unknown, not an invalid payment card. */
-export interface Bin {
+export interface Card {
 	bin: string;
 	/** Actual longest matched prefix. May be shorter than the input. */
 	prefix: string | null;
@@ -634,7 +634,6 @@ export interface Bin {
 	brand_name: string | null;
 	type: string | null;
 	prepaid: boolean | null;
-	deep?: Record<string, never>;
 }
 
 
