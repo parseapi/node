@@ -419,11 +419,13 @@ export interface TariffMeasure {
 }
 
 export interface TariffDeep {
+	/** Open-string explanation when effective_rate is null. */
+	reason?: string | null;
 	/** The origin country the measures were resolved for. */
 	origin?: string | null;
-	/** Composed ad valorem percent. Null when the components do not compose cleanly. */
+	/** Composed ad valorem percent for matched stored measures only, not complete duty or landed cost. Null when the components do not compose cleanly. */
 	effective_rate?: number | null;
-	/** Every Chapter 99 tariff measure that applies to this code from this origin. */
+	/** Matching stored Chapter 99 schedule measures for this code and goods origin. */
 	measures?: TariffMeasure[] | null;
 	/** Units of quantity (No., kg). */
 	units: string[];
@@ -434,6 +436,10 @@ export interface TariffDeep {
 }
 
 export interface Tariff {
+	/** Exact immutable edition. Older servers may omit it. */
+	edition?: string;
+	/** Answering date, or null for an undated edition query. */
+	date?: string | null;
 	/** Normalized code with dots (8471.30.01.00). */
 	hts: string;
 	/** The schedule line verbatim. */
@@ -451,9 +457,15 @@ export interface TariffSearchHit {
 	hts: string;
 	description: string;
 	general: string | null;
+	/** Parent descriptions, outermost first. Older responses may omit this context. */
+	lineage?: string[] | null;
 }
 
 export interface TariffSearch {
+	/** Exact immutable edition. Older servers may omit it. */
+	edition?: string;
+	/** Answering date, or null for an undated edition query. */
+	date?: string | null;
 	q: string;
 	revision: string;
 	/** Up to 20 tariff lines, best match first. */

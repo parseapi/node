@@ -64,7 +64,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 export * from './types.js';
 export * from './preflight.js';
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -190,8 +190,20 @@ export type NaicsSearchOptions = { limit?: number } & DeepOption & RequestOption
 export type TariffOptions = {
 	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
 	origin?: string;
+	/** Exact immutable edition fingerprint. */
+	edition?: string;
+	/** YYYY-MM-DD, accepted only with verified source coverage. */
+	date?: string;
 } & DeepOption & RequestOptions;
-export type TariffSearchOptions = RequestOptions;
+export type TariffSearchOptions = { edition?: string; date?: string } & RequestOptions;
+function tariffSelection<T extends { edition?: string; date?: string | null }>(result: T, opts?: { edition?: string; date?: string }): T {
+	if ((opts?.edition !== undefined || opts?.date !== undefined) &&
+		(typeof result.edition !== 'string' || result.edition.length !== 64 || !/^[a-f0-9]{64}$/.test(result.edition) || (opts.edition !== undefined && result.edition !== opts.edition) ||
+		(opts.date !== undefined ? result.date !== opts.date : result.date != null))) {
+		throw new ParseAPIError(0, 'tariff_selection_mismatch', 'Tariff response did not confirm the requested edition/date. The server may not support this selection.', null, null);
+	}
+	return result;
+}
 export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
@@ -611,9 +623,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
-				request(`/tariff/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }, undefined, opts),
+				request<Tariff>(`/tariff/${enc(code)}`, { origin: opts?.origin, edition: opts?.edition, date: opts?.date, ...deepQuery(opts) }, undefined, opts).then(result => tariffSelection(result, opts)),
 			{
-				search: (query: string, opts?: TariffSearchOptions): Promise<TariffSearch> => request('/tariff', { q: query }, undefined, opts),
+				search: (query: string, opts?: TariffSearchOptions): Promise<TariffSearch> => request<TariffSearch>('/tariff', { q: query, edition: opts?.edition, date: opts?.date }, undefined, opts).then(result => tariffSelection(result, opts)),
 			}
 		),
 
