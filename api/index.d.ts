@@ -320,13 +320,15 @@ interface Iban {
     deep?: Deep<IbanDeep>;
 }
 interface Npi {
-    /** Normalized 10-digit NPI. Invalid input still echoes the fold. */
+    /** Input with accepted separators removed; null when empty. Invalid values remain visible. */
     npi: string | null;
+    /** Format and NPI checksum only; does not verify a provider or credentials. */
     valid: boolean;
-    /** Exists in the CMS NPPES registry. */
+    /** Found in the stored NPPES snapshot. Null when input is invalid. */
     registered: boolean | null;
+    /** Recorded NPI activation status. Null when unknown; not licensure or practice status. */
     active: boolean | null;
-    /** On the OIG exclusion list. */
+    /** NPI-only match in the stored OIG LEIE file. False is not complete exclusion clearance. */
     excluded: boolean | null;
     /** individual or organization. */
     type: string | null;
@@ -353,13 +355,13 @@ interface NpiEnrollment {
     state: string | null;
 }
 interface NpiDeep {
-    /** In the published Medicare FFS enrollment extract. */
+    /** Present in the stored Medicare FFS enrollment extract; not payment eligibility. */
     medicare?: boolean | null;
-    /** On the CMS opt-out affidavit list. Matched by NPI only. */
+    /** NPI-only match in the stored CMS opt-out affidavit list. Null when unavailable. */
     opt_out?: boolean | null;
-    /** Enrollment rows. [] when medicare is false. */
+    /** Stored enrollment rows. Null when unavailable; [] when no rows are returned. */
     enrollments?: NpiEnrollment[] | null;
-    /** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+    /** Recorded NPI deactivation date, YYYY-MM-DD. Null when active or unavailable. */
     deactivated_at: string | null;
 }
 interface TariffMeasure {
