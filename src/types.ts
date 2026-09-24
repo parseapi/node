@@ -342,7 +342,24 @@ export interface Vat {
 	deep?: Deep<VatDeep>;
 }
 
-export interface Iban {
+/** Ordered IBAN checks. States are open strings for future API values. */
+export interface BankChecks {
+	input: string;
+	country: string;
+	length: string;
+	structure: string;
+	checksum: string;
+	national: string;
+}
+
+/** A validation issue. Fields and codes remain open strings. */
+export interface BankIssue {
+	field: string;
+	code: string;
+	message: string;
+}
+
+export interface Bank {
 	iban: string | null;
 	valid: boolean;
 	country: string | null;
@@ -354,7 +371,62 @@ export interface Iban {
 	bank_name: string | null;
 	/** BIC from that same directory. Null when unsourced or missing. */
 	bic: string | null;
-	deep?: Deep<IbanDeep>;
+	/** Core check results. Older responses may omit them. */
+	checks?: BankChecks;
+	/** First blocking validation issue, or an empty list. Older responses may omit it. */
+	issues?: BankIssue[];
+	deep?: Deep<BankDeep>;
+}
+
+/** Directory evidence is optional and present only when a lookup ran. */
+export interface BankDirectory {
+	edition: string;
+	country: string;
+	/** bank, branch, prefix or none; remains open for future API values. */
+	match: string;
+}
+export interface BankRequirementField {
+	key: string;
+	label: string;
+	required: boolean;
+	type: string;
+	length?: number;
+	min_length?: number;
+	max_length?: number;
+	max_input_length?: number;
+	length_unit?: string;
+	pattern?: string;
+	normalization?: string;
+}
+export interface BankRequirements {
+	country: string;
+	format: string;
+	supported: boolean;
+	fields: BankRequirementField[];
+	checks: Record<string, string>;
+	limitations: string[];
+}
+
+/** US ACH syntax/checksum analysis; no account or payment verification. */
+export interface BankUsAchInput {
+	routing: string;
+	account: string;
+}
+export interface BankUsAchChecks {
+	routing_format: string;
+	routing_checksum: string;
+	account_format: string;
+	account_checksum: string;
+}
+export interface BankUsAch {
+	format: string;
+	country: string;
+	routing: string | null;
+	account: string | null;
+	valid: boolean;
+	bank_name: string | null;
+	checks: BankUsAchChecks;
+	issues: BankIssue[];
 }
 
 export interface Npi {
@@ -1276,7 +1348,9 @@ export interface PostalDeep {
 	property_tax?: PropertyTax | null;
 }
 
-export interface IbanDeep {
+export interface BankDeep {
+	/** Source edition and exact match grain, not coverage or account verification. */
+	directory?: BankDirectory;
 	/** Two check digits as a string, keeping a leading zero. */
 	checksum: string | null;
 	/** Branch identifier when that country has one. */

@@ -94,10 +94,10 @@ await expectOk('company junk', parse.company('junk'), (r) => r.valid === false ?
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
 await expectOk('vat', parse.vat('DE136695976'), (r) => (r.valid === true && r.country === 'DE' ? null : 'not valid DE'));
 await expectOk('card', parse.card('00 0000'), (r) => r.bin === '000000' && r.prefix === null ? null : 'BIN echo or prefix mismatch');
-await expectOk('iban', parse.iban('DE89370400440532013000'), (r) =>
+await expectOk('bank', parse.bank('DE89370400440532013000'), (r) =>
 	r.valid === true && r.country === 'DE' && r.bank === '37040044' ? null : 'not valid DE'
 );
-await expectOk('iban junk', parse.iban('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
+await expectOk('bank junk', parse.bank('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('npi', parse.npi('1881018208'), (r) =>
 	r.valid === true && r.registered === true ? null : 'not registered'
 );

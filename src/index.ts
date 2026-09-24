@@ -29,7 +29,10 @@ import type {
 	Elevation,
 	Email,
 	Vat,
-	Iban,
+	Bank,
+	BankUsAch,
+	BankUsAchInput,
+	BankRequirements,
 	Emoji,
 	EmojiSearch,
 	Hlr,
@@ -159,7 +162,8 @@ export type CompanyOptions = LanguageOption & { country?: string } & DeepOption 
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
-export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
+export type BankOptions = { country?: string } & DeepOption & RequestOptions;
+export type BankRequirementsOptions = { format?: string } & RequestOptions;
 export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
@@ -489,8 +493,16 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				...deepQuery(opts),
 			}, undefined, opts),
 
-		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
-			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+		bank: (iban: string, opts?: BankOptions): Promise<Bank> =>
+			request('/bank', undefined, undefined, opts, { iban, country: opts?.country, deep: opts?.deep }),
+
+		/** Check US routing/account syntax using POST. Does not verify ownership, existence or ACH eligibility. */
+		bankUsAch: (input: BankUsAchInput, opts?: RequestOptions): Promise<BankUsAch> =>
+			request('/bank', undefined, undefined, opts, { format: 'us_ach', country: 'US', routing: input.routing, account: input.account }),
+
+		/** Describe supported input fields and check scope; this does not establish country directory coverage. */
+		bankRequirements: (country: string, opts?: BankRequirementsOptions): Promise<BankRequirements> =>
+			request('/bank/requirements', { country, format: opts?.format }, undefined, opts),
 
 		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
 			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),

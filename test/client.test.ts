@@ -110,14 +110,14 @@ describe('url mapping', () => {
 		['email', (p) => p.email('a@b.com'), 'https://api.parseapi.com/email/a%40b.com'],
 		['vat', (p) => p.vat('DE136695976'), 'https://api.parseapi.com/vat/DE136695976'],
 		[
-			'iban',
-			(p) => p.iban('DE89370400440532013000'),
-			'https://api.parseapi.com/iban/DE89370400440532013000',
+			'bank',
+			(p) => p.bank('DE89370400440532013000'),
+			'https://api.parseapi.com/bank',
 		],
 		[
-			'iban country',
-			(p) => p.iban('89370400440532013000', { country: 'DE' }),
-			'https://api.parseapi.com/iban/89370400440532013000?country=DE',
+			'bank country',
+			(p) => p.bank('89370400440532013000', { country: 'DE' }),
+			'https://api.parseapi.com/bank',
 		],
 		['npi', (p) => p.npi('1881018208'), 'https://api.parseapi.com/npi/1881018208'],
 		[
