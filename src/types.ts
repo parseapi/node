@@ -774,8 +774,52 @@ export interface Timezone {
 	deep?: Deep<TimezoneDeep>;
 }
 
-/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+/** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
 export interface Time extends Timezone {
+	/** Present only for explicit location selectors. Ambiguous or missing results retain null clock fields. */
+	location?: TimeLocation;
+	/** With targets only. Order and duplicates are preserved. Null means the source timezone is unresolved. */
+	targets?: TimezoneConversionTarget[] | null;
+}
+
+/** Serving timezone identifiers and their pinned rule edition. */
+export interface TimeZones {
+	timezone_database_version: string;
+	timezones: string[];
+	/** Present with details=true. The one instant used for all rows. */
+	at?: string;
+	zones?: TimeZoneEntry[];
+}
+
+export interface TimeZoneEntry {
+	timezone: string;
+	countries: string[];
+	area: string | null;
+	abbreviation: string;
+	offset: string;
+	offset_seconds: number;
+	dst: boolean;
+	observes_dst: boolean;
+}
+
+export interface TimeTransitionState {
+	at?: string | null;
+	offset?: string | null;
+	offset_seconds?: number | null;
+	abbreviation?: string | null;
+	dst?: boolean | null;
+}
+
+export interface TimeTransition {
+	at?: string | null;
+	before?: TimeTransitionState | null;
+	after?: TimeTransitionState | null;
+	change_seconds?: number | null;
+}
+
+export interface TimeSeason {
+	start?: TimeTransition | null;
+	end?: TimeTransition | null;
 }
 
 /** The other side of a timezone conversion. `at` is the converted wall time. */
@@ -1338,7 +1382,33 @@ export interface NameDeep {
 	initials?: string | null;
 }
 
+/** How an offsetless source wall time selected an instant. */
+export interface TimeResolution {
+	kind?: string | null;
+	policy?: string | null;
+	/** Signed wall-clock adjustment. Zero for unique and overlapping times. */
+	adjustment_seconds?: number | null;
+	/** Chronological alternatives. Empty means the wall time is unique. */
+	alternatives?: TimeResolutionAlternative[] | null;
+}
+
+export interface TimeResolutionAlternative {
+	at?: string | null;
+	unix?: number | null;
+	offset?: string | null;
+}
+
 export interface TimezoneDeep {
+	/** Rule-defined standard offset. Seasonal changes may be negative. */
+	standard_offset?: string | null;
+	standard_offset_seconds?: number | null;
+	dst_offset_seconds?: number | null;
+	/** Current DST-flag interval, or the next within 400 days. */
+	season?: TimeSeason | null;
+	/** Pinned rules used by canonical Time. */
+	timezone_database_version?: string | null;
+	/** Null when no offsetless conversion was resolved. */
+	resolution?: TimeResolution | null;
 	name: string | null;
 	/** Whole minutes, truncated toward zero for historical second offsets. */
 	offset_minutes: number | null;
@@ -1434,4 +1504,22 @@ export interface PropertyTax {
 	currency: string;
 	/** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
 	period: string;
+}
+
+export interface TimeLocationInput { type: string; value: string; }
+export interface TimeLocationCandidate {
+	id: string | null;
+	name: string | null;
+	country: string | null;
+	state: string | null;
+	timezone: string | null;
+	latitude: number | null;
+	longitude: number | null;
+}
+export interface TimeLocation {
+	input: TimeLocationInput;
+	status: string;
+	candidates: TimeLocationCandidate[];
+	truncated: boolean;
+	source: string;
 }

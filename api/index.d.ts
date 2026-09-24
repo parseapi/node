@@ -695,8 +695,47 @@ interface Timezone {
     to?: TimezoneConversionTarget | null;
     deep?: Deep<TimezoneDeep>;
 }
-/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+/** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
 interface Time extends Timezone {
+    /** Present only for explicit location selectors. Ambiguous or missing results retain null clock fields. */
+    location?: TimeLocation;
+    /** With targets only. Order and duplicates are preserved. Null means the source timezone is unresolved. */
+    targets?: TimezoneConversionTarget[] | null;
+}
+/** Serving timezone identifiers and their pinned rule edition. */
+interface TimeZones {
+    timezone_database_version: string;
+    timezones: string[];
+    /** Present with details=true. The one instant used for all rows. */
+    at?: string;
+    zones?: TimeZoneEntry[];
+}
+interface TimeZoneEntry {
+    timezone: string;
+    countries: string[];
+    area: string | null;
+    abbreviation: string;
+    offset: string;
+    offset_seconds: number;
+    dst: boolean;
+    observes_dst: boolean;
+}
+interface TimeTransitionState {
+    at?: string | null;
+    offset?: string | null;
+    offset_seconds?: number | null;
+    abbreviation?: string | null;
+    dst?: boolean | null;
+}
+interface TimeTransition {
+    at?: string | null;
+    before?: TimeTransitionState | null;
+    after?: TimeTransitionState | null;
+    change_seconds?: number | null;
+}
+interface TimeSeason {
+    start?: TimeTransition | null;
+    end?: TimeTransition | null;
 }
 /** The other side of a timezone conversion. `at` is the converted wall time. */
 interface TimezoneConversionTarget {
@@ -1208,7 +1247,31 @@ interface NameDeep {
     /** Name initials using CLDR formatting rules. */
     initials?: string | null;
 }
+/** How an offsetless source wall time selected an instant. */
+interface TimeResolution {
+    kind?: string | null;
+    policy?: string | null;
+    /** Signed wall-clock adjustment. Zero for unique and overlapping times. */
+    adjustment_seconds?: number | null;
+    /** Chronological alternatives. Empty means the wall time is unique. */
+    alternatives?: TimeResolutionAlternative[] | null;
+}
+interface TimeResolutionAlternative {
+    at?: string | null;
+    unix?: number | null;
+    offset?: string | null;
+}
 interface TimezoneDeep {
+    /** Rule-defined standard offset. Seasonal changes may be negative. */
+    standard_offset?: string | null;
+    standard_offset_seconds?: number | null;
+    dst_offset_seconds?: number | null;
+    /** Current DST-flag interval, or the next within 400 days. */
+    season?: TimeSeason | null;
+    /** Pinned rules used by canonical Time. */
+    timezone_database_version?: string | null;
+    /** Null when no offsetless conversion was resolved. */
+    resolution?: TimeResolution | null;
     name: string | null;
     /** Whole minutes, truncated toward zero for historical second offsets. */
     offset_minutes: number | null;
@@ -1291,6 +1354,26 @@ interface PropertyTax {
     currency: string;
     /** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
     period: string;
+}
+interface TimeLocationInput {
+    type: string;
+    value: string;
+}
+interface TimeLocationCandidate {
+    id: string | null;
+    name: string | null;
+    country: string | null;
+    state: string | null;
+    timezone: string | null;
+    latitude: number | null;
+    longitude: number | null;
+}
+interface TimeLocation {
+    input: TimeLocationInput;
+    status: string;
+    candidates: TimeLocationCandidate[];
+    truncated: boolean;
+    source: string;
 }
 
 /** A proposed task contains operation counts, never lookup inputs. */
@@ -1568,14 +1651,50 @@ type NameOptions = {
     /** CLDR name-formatting locale, such as en or ja. Defaults to en. */
     name_locale?: string;
 } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
 type TimeOptions = LanguageOption & {
+    ip?: string;
+    city?: string;
+    country?: string;
+    state?: string;
+    iata?: string;
+    icao?: string;
+    unlocode?: string;
+    address?: string;
+    /** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
     at?: string;
+    /** Destination IANA timezone. The target has the same unix instant. */
     to?: string;
+    /** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+    targets?: readonly string[];
+    /** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+    disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
 } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
 type TimeAtOptions = LanguageOption & {
+    /** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
     at?: string;
+    /** Destination IANA timezone. The target has the same unix instant. */
     to?: string;
+    /** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+    targets?: readonly string[];
+    /** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+    disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
 } & DeepOption & RequestOptions;
+/** Filter supported identifiers at one instant. Abbreviations return candidates, never an inferred zone. */
+type TimeZonesOptions = {
+    country?: string;
+    area?: string;
+    /** Exact signed UTC offset, such as +05:45 or +00:09:21. */
+    offset?: string;
+    abbreviation?: string;
+    dst?: boolean;
+    /** Whether a DST-flagged state occurs in the UTC calendar year containing at. */
+    observes_dst?: boolean;
+    at?: string;
+    details?: boolean;
+    sort?: 'timezone' | 'offset';
+} & RequestOptions;
 type TimezoneOptions = LanguageOption & {
     at?: string;
     to?: string;
@@ -1696,8 +1815,10 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
     language: (code: string, opts?: LanguageOptions) => Promise<Language>;
     name: (name: string, opts?: NameOptions) => Promise<Name>;
-    /** Current local time, UTC by default. With to, offsetless at is source wall time. */
+    /** Current local time, UTC by default. With to or targets, offsetless at is source wall time. */
     time: ((timezone?: string, opts?: TimeOptions) => Promise<Time>) & {
+        /** Search serving timezone IDs. Omit query to list all. */
+        zones: (query?: string, opts?: TimeZonesOptions) => Promise<TimeZones>;
         at: (lat: number, lon: number, opts?: TimeAtOptions) => Promise<Time>;
     };
     timezone: ((id: string, opts?: TimezoneOptions) => Promise<Timezone>) & {
@@ -1725,4 +1846,4 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

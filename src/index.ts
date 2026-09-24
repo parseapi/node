@@ -54,6 +54,7 @@ import type {
 	StateDistricts,
 	Timezone,
 	Time,
+	TimeZones,
 	Useragent,
 	Vin,
 	Weather,
@@ -63,7 +64,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 export * from './types.js';
 export * from './preflight.js';
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -200,8 +201,51 @@ export type NameOptions = {
 	/** CLDR name-formatting locale, such as en or ja. Defaults to en. */
 	name_locale?: string;
 } & DeepOption & RequestOptions;
-export type TimeOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
-export type TimeAtOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+export type TimeOptions = LanguageOption & {
+	ip?: string;
+	city?: string;
+	country?: string;
+	state?: string;
+	iata?: string;
+	icao?: string;
+	unlocode?: string;
+	address?: string;
+
+	/** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
+	at?: string;
+	/** Destination IANA timezone. The target has the same unix instant. */
+	to?: string;
+	/** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+	targets?: readonly string[];
+	/** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+	disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
+} & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+export type TimeAtOptions = LanguageOption & {
+	/** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
+	at?: string;
+	/** Destination IANA timezone. The target has the same unix instant. */
+	to?: string;
+	/** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+	targets?: readonly string[];
+	/** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+	disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
+} & DeepOption & RequestOptions;
+/** Filter supported identifiers at one instant. Abbreviations return candidates, never an inferred zone. */
+export type TimeZonesOptions = {
+	country?: string;
+	area?: string;
+	/** Exact signed UTC offset, such as +05:45 or +00:09:21. */
+	offset?: string;
+	abbreviation?: string;
+	dst?: boolean;
+	/** Whether a DST-flagged state occurs in the UTC calendar year containing at. */
+	observes_dst?: boolean;
+	at?: string;
+	details?: boolean;
+	sort?: 'timezone' | 'offset';
+} & RequestOptions;
 export type TimezoneOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
 export type TimezoneAtOptions = LanguageOption & { at?: string } & DeepOption & RequestOptions;
 export type DateOptions = LanguageOption & { format?: 'mdy' | 'dmy'; to?: string } & DeepOption & RequestOptions;
@@ -592,13 +636,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country, ...deepQuery(opts), name_locale: opts?.name_locale }, undefined, opts),
 
-		/** Current local time, UTC by default. With to, offsetless at is source wall time. */
+		/** Current local time, UTC by default. With to or targets, offsetless at is source wall time. */
 		time: Object.assign(
 			(timezone?: string, opts?: TimeOptions): Promise<Time> =>
-				request(timezone === undefined ? '/time' : `/time/${enc(timezone)}`, { at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
+				request(timePath(timezone), { ...timeSource(timezone, opts), at: opts?.at, to: opts?.to, targets: timeTargets(opts?.targets, opts?.to), disambiguation: opts?.disambiguation, ...deepQuery(opts) }, undefined, opts),
 			{
+				/** Search serving timezone IDs. Omit query to list all. */
+				zones: (query?: string, opts?: TimeZonesOptions): Promise<TimeZones> => request('/time/zones', { q: query, country: opts?.country, area: opts?.area, offset: opts?.offset, abbreviation: opts?.abbreviation, dst: opts?.dst === undefined ? undefined : String(opts.dst), observes_dst: opts?.observes_dst === undefined ? undefined : String(opts.observes_dst), at: opts?.at, details: opts?.details, sort: opts?.sort }, undefined, opts),
 				at: (lat: number, lon: number, opts?: TimeAtOptions): Promise<Time> =>
-					request('/time', { lat, lon, at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
+					request('/time', { lat, lon, at: opts?.at, to: opts?.to, targets: timeTargets(opts?.targets, opts?.to), disambiguation: opts?.disambiguation, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
@@ -659,3 +705,28 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 }
 
 export type ParseAPIClient = ReturnType<typeof parseAPI>;
+
+function timeSource(timezone: string | undefined, options: TimeOptions = {}): Record<string, string | undefined> {
+	const values = { ip: options.ip, city: options.city, country: options.country, state: options.state, iata: options.iata, icao: options.icao, unlocode: options.unlocode, address: options.address };
+	const primary = [options.ip, options.city, options.iata, options.icao, options.unlocode, options.address].filter(value => value !== undefined);
+	const present = Object.values(values).some(value => value !== undefined);
+	if (Object.values(values).some(value => value !== undefined && (typeof value !== 'string' || !value.trim())) ||
+		(timezone !== undefined && present) || primary.length > 1 ||
+		(options.country !== undefined && primary.length > 0 && options.city === undefined && options.address === undefined) ||
+		(options.state !== undefined && ((options.city === undefined && options.address === undefined) || options.country === undefined)) ||
+		(options.address !== undefined && options.country === undefined)) throw new TypeError('Pass one Time source, using country only with city or address and state only with city or address and country.');
+	return values;
+}
+
+function timePath(timezone: string | undefined): string {
+	if (timezone !== undefined && ['zones', 'help'].includes(timezone.trim().toLowerCase())) throw new TypeError('Time source must be an IANA timezone ID. Use timezone discovery to list IDs.');
+	return timezone === undefined ? '/time' : `/time/${encodeURIComponent(timezone)}`;
+}
+
+function timeTargets(targets: readonly string[] | undefined, to: string | undefined): string | undefined {
+	if (targets === undefined) return undefined;
+	if (to !== undefined || !Array.isArray(targets) || targets.length < 1 || targets.length > 10 || Array.from(targets).some(zone => typeof zone !== 'string' || !zone.trim() || zone.includes(','))) {
+		throw new TypeError('Time targets requires 1 to 10 timezone IDs and cannot be combined with to.');
+	}
+	return targets.join(',');
+}

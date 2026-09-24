@@ -53,6 +53,18 @@ describe('url mapping', () => {
 		expect(calls).toHaveLength(5);
 	});
 	const table: [string, (parse: ReturnType<typeof parseAPI>) => Promise<unknown>, string][] = [
+		['time compatible', (p) => p.time('America/New_York', { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'compatible' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=compatible'],
+		['time coordinates compatible', (p) => p.time.at(40.71, -74.01, { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'compatible' }), 'https://api.parseapi.com/time?lat=40.71&lon=-74.01&at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=compatible'],
+		['time earlier', (p) => p.time('America/New_York', { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'earlier' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=earlier'],
+		['time coordinates earlier', (p) => p.time.at(40.71, -74.01, { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'earlier' }), 'https://api.parseapi.com/time?lat=40.71&lon=-74.01&at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=earlier'],
+		['time later', (p) => p.time('America/New_York', { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'later' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=later'],
+		['time coordinates later', (p) => p.time.at(40.71, -74.01, { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'later' }), 'https://api.parseapi.com/time?lat=40.71&lon=-74.01&at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=later'],
+		['time reject', (p) => p.time('America/New_York', { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'reject' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=reject'],
+		['time coordinates reject', (p) => p.time.at(40.71, -74.01, { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'reject' }), 'https://api.parseapi.com/time?lat=40.71&lon=-74.01&at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=reject'],
+		['time zones all', (p) => p.time.zones(), 'https://api.parseapi.com/time/zones'],
+		['time zones search', (p) => p.time.zones('Europe'), 'https://api.parseapi.com/time/zones?q=Europe'],
+		['time targets', (p) => p.time('UTC', { targets: ['UTC', 'Asia/Tokyo', 'UTC'] }), 'https://api.parseapi.com/time/UTC?targets=UTC%2CAsia%2FTokyo%2CUTC'],
+		['time coordinate targets', (p) => p.time.at(0, 0, { targets: ['UTC', 'Asia/Tokyo', 'UTC'] }), 'https://api.parseapi.com/time?lat=0&lon=0&targets=UTC%2CAsia%2FTokyo%2CUTC'],
 		['time default UTC', (p) => p.time(), 'https://api.parseapi.com/time'],
 		['time conversion', (p) => p.time('America/New_York', { at: '2026-09-05T15:00:00', to: 'Asia/Tokyo' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-09-05T15%3A00%3A00&to=Asia%2FTokyo'],
 		['time coordinates conversion', (p) => p.time.at(0, 0, { at: '1970-01-01T00:00:00Z', to: 'UTC' }), 'https://api.parseapi.com/time?lat=0&lon=0&at=1970-01-01T00%3A00%3A00Z&to=UTC'],
