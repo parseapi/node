@@ -27,6 +27,11 @@ async function main() {
     if (String(_input).includes('/stack/unavailable.example')) return new Response(JSON.stringify({ domain: 'unavailable.example', url: 'https://unavailable.example/', checked_at: null, scope: 'homepage', pages: 0, partial: null, cms: null, servers: null, frameworks: null, ecommerce: null, analytics: null, chat: null, payments: null, hosting: null, deep: {} }));
     if (String(_input).includes('/stack/')) return new Response(JSON.stringify({ domain: 'example.com', url: 'https://example.com/', checked_at: '2026-09-21T12:00:00Z', scope: 'site', pages: 6, partial: false, cms: [{ technology: 'wordpress', name: 'WordPress', version: '6.8.2' }, { technology: 'ghost', name: 'Ghost', version: null }], servers: [{ technology: 'nginx', name: 'nginx', version: null }, { technology: 'apache', name: 'Apache', version: null }], frameworks: [{ technology: 'nextjs', name: 'Next.js', version: null }], ecommerce: [], analytics: [], chat: [], payments: [], hosting: [], deep: {} }));
     if (String(_input).includes('/email/')) return new Response(JSON.stringify({ email: 'jane+news@example.com', valid: true, deep: { deliverable: null, catchall: false, first_name: 'Jane', no_reply: false, tag: 'news', mail_provider: null, status: null, reason: null } }));
+    const url = new URL(String(_input));
+    if (url.pathname === '/elevation') {
+      if (url.searchParams.get('path') !== '0,0|0,2' || url.searchParams.get('samples') !== '3') throw new Error('Elevation path/sample mapping differs');
+      return new Response(JSON.stringify({ points: [{ latitude: 0, longitude: 0, elevation: 0, elevation_ft: 0, resolution: 460 }, { latitude: 0, longitude: 1, elevation: null, elevation_ft: null, resolution: null }, { latitude: 0, longitude: 2, elevation: -20, elevation_ft: -66, resolution: 460 }] }));
+    }
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
@@ -46,6 +51,9 @@ async function main() {
   if (maximum !== null || estimate.budget?.enforced !== false) throw new Error('Preflight must preserve unknowns and advisory budgets');
   await parse.country.states('US', { signal: new AbortController().signal });
   await parse.timezone.at(0, 0);
+  const path = await parse.elevation.path([[0, 0], [0, 2]], 3, { retries: 0, timeoutMs: 1000 });
+  const elevation: number | null = path.points[0].elevation;
+  if (elevation !== 0 || path.points[1].elevation !== null || path.points[2].elevation !== -20) throw new Error('Packed Elevation path must preserve zero, null and negative samples');
   await parse.city.search('den', { country: 'US' });
   await parse.address.search('1600 Penn', { country: 'US' });
   const oldName = parse.name;

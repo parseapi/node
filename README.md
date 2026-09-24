@@ -17,7 +17,7 @@ Get a key at [parseapi.com](https://parseapi.com). The client also reads `PARSEA
 
 ## API versions
 
-Version 1.4.0 explicitly selects the API contract supported by this SDK. It sends `Parse-Version: 2.0.0` on every lookup so responses match the API contract supported by the package. Your key and the team's saved default stay the same.
+Version 1.5.0 explicitly selects the API contract supported by this SDK. It sends `Parse-Version: 2.0.0` on every lookup so responses match the API contract supported by the package. Your key and the team's saved default stay the same.
 
 Upgrade the dependency in staging, review the [release notes](https://parseapi.com/docs/releases), and test the application before deploying the same code and dependency version to production. Commit your dependency lockfile so the tested package travels with your deployment. Future major SDK upgrades can select a newer API contract.
 
@@ -132,6 +132,8 @@ await parse.date.today();
 await parse.holiday('US', { year: 2026 });
 await parse.holiday.date('US', '2026-12-25');
 await parse.elevation(35.2271, -80.8431);
+await parse.elevation.points([[35.2271, -80.8431], [40.7128, -74.006]]);
+await parse.elevation.path([[35.2271, -80.8431], [35.5951, -82.5515]], 100);
 await parse.point(36.0726, -79.792);
 await parse.weather(40.7128, -74.006);
 await parse.domain('example.com');
@@ -155,6 +157,12 @@ NAICS paid deep records include classification `deep.exclusions`, each with a de
 Responses are typed, plain JSON data. `country.states('US')` requests the states directly; it does not fetch a country first. Optional arguments go in the final options object, so new options can be added without changing your existing calls.
 
 DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV and PTR. Records contain `name`, `type`, `ttl` in seconds and a DNS presentation `value`. TXT values retain quoting and chunk boundaries. A selected question can include its CNAME chain. Empty records mean no records. Lookup failures remain errors.
+
+## Elevation
+
+`elevation(lat, lon)` returns one sample with meters, feet and grid resolution in meters. `elevation.points(...)` accepts up to 512 `[lat, lon]` pairs, a `lat,lon|lat,lon` string, or `enc:` followed by a Google encoded polyline. Its `points` array preserves input order and duplicate coordinates. Unknown samples stay null, and negative elevations and known zero values are preserved. Each list uses one pooled request. The SDK automatically uses JSON POST for long URLs and numeric coordinates that JavaScript expresses in exponent notation.
+
+`elevation.path(path, samples)` accepts the same input formats with 2-512 path vertices and a required integer sample count from 2 to 512. Its `points` array includes both endpoints, with samples spaced uniformly by cumulative great-circle distance along the path. Each segment follows the shortest arc. A segment with antipodal endpoints is rejected because it does not define a unique arc. Path sampling uses one pooled request and automatically selects JSON POST for a long URL.
 
 ## Time
 

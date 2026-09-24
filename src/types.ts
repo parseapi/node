@@ -835,6 +835,11 @@ export interface Elevation {
 	resolution: number | null;
 }
 
+export interface ElevationLocations {
+	/** Ordered samples. Point lists preserve supplied coordinates. Paths include both endpoints with even spacing along the path. Unknown elevations stay null. */
+	points: Elevation[];
+}
+
 export interface PointDeep {
 	city: PointCity | null;
 	elevation: number | null;

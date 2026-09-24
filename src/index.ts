@@ -27,6 +27,7 @@ import type {
 	Stack,
 	Domain,
 	Elevation,
+	ElevationLocations,
 	Email,
 	Vat,
 	Iban,
@@ -62,7 +63,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 export * from './types.js';
 export * from './preflight.js';
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -363,6 +364,20 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	const deepQuery = (opts?: DeepOption): Query => (opts?.deep ? { deep: true } : {});
 
 
+	function elevationSamples(selector: 'points' | 'path', coordinates: Array<[number, number]> | string, opts?: ElevationOptions, samples?: number): Promise<ElevationLocations> {
+		const value = typeof coordinates === 'string' ? coordinates : coordinates.map(([lat, lon]) => `${lat},${lon}`).join('|');
+		// The query grammar uses plain decimals. JSON preserves small numeric
+		// coordinates that JavaScript serializes with exponent notation.
+		const numericJson = typeof coordinates !== 'string' && coordinates.some(point => point.some(value => /e/i.test(String(value))));
+		const sampling = samples === undefined ? {} : { samples };
+		const query = { [selector]: value, ...sampling };
+		const url = new URL(baseUrl + '/elevation');
+		for (const [name, value] of Object.entries(query)) url.searchParams.set(name, String(value));
+		return !numericJson && url.href.length <= 8000
+			? request('/elevation', query, undefined, opts)
+			: request('/elevation', undefined, undefined, opts, { [selector]: coordinates, ...sampling });
+	}
+
 	return {
 		/** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
 		preflight: (task: PreflightTask, opts?: RequestOptions): Promise<Preflight> =>
@@ -613,7 +628,17 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		elevation: (lat: number, lon: number, opts?: ElevationOptions): Promise<Elevation> => request('/elevation', { lat, lon }, undefined, opts),
+		elevation: Object.assign(
+			(lat: number, lon: number, opts?: ElevationOptions): Promise<Elevation> => request('/elevation', { lat, lon }, undefined, opts),
+			{
+				/** Sample up to 512 coordinates in order. Accepts lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+				points: (points: Array<[number, number]> | string, opts?: ElevationOptions): Promise<ElevationLocations> =>
+					elevationSamples('points', points, opts),
+				/** Sample a path at 2-512 evenly spaced great-circle distances, including both endpoints. Accepts 2-512 vertices as lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+				path: (path: Array<[number, number]> | string, samples: number, opts?: ElevationOptions): Promise<ElevationLocations> =>
+					elevationSamples('path', path, opts, samples),
+			}
+		),
 
 		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>

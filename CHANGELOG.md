@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 - 2026-09-24
+
+Adds Elevation point lists and evenly spaced great-circle path samples (2–512), preserving the existing single-coordinate call. Long requests and exponent-notation numeric tuples use JSON POST automatically.
+
 ## 1.4.0 - 2026-09-24
 
 Adds Australian Postal suburb choices while preserving null, empty, and ambiguous results. Existing calls, compact nearby/distance responses, and API contract `2.0.0` remain unchanged.
