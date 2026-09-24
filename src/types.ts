@@ -229,10 +229,19 @@ export interface PostalMetro {
 	other_share: number | null;
 }
 
+/** A supported Australian postcode suburb choice, independent of the scalar city. */
+export interface PostalLocality {
+	city: string;
+	state: string;
+	state_name: string;
+}
+
 export interface Postal {
 	postal: string;
 	city: string | null;
 	city_local: string | null;
+	/** Null/missing is unknown. An empty list has no eligible choices. One choice does not imply city. */
+	localities?: PostalLocality[] | null;
 	district: string | null;
 	district_name: string | null;
 	district_name_local: string | null;

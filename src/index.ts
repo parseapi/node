@@ -62,7 +62,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 export * from './types.js';
 export * from './preflight.js';
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
