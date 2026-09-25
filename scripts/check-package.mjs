@@ -31,18 +31,21 @@ async function main() {
     const url = new URL(String(_input));
     if (url.pathname.startsWith('/card/')) {
       cardRequests++;
-      if (url.pathname !== '/card/00%201234-56' || url.search !== '') throw new Error('Packed Card must preserve and encode the BIN once');
-      return new Response(JSON.stringify({ bin: '00123456', prefix: '001234', country: null, issuer: null, brand: null, brand_name: null, type: null, prepaid: false }));
+      if (url.pathname === '/card/51' && url.search === '') return new Response(JSON.stringify({bin:'51',brand:'mastercard',brand_name:'Mastercard',logo:'https://cdn.parseapi.com/card/mastercard.svg'}));
+      if (url.pathname !== '/card/00%201234-56' || url.search !== '?deep=true') throw new Error('Packed Card must preserve and encode the BIN once');
+      return new Response(JSON.stringify({ bin:'00123456',brand:null,brand_name:null,logo:'https://cdn.parseapi.com/card/generic.svg',deep:{prefix:'001234',country:null,issuer:null,type:null,prepaid:false} }));
     }
     if (url.pathname === '/country/RETRY') return new Response('{"code":"rate_limited","message":"Wait","request_id":"req_fixture"}', { status: 429, headers: { 'Retry-After': '60' } });
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
-  const card: Card = await parse.card('00 1234-56');
-  if (card.bin !== '00123456' || card.prefix !== '001234' || card.prepaid !== false || card.country !== null || 'bin' in parse) throw new Error('Packed Card must preserve BIN fields with only the card method');
+  const core: Card = await parse.card('51');
+  if (core.brand !== 'mastercard' || !core.logo.endsWith('/mastercard.svg') || core.deep !== undefined) throw new Error('Packed Card core differs');
+  const card: Card = await parse.card('00 1234-56', {deep:true});
+  if (card.bin !== '00123456' || card.deep?.prefix !== '001234' || card.deep?.prepaid !== false || card.deep?.country !== null || 'bin' in parse) throw new Error('Packed Card must preserve BIN fields with only the card method');
   try { await parse.card('4242424242424242'); throw new Error('Card accepted a full number'); }
   catch (error) { if (!(error instanceof TypeError)) throw error; }
-  if (cardRequests !== 1) throw new Error('Packed Card dispatched a rejected input');
+  if (cardRequests !== 2) throw new Error('Packed Card dispatched a rejected input');
   try { await parse.country('RETRY'); throw new Error('Expected rate limit'); }
   catch (error) {
     if (!(error instanceof ParseAPIError) || error.retryAfter !== '60' || error.requestId !== 'req_fixture') throw error;

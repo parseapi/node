@@ -695,21 +695,25 @@ export interface Mac {
 	multicast: boolean | null;
 }
 
-/** Card-prefix reference data. Null means unknown, not an invalid payment card. */
+/** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
 export interface Card {
 	bin: string;
-	/** Actual longest matched prefix. May be shorter than the input. */
-	prefix: string | null;
-	country: string | null;
-	issuer: string | null;
-	/** Network key (visa, amex) or co-branded combination. */
 	brand: string | null;
-	/** Display name for brand (American Express). */
 	brand_name: string | null;
+	/** SVG URL, with a generic-card fallback. */
+	logo: string;
+	/** Included only when requested; pooled on every plan. */
+	deep?: CardDeep;
+}
+
+export interface CardDeep {
+	/** Longest recorded matching prefix; may be shorter than bin. */
+	prefix: string | null;
+	issuer: string | null;
+	country: string | null;
 	type: string | null;
 	prepaid: boolean | null;
 }
-
 
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 export interface DnsRecord {

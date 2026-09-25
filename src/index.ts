@@ -178,7 +178,7 @@ export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = LanguageOption & RequestOptions;
 export type MacOptions = RequestOptions;
 /** Request controls for a card-prefix reference lookup. */
-export type CardOptions = RequestOptions;
+export type CardOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
 export type MeasureUnitsOptions = LanguageOption & { query?: string; type?: string; unit?: string } & RequestOptions;
@@ -535,12 +535,12 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
 
-		/** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
+		/** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
 		card: async (bin: string, opts?: CardOptions): Promise<Card> => {
-			if (typeof bin !== 'string' || bin.length > 64 || !/^[0-9]{6,11}$/.test(bin.replace(/[ \t\r\n-]/g, ''))) {
-				throw new TypeError('parseAPI: Card requires a string containing 6 to 11 digits. Send a prefix only.');
+			if (typeof bin !== 'string' || bin.length > 64 || !/^[0-9]{2,11}$/.test(bin.replace(/[ \t\r\n-]/g, ''))) {
+				throw new TypeError('parseAPI: Card requires a string containing 2 to 11 digits. Send a prefix only.');
 			}
-			return request(`/card/${enc(bin)}`, undefined, undefined, opts);
+			return request(`/card/${enc(bin)}`, deepQuery(opts), undefined, opts);
 		},
 
 		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
