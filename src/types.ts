@@ -1536,3 +1536,13 @@ export interface PropertyTax {
 	/** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
 	period: string;
 }
+
+// Industry names for the existing US NAICS response contract.
+export type Industry = Naics;
+export type IndustryChild = NaicsChild;
+export type IndustryCorrection = NaicsCorrection;
+export type IndustryDeep = NaicsDeep;
+export type IndustryExclusion = NaicsExclusion;
+export type IndustryMatch = NaicsMatch;
+export type IndustrySearch = NaicsSearch;
+export type IndustrySearchItem = NaicsSearchItem;

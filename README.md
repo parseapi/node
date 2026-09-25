@@ -142,15 +142,17 @@ await parse.dns('example.com');
 await parse.dns('_dmarc.example.com', { type: 'TXT' });
 await parse.useragent(uaString);
 await parse.vin('1HGCM82633A004352');
-await parse.naics('541511');
-await parse.naics.search('coffee shop', { limit: 5 });
+await parse.industry('541511');
+await parse.industry.search('coffee shop', { limit: 5 });
 await parse.tariff('8471.30.01.00');
 await parse.tariff.search('sunglasses');
 await parse.emoji('rocket');
 await parse.emoji.search('fire');
 ```
 
-NAICS paid deep records include classification `deep.exclusions`, each with a description and linked codes. Generic exclusions can have no linked codes. Omitted or null exclusions in older responses remain unknown. Search results also include `match`: the matched `field` (`name`, `term` or `naics`) and `text`, plus `corrections` with `from` and `to` tokens for typo fallback. Corrections are empty for exact, plural and prefix matches. Direct code lookups omit `match`. Older responses may omit it.
+The existing NAICS lookup and search methods remain available as compatibility names for Industry.
+
+Industry paid deep records include classification `deep.exclusions`, each with a description and linked codes. Generic exclusions can have no linked codes. Omitted or null exclusions in older responses remain unknown. Search results also include `match`: the matched `field` (`name`, `term` or `naics`) and `text`, plus `corrections` with `from` and `to` tokens for typo fallback. Corrections are empty for exact, plural and prefix matches. Direct code lookups omit `match`. Older responses may omit it.
 
 Responses are typed, plain JSON data. `country.states('US')` requests the states directly; it does not fetch a country first. Optional arguments go in the final options object, so new options can be added without changing your existing calls.
 
@@ -242,7 +244,7 @@ Choose enrichment for the question you need answered.
 | VAT | A metered registry check where supported, using included VAT checks or enabled on-demand usage. |
 | Phone, Time, Date, Currency, Language, Emoji, Bank, Point | Optional detail in the same pooled request on every plan. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
-| Name, NAICS | Name evidence or the industry definition profile on paid plans. |
+| Name, Industry | Name evidence or the industry definition profile on paid plans. |
 | NPI | Deactivation date, Medicare enrollment, opt-out and enrollment rows from stored sources on paid plans. Exclusion evidence stays core. |
 | VIN, Tariff, Company | The complete product detail bag on paid plans. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
@@ -333,7 +335,7 @@ before dispatch, accepted input is forwarded unchanged. Never send a full card n
 
 ## Optional detail
 
-The default response answers the common task. Ask for `deep` when you need more detail about that same result. Core fields stay equal. City, NAICS and Emoji searches put detail inside each result. Postal nearby and distance put metropolitan detail beside the entity it describes. Time conversion keeps target detail in `to.deep`; only the source has `deep.next_dst`.
+The default response answers the common task. Ask for `deep` when you need more detail about that same result. Core fields stay equal. City, Industry and Emoji searches put detail inside each result. Postal nearby and distance put metropolitan detail beside the entity it describes. Time conversion keeps target detail in `to.deep`; only the source has `deep.next_dst`.
 
 ```ts
 const basic = await parse.time('America/New_York');

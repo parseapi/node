@@ -36,8 +36,8 @@ import type {
 	Emoji,
 	EmojiSearch,
 	Hlr,
-	Naics,
-	NaicsSearch,
+	Industry,
+	IndustrySearch,
 	Tariff,
 	TariffSearch,
 	HolidayDate,
@@ -188,9 +188,9 @@ export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
-export type NaicsOptions = DeepOption & RequestOptions;
+export type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
-export type NaicsSearchOptions = { limit?: number } & DeepOption & RequestOptions;
+export type IndustrySearchOptions = { limit?: number } & DeepOption & RequestOptions;
 /** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 export type TariffOptions = {
 	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
@@ -375,6 +375,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	const enc = encodeURIComponent;
 	const deepQuery = (opts?: DeepOption): Query => (opts?.deep ? { deep: true } : {});
 
+
+	const industry = Object.assign(
+			(code: string, opts?: IndustryOptions): Promise<Industry> => request(`/industry/${enc(code)}`, deepQuery(opts), undefined, opts),
+			{
+				search: (query: string, opts?: IndustrySearchOptions): Promise<IndustrySearch> =>
+					request('/industry', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+			}
+		);
 
 	return {
 		/** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
@@ -567,13 +575,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request(`/vin/${enc(vin)}`, deepQuery(opts), undefined, opts),
 
 		/** US NAICS 2022 definitions and hierarchy. */
-		naics: Object.assign(
-			(code: string, opts?: NaicsOptions): Promise<Naics> => request(`/naics/${enc(code)}`, deepQuery(opts), undefined, opts),
-			{
-				search: (query: string, opts?: NaicsSearchOptions): Promise<NaicsSearch> =>
-					request('/naics', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
-			}
-		),
+		industry,
+		/** Compatibility name for industry. */
+		naics: industry,
 		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
@@ -659,3 +663,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 }
 
 export type ParseAPIClient = ReturnType<typeof parseAPI>;
+
+/** Existing NAICS options remain source compatible. */
+export type NaicsOptions = IndustryOptions;
+export type NaicsSearchOptions = IndustrySearchOptions;
