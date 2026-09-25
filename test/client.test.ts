@@ -119,11 +119,11 @@ describe('url mapping', () => {
 			(p) => p.bank('89370400440532013000', { country: 'DE' }),
 			'https://api.parseapi.com/bank',
 		],
-		['npi', (p) => p.npi('1881018208'), 'https://api.parseapi.com/npi/1881018208'],
+		['npi', (p) => p.provider('1881018208'), 'https://api.parseapi.com/provider/1881018208'],
 		[
 			'npi deep',
-			(p) => p.npi('1881018208', { deep: true }),
-			'https://api.parseapi.com/npi/1881018208?deep=true',
+			(p) => p.provider('1881018208', { deep: true }),
+			'https://api.parseapi.com/provider/1881018208?deep=true',
 		],
 		[
 			'vat from deep',

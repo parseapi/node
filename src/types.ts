@@ -429,7 +429,30 @@ export interface BankUsAch {
 	issues: BankIssue[];
 }
 
-export interface Npi {
+export interface ProviderTaxonomy {
+	taxonomy?: string | null;
+	specialty?: string | null;
+	primary?: boolean | null;
+	license?: string | null;
+	state?: string | null;
+}
+
+export interface ProviderSource {
+	edition?: string | null;
+	published_at?: string | null;
+	through?: string | null;
+	imported_at?: string | null;
+}
+
+export interface ProviderSources {
+	nppes?: ProviderSource | null;
+	leie?: ProviderSource | null;
+	pecos?: ProviderSource | null;
+	optout?: ProviderSource | null;
+}
+
+export interface Provider {
+	sources?: ProviderSources | null;
 	/** Input with accepted separators removed; null when empty. Invalid values remain visible. */
 	npi: string | null;
 	/** Format and NPI checksum only; does not verify a provider or credentials. */
@@ -456,23 +479,27 @@ export interface Npi {
 	postal: string | null;
 	country: string | null;
 	phone: string | null;
-	deep?: Deep<NpiDeep>;
+	deep?: Deep<ProviderDeep>;
 }
 
-export interface NpiEnrollment {
+export interface ProviderEnrollment {
 	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
 	type: string | null;
 	specialty: string | null;
 	state: string | null;
 }
 
-export interface NpiDeep {
+export interface ProviderDeep {
+	enumerated_at?: string | null;
+	updated_at?: string | null;
+	reactivated_at?: string | null;
+	taxonomies?: ProviderTaxonomy[] | null;
 	/** Present in the stored Medicare FFS enrollment extract; not payment eligibility. */
 	medicare?: boolean | null;
 	/** NPI-only match in the stored CMS opt-out affidavit list. Null when unavailable. */
 	opt_out?: boolean | null;
 	/** Stored enrollment rows. Null when unavailable; [] when no rows are returned. */
-	enrollments?: NpiEnrollment[] | null;
+	enrollments?: ProviderEnrollment[] | null;
 	/** Recorded NPI deactivation date, YYYY-MM-DD. Null when active or unavailable. */
 	deactivated_at: string | null;
 }

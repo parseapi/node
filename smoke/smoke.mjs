@@ -98,10 +98,10 @@ await expectOk('bank', parse.bank('DE89370400440532013000'), (r) =>
 	r.valid === true && r.country === 'DE' && r.bank === '37040044' ? null : 'not valid DE'
 );
 await expectOk('bank junk', parse.bank('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
-await expectOk('npi', parse.npi('1881018208'), (r) =>
+await expectOk('npi', parse.provider('1881018208'), (r) =>
 	r.valid === true && r.registered === true ? null : 'not registered'
 );
-await expectOk('npi junk', parse.npi('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
+await expectOk('npi junk', parse.provider('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('phone', parse.phone('+14155552671'), (r) => (r.phone === '+14155552671' ? null : 'wrong phone'));
 // Metered core siblings: junk numbers answer 200 valid false, free, no vendor dip.
 await expectOk('carrier junk free', parse.carrier('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));

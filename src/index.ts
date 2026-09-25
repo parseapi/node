@@ -46,7 +46,7 @@ import type {
 	Language,
 	Mx,
 	Name,
-	Npi,
+	Provider,
 	Phone,
 	Point,
 	Postal,
@@ -164,7 +164,7 @@ export type EmailOptions = DeepOption & RequestOptions;
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
 export type BankOptions = { country?: string } & DeepOption & RequestOptions;
 export type BankRequirementsOptions = { format?: string } & RequestOptions;
-export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
+export type ProviderOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
@@ -504,8 +504,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		bankRequirements: (country: string, opts?: BankRequirementsOptions): Promise<BankRequirements> =>
 			request('/bank/requirements', { country, format: opts?.format }, undefined, opts),
 
-		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
-			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),
+		provider: (npi: string, opts?: ProviderOptions): Promise<Provider> =>
+			request(`/provider/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
