@@ -471,11 +471,13 @@ interface TariffMeasure {
     conditional?: boolean | null;
 }
 interface TariffDeep {
+    /** Open-string explanation when effective_rate is null. */
+    reason?: string | null;
     /** The origin country the measures were resolved for. */
     origin?: string | null;
-    /** Composed ad valorem percent. Null when the components do not compose cleanly. */
+    /** Composed ad valorem percent for matched stored measures only, not complete duty or landed cost. Null when the components do not compose cleanly. */
     effective_rate?: number | null;
-    /** Every Chapter 99 tariff measure that applies to this code from this origin. */
+    /** Matching stored Chapter 99 schedule measures for this code and goods origin. */
     measures?: TariffMeasure[] | null;
     /** Units of quantity (No., kg). */
     units: string[];
@@ -485,6 +487,10 @@ interface TariffDeep {
     other: string | null;
 }
 interface Tariff {
+    /** Exact immutable edition. Older servers may omit it. */
+    edition?: string;
+    /** Answering date, or null for an undated edition query. */
+    date?: string | null;
     /** Normalized code with dots (8471.30.01.00). */
     hts: string;
     /** The schedule line verbatim. */
@@ -501,8 +507,14 @@ interface TariffSearchHit {
     hts: string;
     description: string;
     general: string | null;
+    /** Parent descriptions, outermost first. Older responses may omit this context. */
+    lineage?: string[] | null;
 }
 interface TariffSearch {
+    /** Exact immutable edition. Older servers may omit it. */
+    edition?: string;
+    /** Answering date, or null for an undated edition query. */
+    date?: string | null;
     q: string;
     revision: string;
     /** Up to 20 tariff lines, best match first. */
@@ -792,8 +804,47 @@ interface Timezone {
     to?: TimezoneConversionTarget | null;
     deep?: Deep<TimezoneDeep>;
 }
-/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+/** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
 interface Time extends Timezone {
+    /** Present only for explicit location selectors. Ambiguous or missing results retain null clock fields. */
+    location?: TimeLocation;
+    /** With targets only. Order and duplicates are preserved. Null means the source timezone is unresolved. */
+    targets?: TimezoneConversionTarget[] | null;
+}
+/** Serving timezone identifiers and their pinned rule edition. */
+interface TimeZones {
+    timezone_database_version: string;
+    timezones: string[];
+    /** Present with details=true. The one instant used for all rows. */
+    at?: string;
+    zones?: TimeZoneEntry[];
+}
+interface TimeZoneEntry {
+    timezone: string;
+    countries: string[];
+    area: string | null;
+    abbreviation: string;
+    offset: string;
+    offset_seconds: number;
+    dst: boolean;
+    observes_dst: boolean;
+}
+interface TimeTransitionState {
+    at?: string | null;
+    offset?: string | null;
+    offset_seconds?: number | null;
+    abbreviation?: string | null;
+    dst?: boolean | null;
+}
+interface TimeTransition {
+    at?: string | null;
+    before?: TimeTransitionState | null;
+    after?: TimeTransitionState | null;
+    change_seconds?: number | null;
+}
+interface TimeSeason {
+    start?: TimeTransition | null;
+    end?: TimeTransition | null;
 }
 /** The other side of a timezone conversion. `at` is the converted wall time. */
 interface TimezoneConversionTarget {
@@ -845,6 +896,10 @@ interface Elevation {
     elevation: number | null;
     elevation_ft: number | null;
     resolution: number | null;
+}
+interface ElevationLocations {
+    /** Ordered samples. Point lists preserve supplied coordinates. Paths include both endpoints with even spacing along the path. Unknown elevations stay null. */
+    points: Elevation[];
 }
 interface PointDeep {
     city: PointCity | null;
@@ -1077,6 +1132,147 @@ interface Company {
     postal: string | null;
     deep?: Deep<CompanyDeep>;
 }
+/** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
+interface CompanyProfileListing {
+    exchange: string;
+    symbol: string;
+}
+interface CompanyProfileAddress {
+    type: string;
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postal: string | null;
+    country: string | null;
+}
+interface CompanyProfileJurisdiction {
+    country: string | null;
+    state: string | null;
+}
+interface CompanyProfileWebsite {
+    domain: string;
+    url: string | null;
+}
+interface CompanyProfileIdentifier {
+    type: string;
+    authority: string;
+    value: string;
+}
+interface CompanyProfileIndustry {
+    type: string;
+    code: string;
+    name: string | null;
+}
+/** Source-stated founding value. Precision is year, month, day, or a future open value. */
+interface CompanyProfileFounding {
+    value: string;
+    precision: string;
+}
+/** Reported total headcount for the stated organization scope and measurement date. */
+interface CompanyProfileEmployees {
+    count: number;
+    as_of: string;
+    /** Open string, currently legal_entity or consolidated_group. */
+    scope: string;
+    /** Open string, currently reported. */
+    method: string;
+    approximate: boolean;
+}
+/** Legal form recorded by a register; codes remain open strings. */
+interface CompanyProfileRegistrationLegalForm {
+    code: string;
+    name: string;
+}
+/** Source-recorded principal address. State and country_raw are not inferred ISO codes. */
+interface CompanyProfileRegistrationAddress {
+    kind: string;
+    line1: string | null;
+    line2: string | null;
+    city: string | null;
+    state: string | null;
+    postal: string | null;
+    country_raw: string | null;
+}
+/** Registry-scoped legal facts; registration does not establish current operation or tax exemption. */
+interface CompanyProfileRegistration {
+    authority: string;
+    number: string;
+    jurisdiction: CompanyProfileJurisdiction;
+    role: string;
+    legal_form: CompanyProfileRegistrationLegalForm;
+    status: string;
+    /** This register's reported entity-form date, not universal incorporation or founding. */
+    formation_date: string | null;
+    address: CompanyProfileRegistrationAddress | null;
+}
+/** Attribution for selected enrichment fields, not the whole company profile. */
+interface CompanyProfileSource {
+    type: string;
+    url: string;
+    fields: string[];
+    observed_at: string;
+    /** Explicit source update timestamp or null; employee measurement dates remain in as_of. */
+    updated_at: string | null;
+}
+/** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
+interface CompanyProfileDeep {
+    legal_name?: string | null;
+    aliases?: string[] | null;
+    jurisdiction?: CompanyProfileJurisdiction | null;
+    status?: string | null;
+    websites?: CompanyProfileWebsite[] | null;
+    identifiers?: CompanyProfileIdentifier[] | null;
+    incorporated?: string | null;
+    addresses?: CompanyProfileAddress[] | null;
+    industries?: CompanyProfileIndustry[] | null;
+    parent?: string | null;
+    description?: string | null;
+    /** Returned asset URL only. The SDK does not fetch it. */
+    logo?: string | null;
+    socials?: string[] | null;
+    /** Founding claim, distinct from legal incorporation. Year-only dates stay year-only. */
+    founded?: CompanyProfileFounding | null;
+    employees?: CompanyProfileEmployees | null;
+    /** Empty means no admitted registration facts; older editions may omit this member. */
+    registrations?: CompanyProfileRegistration[] | null;
+    sources?: CompanyProfileSource[] | null;
+}
+interface CompanyProfile {
+    id: string;
+    name: string;
+    country: string | null;
+    website: string | null;
+    listings: CompanyProfileListing[] | null;
+    address: CompanyProfileAddress | null;
+    deep?: Deep<CompanyProfileDeep>;
+}
+/** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
+interface CompanyMatch {
+    field?: string | null;
+    value?: string | null;
+    type?: string | null;
+    authority?: string | null;
+    exchange?: string | null;
+}
+interface CompanyCandidate extends CompanyProfile {
+    match: CompanyMatch;
+}
+interface CompanySearch {
+    companies: CompanyCandidate[];
+    next: string | null;
+}
+/** Edition counts describe the records available, not all companies in a country. */
+interface CompanyCoverage {
+    scope: string;
+    label: string;
+    description: string;
+    snapshot_at: string;
+    companies: number;
+    countries: string[];
+    with_website: number;
+    with_listings: number;
+    with_address: number;
+}
 /** A direct child industry code. */
 interface NaicsChild {
     naics: string;
@@ -1303,7 +1499,31 @@ interface NameDeep {
     /** Name initials using CLDR formatting rules. */
     initials?: string | null;
 }
+/** How an offsetless source wall time selected an instant. */
+interface TimeResolution {
+    kind?: string | null;
+    policy?: string | null;
+    /** Signed wall-clock adjustment. Zero for unique and overlapping times. */
+    adjustment_seconds?: number | null;
+    /** Chronological alternatives. Empty means the wall time is unique. */
+    alternatives?: TimeResolutionAlternative[] | null;
+}
+interface TimeResolutionAlternative {
+    at?: string | null;
+    unix?: number | null;
+    offset?: string | null;
+}
 interface TimezoneDeep {
+    /** Rule-defined standard offset. Seasonal changes may be negative. */
+    standard_offset?: string | null;
+    standard_offset_seconds?: number | null;
+    dst_offset_seconds?: number | null;
+    /** Current DST-flag interval, or the next within 400 days. */
+    season?: TimeSeason | null;
+    /** Pinned rules used by canonical Time. */
+    timezone_database_version?: string | null;
+    /** Null when no offsetless conversion was resolved. */
+    resolution?: TimeResolution | null;
     name: string | null;
     /** Whole minutes, truncated toward zero for historical second offsets. */
     offset_minutes: number | null;
@@ -1386,6 +1606,26 @@ interface PropertyTax {
     currency: string;
     /** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
     period: string;
+}
+interface TimeLocationInput {
+    type: string;
+    value: string;
+}
+interface TimeLocationCandidate {
+    id: string | null;
+    name: string | null;
+    country: string | null;
+    state: string | null;
+    timezone: string | null;
+    latitude: number | null;
+    longitude: number | null;
+}
+interface TimeLocation {
+    input: TimeLocationInput;
+    status: string;
+    candidates: TimeLocationCandidate[];
+    truncated: boolean;
+    source: string;
 }
 type Industry = Naics;
 type IndustryChild = NaicsChild;
@@ -1599,6 +1839,36 @@ type AddressSearchOptions = {
 type CompanyOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
+/** Refetch a directory company by its stable co_ ID. */
+type CompanyIdOptions = DeepOption & RequestOptions;
+/** Choose at most one selector, or discover by country, exact industry or selected registration. The API validates filters and cursors. */
+type CompanySearchOptions = {
+    /** Company name search. Sent as q. */
+    query?: string;
+    domain?: string;
+    ticker?: string;
+    identifier?: string;
+    /** ISO2 country filter. */
+    country?: string;
+    /** Exact four-digit SIC code string, preserving leading zeros. Requires industry_type. */
+    industry?: string;
+    /** Industry namespace; currently sic. Requires industry. */
+    industry_type?: string;
+    /** Selected registration authority, such as RA000599; permits discovery without an identity selector. */
+    registration_authority?: string;
+    /** Exact source legal-form code; requires registration_authority. DPC does not mean publicly traded. */
+    registration_form?: string;
+    /** Exact source administrative status; requires registration_authority. It does not establish business activity. */
+    registration_status?: string;
+    /** Exchange filter for ticker searches. */
+    exchange?: string;
+    /** Issuing authority filter for identifier searches. */
+    authority?: string;
+    limit?: number;
+    /** Opaque next-page cursor. Keep the same selector and filters. */
+    cursor?: string;
+} & DeepOption & RequestOptions;
+type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
@@ -1666,8 +1936,15 @@ type IndustrySearchOptions = {
 type TariffOptions = {
     /** Origin country (ISO2). With paid deep, resolves country-specific measures. */
     origin?: string;
+    /** Exact immutable edition fingerprint. */
+    edition?: string;
+    /** YYYY-MM-DD, accepted only with verified source coverage. */
+    date?: string;
 } & DeepOption & RequestOptions;
-type TariffSearchOptions = RequestOptions;
+type TariffSearchOptions = {
+    edition?: string;
+    date?: string;
+} & RequestOptions;
 type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 type CurrencyRateOptions = {
     date?: string;
@@ -1680,14 +1957,50 @@ type NameOptions = {
     /** CLDR name-formatting locale, such as en or ja. Defaults to en. */
     name_locale?: string;
 } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
 type TimeOptions = LanguageOption & {
+    ip?: string;
+    city?: string;
+    country?: string;
+    state?: string;
+    iata?: string;
+    icao?: string;
+    unlocode?: string;
+    address?: string;
+    /** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
     at?: string;
+    /** Destination IANA timezone. The target has the same unix instant. */
     to?: string;
+    /** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+    targets?: readonly string[];
+    /** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+    disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
 } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
 type TimeAtOptions = LanguageOption & {
+    /** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
     at?: string;
+    /** Destination IANA timezone. The target has the same unix instant. */
     to?: string;
+    /** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+    targets?: readonly string[];
+    /** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+    disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
 } & DeepOption & RequestOptions;
+/** Filter supported identifiers at one instant. Abbreviations return candidates, never an inferred zone. */
+type TimeZonesOptions = {
+    country?: string;
+    area?: string;
+    /** Exact signed UTC offset, such as +05:45 or +00:09:21. */
+    offset?: string;
+    abbreviation?: string;
+    dst?: boolean;
+    /** Whether a DST-flagged state occurs in the UTC calendar year containing at. */
+    observes_dst?: boolean;
+    at?: string;
+    details?: boolean;
+    sort?: 'timezone' | 'offset';
+} & RequestOptions;
 type TimezoneOptions = LanguageOption & {
     at?: string;
     to?: string;
@@ -1758,7 +2071,14 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         /** Find address suggestions using the context supplied. Prefer postal, or city and state, from the form. ip is an optional end-user locality hint for server-side calls. An empty result has reason more_input, missing_context or no_matches. Suggestions have reason null. Operational failures are errors. */
         search: (query: string, opts?: AddressSearchOptions) => Promise<AddressSearch>;
     };
-    company: (number: string, opts?: CompanyOptions) => Promise<Company>;
+    company: ((number: string, opts?: CompanyOptions) => Promise<Company>) & {
+        /** Look up a stable directory ID. Requested deep belongs to this profile. */
+        id: (id: string, opts?: CompanyIdOptions) => Promise<CompanyProfile>;
+        /** Return candidates without selecting a match. Use one selector, country, exact industry, or selected registration filters. */
+        search: (opts: CompanySearchOptions) => Promise<CompanySearch>;
+        /** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
+        coverage: (opts?: CompanyCoverageOptions) => Promise<CompanyCoverage>;
+    };
     /**
      * Parse an email and check its format and domain.
      * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
@@ -1819,8 +2139,10 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
     language: (code: string, opts?: LanguageOptions) => Promise<Language>;
     name: (name: string, opts?: NameOptions) => Promise<Name>;
-    /** Current local time, UTC by default. With to, offsetless at is source wall time. */
+    /** Current local time, UTC by default. With to or targets, offsetless at is source wall time. */
     time: ((timezone?: string, opts?: TimeOptions) => Promise<Time>) & {
+        /** Search serving timezone IDs. Omit query to list all. */
+        zones: (query?: string, opts?: TimeZonesOptions) => Promise<TimeZones>;
         at: (lat: number, lon: number, opts?: TimeAtOptions) => Promise<Time>;
     };
     timezone: ((id: string, opts?: TimezoneOptions) => Promise<Timezone>) & {
@@ -1832,7 +2154,12 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     holiday: ((country: string, opts?: HolidayOptions) => Promise<HolidayYear>) & {
         date: (country: string, date: string, opts?: HolidayDateOptions) => Promise<HolidayDate>;
     };
-    elevation: (lat: number, lon: number, opts?: ElevationOptions) => Promise<Elevation>;
+    elevation: ((lat: number, lon: number, opts?: ElevationOptions) => Promise<Elevation>) & {
+        /** Sample up to 512 coordinates in order. Accepts lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+        points: (points: Array<[number, number]> | string, opts?: ElevationOptions) => Promise<ElevationLocations>;
+        /** Sample a path at 2-512 evenly spaced great-circle distances, including both endpoints. Accepts 2-512 vertices as lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+        path: (path: Array<[number, number]> | string, samples: number, opts?: ElevationOptions) => Promise<ElevationLocations>;
+    };
     /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
     point: (lat: number, lon: number, opts?: PointOptions) => Promise<Point>;
     /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
@@ -1846,4 +2173,4 @@ type ParseAPIClient = ReturnType<typeof parseAPI>;
 type NaicsOptions = IndustryOptions;
 type NaicsSearchOptions = IndustrySearchOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

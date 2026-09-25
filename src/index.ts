@@ -7,6 +7,9 @@ import type {
 	Address,
 	AddressSearch,
 	Company,
+	CompanyProfile,
+	CompanySearch,
+	CompanyCoverage,
 	Bloc,
 	BlocCountries,
 	Caller,
@@ -27,6 +30,7 @@ import type {
 	Stack,
 	Domain,
 	Elevation,
+	ElevationLocations,
 	Email,
 	Vat,
 	Bank,
@@ -56,6 +60,7 @@ import type {
 	StateDistricts,
 	Timezone,
 	Time,
+	TimeZones,
 	Useragent,
 	Vin,
 	Vehicle,
@@ -159,6 +164,36 @@ export type AddressSearchOptions = {
 	ip?: string;
 } & RequestOptions;
 export type CompanyOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+/** Refetch a directory company by its stable co_ ID. */
+export type CompanyIdOptions = DeepOption & RequestOptions;
+/** Choose at most one selector, or discover by country, exact industry or selected registration. The API validates filters and cursors. */
+export type CompanySearchOptions = {
+	/** Company name search. Sent as q. */
+	query?: string;
+	domain?: string;
+	ticker?: string;
+	identifier?: string;
+	/** ISO2 country filter. */
+	country?: string;
+	/** Exact four-digit SIC code string, preserving leading zeros. Requires industry_type. */
+	industry?: string;
+	/** Industry namespace; currently sic. Requires industry. */
+	industry_type?: string;
+	/** Selected registration authority, such as RA000599; permits discovery without an identity selector. */
+	registration_authority?: string;
+	/** Exact source legal-form code; requires registration_authority. DPC does not mean publicly traded. */
+	registration_form?: string;
+	/** Exact source administrative status; requires registration_authority. It does not establish business activity. */
+	registration_status?: string;
+	/** Exchange filter for ticker searches. */
+	exchange?: string;
+	/** Issuing authority filter for identifier searches. */
+	authority?: string;
+	limit?: number;
+	/** Opaque next-page cursor. Keep the same selector and filters. */
+	cursor?: string;
+} & DeepOption & RequestOptions;
+export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
@@ -197,8 +232,20 @@ export type IndustrySearchOptions = { limit?: number } & DeepOption & RequestOpt
 export type TariffOptions = {
 	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
 	origin?: string;
+	/** Exact immutable edition fingerprint. */
+	edition?: string;
+	/** YYYY-MM-DD, accepted only with verified source coverage. */
+	date?: string;
 } & DeepOption & RequestOptions;
-export type TariffSearchOptions = RequestOptions;
+export type TariffSearchOptions = { edition?: string; date?: string } & RequestOptions;
+function tariffSelection<T extends { edition?: string; date?: string | null }>(result: T, opts?: { edition?: string; date?: string }): T {
+	if ((opts?.edition !== undefined || opts?.date !== undefined) &&
+		(typeof result.edition !== 'string' || result.edition.length !== 64 || !/^[a-f0-9]{64}$/.test(result.edition) || (opts.edition !== undefined && result.edition !== opts.edition) ||
+		(opts.date !== undefined ? result.date !== opts.date : result.date != null))) {
+		throw new ParseAPIError(0, 'tariff_selection_mismatch', 'Tariff response did not confirm the requested edition/date. The server may not support this selection.', null, null);
+	}
+	return result;
+}
 export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
@@ -208,8 +255,51 @@ export type NameOptions = {
 	/** CLDR name-formatting locale, such as en or ja. Defaults to en. */
 	name_locale?: string;
 } & DeepOption & RequestOptions;
-export type TimeOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
-export type TimeAtOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+export type TimeOptions = LanguageOption & {
+	ip?: string;
+	city?: string;
+	country?: string;
+	state?: string;
+	iata?: string;
+	icao?: string;
+	unlocode?: string;
+	address?: string;
+
+	/** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
+	at?: string;
+	/** Destination IANA timezone. The target has the same unix instant. */
+	to?: string;
+	/** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+	targets?: readonly string[];
+	/** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+	disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
+} & DeepOption & RequestOptions;
+/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+export type TimeAtOptions = LanguageOption & {
+	/** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
+	at?: string;
+	/** Destination IANA timezone. The target has the same unix instant. */
+	to?: string;
+	/** One to ten destination IDs, preserving order and duplicates. Use instead of to. */
+	targets?: readonly string[];
+	/** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
+	disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
+} & DeepOption & RequestOptions;
+/** Filter supported identifiers at one instant. Abbreviations return candidates, never an inferred zone. */
+export type TimeZonesOptions = {
+	country?: string;
+	area?: string;
+	/** Exact signed UTC offset, such as +05:45 or +00:09:21. */
+	offset?: string;
+	abbreviation?: string;
+	dst?: boolean;
+	/** Whether a DST-flagged state occurs in the UTC calendar year containing at. */
+	observes_dst?: boolean;
+	at?: string;
+	details?: boolean;
+	sort?: 'timezone' | 'offset';
+} & RequestOptions;
 export type TimezoneOptions = LanguageOption & { at?: string; to?: string } & DeepOption & RequestOptions;
 export type TimezoneAtOptions = LanguageOption & { at?: string } & DeepOption & RequestOptions;
 export type DateOptions = LanguageOption & { format?: 'mdy' | 'dmy'; to?: string } & DeepOption & RequestOptions;
@@ -233,6 +323,9 @@ interface DeepOption {
 }
 
 type Query = Record<string, string | number | boolean | undefined>;
+
+// Directory routes do not accept display language or other product options.
+const requestControls = (opts?: RequestOptions): RequestOptions => ({ signal: opts?.signal, timeoutMs: opts?.timeoutMs, retries: opts?.retries });
 
 function env(name: string): string | undefined {
 	return typeof process !== 'undefined' ? process.env?.[name] : undefined;
@@ -377,6 +470,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	const enc = encodeURIComponent;
 	const deepQuery = (opts?: DeepOption): Query => (opts?.deep ? { deep: true } : {});
 
+	function elevationSamples(selector: 'points' | 'path', coordinates: Array<[number, number]> | string, opts?: ElevationOptions, samples?: number): Promise<ElevationLocations> {
+		const value = typeof coordinates === 'string' ? coordinates : coordinates.map(([lat, lon]) => `${lat},${lon}`).join('|');
+		// The query grammar uses plain decimals. JSON preserves small numeric
+		// coordinates that JavaScript serializes with exponent notation.
+		const numericJson = typeof coordinates !== 'string' && coordinates.some(point => point.some(value => /e/i.test(String(value))));
+		const sampling = samples === undefined ? {} : { samples };
+		const query = { [selector]: value, ...sampling };
+		const url = new URL(baseUrl + '/elevation');
+		for (const [name, value] of Object.entries(query)) url.searchParams.set(name, String(value));
+		return !numericJson && url.href.length <= 8000
+			? request('/elevation', query, undefined, opts)
+			: request('/elevation', undefined, undefined, opts, { [selector]: coordinates, ...sampling });
+	}
 
 	const industry = Object.assign(
 			(code: string, opts?: IndustryOptions): Promise<Industry> => request(`/industry/${enc(code)}`, deepQuery(opts), undefined, opts),
@@ -482,8 +588,21 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		company: (number: string, opts?: CompanyOptions): Promise<Company> =>
-			request(`/company/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+		company: Object.assign(
+			(number: string, opts?: CompanyOptions): Promise<Company> =>
+				request(`/company/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+			{
+				/** Look up a stable directory ID. Requested deep belongs to this profile. */
+				id: (id: string, opts?: CompanyIdOptions): Promise<CompanyProfile> =>
+					request(`/company/id/${enc(id)}`, deepQuery(opts), undefined, requestControls(opts)),
+				/** Return candidates without selecting a match. Use one selector, country, exact industry, or selected registration filters. */
+				search: (opts: CompanySearchOptions): Promise<CompanySearch> =>
+					request('/company', { q: opts.query, domain: opts.domain, ticker: opts.ticker, identifier: opts.identifier, country: opts.country, industry: opts.industry, industry_type: opts.industry_type, registration_authority: opts.registration_authority, registration_form: opts.registration_form, registration_status: opts.registration_status, exchange: opts.exchange, authority: opts.authority, limit: opts.limit, cursor: opts.cursor, ...deepQuery(opts) }, undefined, requestControls(opts)),
+				/** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
+				coverage: (opts?: CompanyCoverageOptions): Promise<CompanyCoverage> =>
+					request('/company/directory/coverage', undefined, undefined, requestControls(opts)),
+			}
+		),
 
 		/**
 		 * Parse an email and check its format and domain.
@@ -588,9 +707,9 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
-				request(`/tariff/${enc(code)}`, { origin: opts?.origin, ...deepQuery(opts) }, undefined, opts),
+				request<Tariff>(`/tariff/${enc(code)}`, { origin: opts?.origin, edition: opts?.edition, date: opts?.date, ...deepQuery(opts) }, undefined, opts).then(result => tariffSelection(result, opts)),
 			{
-				search: (query: string, opts?: TariffSearchOptions): Promise<TariffSearch> => request('/tariff', { q: query }, undefined, opts),
+				search: (query: string, opts?: TariffSearchOptions): Promise<TariffSearch> => request<TariffSearch>('/tariff', { q: query, edition: opts?.edition, date: opts?.date }, undefined, opts).then(result => tariffSelection(result, opts)),
 			}
 		),
 
@@ -613,13 +732,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		name: (name: string, opts?: NameOptions): Promise<Name> => request(`/name/${enc(name)}`, { country: opts?.country, ...deepQuery(opts), name_locale: opts?.name_locale }, undefined, opts),
 
-		/** Current local time, UTC by default. With to, offsetless at is source wall time. */
+		/** Current local time, UTC by default. With to or targets, offsetless at is source wall time. */
 		time: Object.assign(
 			(timezone?: string, opts?: TimeOptions): Promise<Time> =>
-				request(timezone === undefined ? '/time' : `/time/${enc(timezone)}`, { at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
+				request(timePath(timezone), { ...timeSource(timezone, opts), at: opts?.at, to: opts?.to, targets: timeTargets(opts?.targets, opts?.to), disambiguation: opts?.disambiguation, ...deepQuery(opts) }, undefined, opts),
 			{
+				/** Search serving timezone IDs. Omit query to list all. */
+				zones: (query?: string, opts?: TimeZonesOptions): Promise<TimeZones> => request('/time/zones', { q: query, country: opts?.country, area: opts?.area, offset: opts?.offset, abbreviation: opts?.abbreviation, dst: opts?.dst === undefined ? undefined : String(opts.dst), observes_dst: opts?.observes_dst === undefined ? undefined : String(opts.observes_dst), at: opts?.at, details: opts?.details, sort: opts?.sort }, undefined, opts),
 				at: (lat: number, lon: number, opts?: TimeAtOptions): Promise<Time> =>
-					request('/time', { lat, lon, at: opts?.at, to: opts?.to, ...deepQuery(opts) }, undefined, opts),
+					request('/time', { lat, lon, at: opts?.at, to: opts?.to, targets: timeTargets(opts?.targets, opts?.to), disambiguation: opts?.disambiguation, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
@@ -649,7 +770,17 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		elevation: (lat: number, lon: number, opts?: ElevationOptions): Promise<Elevation> => request('/elevation', { lat, lon }, undefined, opts),
+		elevation: Object.assign(
+			(lat: number, lon: number, opts?: ElevationOptions): Promise<Elevation> => request('/elevation', { lat, lon }, undefined, opts),
+			{
+				/** Sample up to 512 coordinates in order. Accepts lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+				points: (points: Array<[number, number]> | string, opts?: ElevationOptions): Promise<ElevationLocations> =>
+					elevationSamples('points', points, opts),
+				/** Sample a path at 2-512 evenly spaced great-circle distances, including both endpoints. Accepts 2-512 vertices as lat/lon tuples, a pipe list, or an enc: Google polyline. Long URLs use JSON POST automatically. */
+				path: (path: Array<[number, number]> | string, samples: number, opts?: ElevationOptions): Promise<ElevationLocations> =>
+					elevationSamples('path', path, opts, samples),
+			}
+		),
 
 		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
@@ -670,6 +801,31 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 }
 
 export type ParseAPIClient = ReturnType<typeof parseAPI>;
+
+function timeSource(timezone: string | undefined, options: TimeOptions = {}): Record<string, string | undefined> {
+	const values = { ip: options.ip, city: options.city, country: options.country, state: options.state, iata: options.iata, icao: options.icao, unlocode: options.unlocode, address: options.address };
+	const primary = [options.ip, options.city, options.iata, options.icao, options.unlocode, options.address].filter(value => value !== undefined);
+	const present = Object.values(values).some(value => value !== undefined);
+	if (Object.values(values).some(value => value !== undefined && (typeof value !== 'string' || !value.trim())) ||
+		(timezone !== undefined && present) || primary.length > 1 ||
+		(options.country !== undefined && primary.length > 0 && options.city === undefined && options.address === undefined) ||
+		(options.state !== undefined && ((options.city === undefined && options.address === undefined) || options.country === undefined)) ||
+		(options.address !== undefined && options.country === undefined)) throw new TypeError('Pass one Time source, using country only with city or address and state only with city or address and country.');
+	return values;
+}
+
+function timePath(timezone: string | undefined): string {
+	if (timezone !== undefined && ['zones', 'help'].includes(timezone.trim().toLowerCase())) throw new TypeError('Time source must be an IANA timezone ID. Use timezone discovery to list IDs.');
+	return timezone === undefined ? '/time' : `/time/${encodeURIComponent(timezone)}`;
+}
+
+function timeTargets(targets: readonly string[] | undefined, to: string | undefined): string | undefined {
+	if (targets === undefined) return undefined;
+	if (to !== undefined || !Array.isArray(targets) || targets.length < 1 || targets.length > 10 || Array.from(targets).some(zone => typeof zone !== 'string' || !zone.trim() || zone.includes(','))) {
+		throw new TypeError('Time targets requires 1 to 10 timezone IDs and cannot be combined with to.');
+	}
+	return targets.join(',');
+}
 
 /** Existing NAICS options remain source compatible. */
 export type NaicsOptions = IndustryOptions;

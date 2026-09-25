@@ -80,6 +80,35 @@ behavior and does not inherit a previous request's choice.
 
 ## Calls
 
+Search the company directory, then refetch an ID you have chosen:
+
+```ts
+const candidates = await parse.company.search({ query: 'Cloudflare', country: 'US' });
+// After the caller chooses a candidate, retain its id for later lookups.
+const chosenId = 'co_xw3f22es6cjq';
+const company = await parse.company.id(chosenId, { deep: true });
+const coverage = await parse.company.coverage();
+```
+
+Company search accepts at most one of `query`, `domain`, `ticker`, or `identifier`, or discovers candidates using country or exact industry filters.
+Use `exchange` with a ticker, or `authority` with an identifier. `country`, `limit`
+and the returned `next` cursor narrow or page the same search. Pass the cursor as
+`cursor` with the same selector, filters and limit. Each result has its own
+`match` and optional `deep`. The SDK returns all candidates without choosing one.
+Directory methods accept `signal`, `timeoutMs` and `retries`, and omit `lang`.
+Directory deep adds detail in the same pooled request on every plan.
+Coverage describes the current directory edition. Empty listings do not establish
+private ownership. Deep source entries attribute selected enrichment fields, and
+logo URLs are returned without fetching images. The existing `company(number)`
+call still parses national registration numbers and returns `Company`.
+
+Discovery example: `await parse.company.search({ country: 'US', industry: '0700', industry_type: 'sic' });`
+
+Supply `industry` and `industry_type` together. The supported namespace is `sic`, with an exact four-digit string such as `0700`; leading zeros are meaningful. Country-only discovery is also supported. Filters intersect and may narrow an existing selector. Country matches the profile country, not a headquarters or operating-presence claim. Unknown values do not match a requested filter. Filter-only candidates use `match.field: "filters"` and `match.value: null`; reuse the same filters and limit with a returned cursor. Counts describe this directory edition, not complete country coverage.
+
+Reviewed `deep.registrations` retain the registry authority and exact number, registration jurisdiction, domestic role, legal form, administrative status and source-scoped formation date. Principal addresses keep their role and recorded text; they are not headquarters. Registration does not establish current operations or tax exemption. `[]` means no admitted registration facts; older responses may omit the field. Sources use `business_register` for these facts and preserve the original observation time; unknown record update times remain null.
+
+
 One method per endpoint, named after the route.
 
 ```ts
@@ -101,6 +130,11 @@ await parse.postal.distance('28202', '10001', { country: 'US' });
 await parse.address('1600 Pennsylvania Ave NW, Washington DC', { country: 'US' });
 await parse.address.search('1600 Pennsylvania', { country: 'US', postal: '20500' });
 await parse.company('51 824 753 556', { country: 'AU' });
+await parse.company.id('co_xw3f22es6cjq', { deep: true });
+await parse.company.search({ domain: 'cloudflare.com' });
+await parse.company.search({ ticker: 'NET', exchange: 'NYSE' });
+await parse.company.search({ identifier: '0001477333', authority: 'SEC' });
+await parse.company.coverage();
 await parse.city('charlotte', { country: 'US' });
 await parse.city.id('city_mb8mbqrkz8zb');
 await parse.city.search('char', { country: 'US', limit: 10 });
@@ -132,6 +166,8 @@ await parse.date.today();
 await parse.holiday('US', { year: 2026 });
 await parse.holiday.date('US', '2026-12-25');
 await parse.elevation(35.2271, -80.8431);
+await parse.elevation.points([[35.2271, -80.8431], [40.7128, -74.006]]);
+await parse.elevation.path([[35.2271, -80.8431], [35.5951, -82.5515]], 100);
 await parse.point(36.0726, -79.792);
 await parse.weather(40.7128, -74.006);
 await parse.domain('example.com');
@@ -158,9 +194,59 @@ Responses are typed, plain JSON data. `country.states('US')` requests the states
 
 DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV and PTR. Records contain `name`, `type`, `ttl` in seconds and a DNS presentation `value`. TXT values retain quoting and chunk boundaries. A selected question can include its CNAME chain. Empty records mean no records. Lookup failures remain errors.
 
+## Elevation
+
+`elevation(lat, lon)` returns one sample with meters, feet and grid resolution in meters. `elevation.points(...)` accepts up to 512 `[lat, lon]` pairs, a `lat,lon|lat,lon` string, or `enc:` followed by a Google encoded polyline. Its `points` array preserves input order and duplicate coordinates. Unknown samples stay null, and negative elevations and known zero values are preserved. Each list uses one pooled request. The SDK automatically uses JSON POST for long URLs and numeric coordinates that JavaScript expresses in exponent notation.
+
+`elevation.path(path, samples)` accepts the same input formats with 2-512 path vertices and a required integer sample count from 2 to 512. Its `points` array includes both endpoints, with samples spaced uniformly by cumulative great-circle distance along the path. Each segment follows the shortest arc. A segment with antipodal endpoints is rejected because it does not define a unique arc. Path sampling uses one pooled request and automatically selects JSON POST for a long URL.
+
 ## Time
 
-`time` returns local ISO `at` with its UTC offset and integer Unix seconds in `unix`. The core `offset` preserves exact precision. Optional `deep.offset_seconds` gives the numeric offset, while `deep.offset_minutes` gives whole minutes. Historical offsets and ISO times can include offset seconds. Omitted `at` means now. With `to`, an offsetless `at` is source wall time. Otherwise it is UTC. Include an offset for repeated local times around a clock change. Current time and conversion use pooled requests on every plan. Coordinate clock fields can be null when the timezone is unknown. Existing `timezone` methods remain supported.
+`time` returns local ISO `at` with its UTC offset and integer Unix seconds in `unix`. The core `offset` preserves exact precision. Optional `deep.offset_seconds` gives the numeric offset, while `deep.offset_minutes` gives whole minutes. Historical offsets and ISO times can include offset seconds. Omitted `at` means now. With `to` or `targets`, an offsetless `at` is source wall time. Otherwise it is UTC. Include an offset for repeated local times around a clock change. Current time and conversion use pooled requests on every plan. Coordinate clock fields can be null when the timezone is unknown. Existing `timezone` methods remain supported.
+
+For an offsetless `at` with `to` or `targets`, choose how to handle a clock change with `disambiguation`. It applies to named-zone and coordinate Time calls.
+
+| Value | Repeated time | Skipped time |
+| --- | --- | --- |
+| `compatible` (default) | Earlier occurrence | Shift forward by the clock change |
+| `earlier` | Earlier occurrence | Shift backward by the clock change |
+| `later` | Later occurrence | Shift forward by the clock change |
+| `reject` | `400 ambiguous_time` | `400 nonexistent_time` |
+
+An explicit UTC offset selects an instant directly. For example, `2026-11-01T01:30:00-04:00` and `2026-11-01T01:30:00-05:00` identify the two New York occurrences. A valid `disambiguation` value has no effect on explicit instants, current-time requests or lookups without `to` or `targets`. For user-entered appointment times, start with `reject`. Handle `ambiguous_time` or `nonexistent_time` by collecting an explicit offset or an earlier/later choice from the user. Other malformed input still uses `invalid_request`.
+
+```ts
+const result = await parse.time('America/New_York', {
+  at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'later',
+});
+console.log(result.to?.at); // 2026-11-01T06:30:00+00:00
+```
+
+Canonical Time `deep` includes the pinned rule edition in `deep.timezone_database_version` and source-wall resolution in `deep.resolution`. Resolution records `kind` (`unique`, `overlap` or `gap`), the selected policy, signed `adjustment_seconds`, and chronological alternatives with exact `at`, Unix seconds and UTC offset. Unique times have an empty alternatives list. Explicit instants, current time and lookups without conversion have null resolution. Destination detail stays compact.
+
+Search serving IANA IDs by city or region, or omit the query to list all (Go and Rust use an empty string). Discovery returns `timezone_database_version` and sorted `timezones`. No search matches returns `timezones: []`.
+
+Pass `targets` to convert one instant to 1-10 zones in a single pooled request. The native list preserves order and duplicates. Use `targets` instead of `to`. The response adds `targets`, with optional detail inside each target. Unknown source coordinates return `targets: null`. An unknown destination rejects the whole request with `not_found`. Omission keeps the original response shape.
+
+```ts
+const zones = await parse.time.zones('New York');
+const result = await parse.time('UTC', {
+  at: '2026-09-24T12:00:00Z', targets: ['America/New_York', 'Asia/Tokyo'],
+});
+console.log(zones.timezones, result.targets);
+```
+
+### Location inputs and timezone filters
+
+`parse.time(undefined, { iata: 'JFK', deep: true })` and `parse.time.zones(undefined, { country: 'US', dst: false, observes_dst: true, details: true })`.
+
+Choose one explicit location input: IP, exact city name or stable city ID, country, IATA airport, ICAO airport, port UN/LOCODE, or address. Country and state can narrow a city or address. State requires country. Address lookup requires US country context and a strict address-point match. Port lookup covers the reviewed port subset, not every assigned UN/LOCODE. IP lookup always uses the supplied IP.
+
+Location calls add `location` with `status`, `candidates`, `truncated`, `source` and the typed input. Check `status` before using the clock: ambiguous or missing locations retain null time fields. Candidate coordinates and IDs can also be null. A country with multiple timezones does not silently choose one. Named-zone and coordinate calls retain their existing signatures.
+
+Timezone discovery accepts country, IANA area, exact signed offset, abbreviation, DST-at-instant and observes-DST-during-year filters. `at` selects the common instant, `sort` selects timezone or offset order, and `details` adds `zones` rows plus the evaluation `at`. The default `timezones` list stays compact. False DST filters are sent explicitly. An abbreviation returns candidate zones rather than choosing one. Observes-DST uses the UTC calendar year containing `at`.
+
+Source deep adds `standard_offset`, `standard_offset_seconds`, signed `dst_offset_seconds` and `season`. Seasonal adjustments can be negative. `season` describes the current DST-flag interval, or the next within 400 days, with actual before/after transition facts and signed `change_seconds`. Unknown boundaries remain null. These fields are optional and nullable, and destination deep stays compact.
 
 ## Measurements
 
@@ -195,6 +281,12 @@ await parse.weather(40.7128, -74.006, { deep: true, date: '2026-08-15' });
 ```
 
 Tariff starts with the general schedule line. Paid deep adds units and the special and other schedule columns. An optional origin then resolves country-specific measures. The three calls below show those successive choices. Without origin, schedule detail is still returned and origin-dependent fields are null. A null effective rate is not a zero rate.
+Tariff lookup and search accept an optional `edition` fingerprint and `date` (`YYYY-MM-DD`). The edition pins exact immutable source bytes. A date is accepted only when verified source coverage exists. An edition without a date returns undated schedule context (`date: null`). Default requests use today. Paid detail exposes an open-string `reason` when `effective_rate` is null, including `incomplete_coverage`. A null rate never means zero. Explicit selections fail with `tariff_selection_mismatch` if an older server ignores the requested scope.
+
+
+Origin means where the goods originate, not where they ship from. The effective rate covers matched stored schedule measures only; it is not complete duty or landed cost.
+
+Codes contain 4, 6, 8 or 10 ASCII digits; dots and whitespace are optional. Search returns up to 20 description matches with parent `lineage` so a result named “Other” has context. Search is not product classification. In deep, `measures: null` means origin-dependent measures were not resolved; `measures: []` means the resolved lookup found none.
 
 ```ts
 await parse.tariff('8471.30.01.00');
@@ -238,6 +330,7 @@ Choose enrichment for the question you need answered.
 
 | Operation | What `deep` requests |
 |---|---|
+| NPI | All published taxonomies, reported license details, provider record dates and Medicare detail on paid plans. Primary specialty, exclusion flag and source metadata stay core. |
 | IP | Richer IP fields included with a paid plan. No separate check meter. |
 | Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
@@ -245,8 +338,8 @@ Choose enrichment for the question you need answered.
 | Phone, Time, Date, Currency, Language, Emoji, Bank, Point | Optional detail in the same pooled request on every plan. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
-| NPI | Deactivation date, Medicare enrollment, opt-out and enrollment rows from stored sources on paid plans. Exclusion evidence stays core. |
-| Vehicle, Tariff, Company | The complete product detail bag on paid plans. |
+| Vehicle, Tariff, Company (national number) | The complete product detail bag on paid plans. |
+| Company directory | Profile detail in the same pooled request on every plan. Search detail belongs to each company result. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
 | Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |
 
@@ -335,7 +428,7 @@ before dispatch, accepted input is forwarded unchanged. Never send a full card n
 
 ## Optional detail
 
-The default response answers the common task. Ask for `deep` when you need more detail about that same result. Core fields stay equal. City, Industry and Emoji searches put detail inside each result. Postal nearby and distance put metropolitan detail beside the entity it describes. Time conversion keeps target detail in `to.deep`; only the source has `deep.next_dst`.
+The default response answers the common task. Ask for `deep` when you need more detail about that same result. Core fields stay equal. City, Industry and Emoji searches put detail inside each result. Postal nearby and distance put metropolitan detail beside the entity it describes. Time conversion keeps target detail in `to.deep` or each `targets` item; only the source has `deep.next_dst`.
 
 ```ts
 const basic = await parse.time('America/New_York');

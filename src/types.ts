@@ -520,11 +520,13 @@ export interface TariffMeasure {
 }
 
 export interface TariffDeep {
+	/** Open-string explanation when effective_rate is null. */
+	reason?: string | null;
 	/** The origin country the measures were resolved for. */
 	origin?: string | null;
-	/** Composed ad valorem percent. Null when the components do not compose cleanly. */
+	/** Composed ad valorem percent for matched stored measures only, not complete duty or landed cost. Null when the components do not compose cleanly. */
 	effective_rate?: number | null;
-	/** Every Chapter 99 tariff measure that applies to this code from this origin. */
+	/** Matching stored Chapter 99 schedule measures for this code and goods origin. */
 	measures?: TariffMeasure[] | null;
 	/** Units of quantity (No., kg). */
 	units: string[];
@@ -535,6 +537,10 @@ export interface TariffDeep {
 }
 
 export interface Tariff {
+	/** Exact immutable edition. Older servers may omit it. */
+	edition?: string;
+	/** Answering date, or null for an undated edition query. */
+	date?: string | null;
 	/** Normalized code with dots (8471.30.01.00). */
 	hts: string;
 	/** The schedule line verbatim. */
@@ -552,9 +558,15 @@ export interface TariffSearchHit {
 	hts: string;
 	description: string;
 	general: string | null;
+	/** Parent descriptions, outermost first. Older responses may omit this context. */
+	lineage?: string[] | null;
 }
 
 export interface TariffSearch {
+	/** Exact immutable edition. Older servers may omit it. */
+	edition?: string;
+	/** Answering date, or null for an undated edition query. */
+	date?: string | null;
 	q: string;
 	revision: string;
 	/** Up to 20 tariff lines, best match first. */
@@ -878,8 +890,52 @@ export interface Timezone {
 	deep?: Deep<TimezoneDeep>;
 }
 
-/** Current time and timezone facts. Null clock fields mean the coordinates did not resolve. */
+/** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
 export interface Time extends Timezone {
+	/** Present only for explicit location selectors. Ambiguous or missing results retain null clock fields. */
+	location?: TimeLocation;
+	/** With targets only. Order and duplicates are preserved. Null means the source timezone is unresolved. */
+	targets?: TimezoneConversionTarget[] | null;
+}
+
+/** Serving timezone identifiers and their pinned rule edition. */
+export interface TimeZones {
+	timezone_database_version: string;
+	timezones: string[];
+	/** Present with details=true. The one instant used for all rows. */
+	at?: string;
+	zones?: TimeZoneEntry[];
+}
+
+export interface TimeZoneEntry {
+	timezone: string;
+	countries: string[];
+	area: string | null;
+	abbreviation: string;
+	offset: string;
+	offset_seconds: number;
+	dst: boolean;
+	observes_dst: boolean;
+}
+
+export interface TimeTransitionState {
+	at?: string | null;
+	offset?: string | null;
+	offset_seconds?: number | null;
+	abbreviation?: string | null;
+	dst?: boolean | null;
+}
+
+export interface TimeTransition {
+	at?: string | null;
+	before?: TimeTransitionState | null;
+	after?: TimeTransitionState | null;
+	change_seconds?: number | null;
+}
+
+export interface TimeSeason {
+	start?: TimeTransition | null;
+	end?: TimeTransition | null;
 }
 
 /** The other side of a timezone conversion. `at` is the converted wall time. */
@@ -937,6 +993,11 @@ export interface Elevation {
 	elevation: number | null;
 	elevation_ft: number | null;
 	resolution: number | null;
+}
+
+export interface ElevationLocations {
+	/** Ordered samples. Point lists preserve supplied coordinates. Paths include both endpoints with even spacing along the path. Unknown elevations stay null. */
+	points: Elevation[];
 }
 
 export interface PointDeep {
@@ -1193,6 +1254,148 @@ export interface Company {
 	deep?: Deep<CompanyDeep>;
 }
 
+/** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
+export interface CompanyProfileListing {
+	exchange: string;
+	symbol: string;
+}
+export interface CompanyProfileAddress {
+	type: string;
+	street: string | null;
+	city: string | null;
+	state: string | null;
+	postal: string | null;
+	country: string | null;
+}
+export interface CompanyProfileJurisdiction {
+	country: string | null;
+	state: string | null;
+}
+export interface CompanyProfileWebsite {
+	domain: string;
+	url: string | null;
+}
+export interface CompanyProfileIdentifier {
+	type: string;
+	authority: string;
+	value: string;
+}
+export interface CompanyProfileIndustry {
+	type: string;
+	code: string;
+	name: string | null;
+}
+/** Source-stated founding value. Precision is year, month, day, or a future open value. */
+export interface CompanyProfileFounding {
+	value: string;
+	precision: string;
+}
+/** Reported total headcount for the stated organization scope and measurement date. */
+export interface CompanyProfileEmployees {
+	count: number;
+	as_of: string;
+	/** Open string, currently legal_entity or consolidated_group. */
+	scope: string;
+	/** Open string, currently reported. */
+	method: string;
+	approximate: boolean;
+}
+/** Legal form recorded by a register; codes remain open strings. */
+export interface CompanyProfileRegistrationLegalForm {
+	code: string;
+	name: string;
+}
+/** Source-recorded principal address. State and country_raw are not inferred ISO codes. */
+export interface CompanyProfileRegistrationAddress {
+	kind: string;
+	line1: string | null;
+	line2: string | null;
+	city: string | null;
+	state: string | null;
+	postal: string | null;
+	country_raw: string | null;
+}
+/** Registry-scoped legal facts; registration does not establish current operation or tax exemption. */
+export interface CompanyProfileRegistration {
+	authority: string;
+	number: string;
+	jurisdiction: CompanyProfileJurisdiction;
+	role: string;
+	legal_form: CompanyProfileRegistrationLegalForm;
+	status: string;
+	/** This register's reported entity-form date, not universal incorporation or founding. */
+	formation_date: string | null;
+	address: CompanyProfileRegistrationAddress | null;
+}
+/** Attribution for selected enrichment fields, not the whole company profile. */
+export interface CompanyProfileSource {
+	type: string;
+	url: string;
+	fields: string[];
+	observed_at: string;
+	/** Explicit source update timestamp or null; employee measurement dates remain in as_of. */
+	updated_at: string | null;
+}
+/** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
+export interface CompanyProfileDeep {
+	legal_name?: string | null;
+	aliases?: string[] | null;
+	jurisdiction?: CompanyProfileJurisdiction | null;
+	status?: string | null;
+	websites?: CompanyProfileWebsite[] | null;
+	identifiers?: CompanyProfileIdentifier[] | null;
+	incorporated?: string | null;
+	addresses?: CompanyProfileAddress[] | null;
+	industries?: CompanyProfileIndustry[] | null;
+	parent?: string | null;
+	description?: string | null;
+	/** Returned asset URL only. The SDK does not fetch it. */
+	logo?: string | null;
+	socials?: string[] | null;
+	/** Founding claim, distinct from legal incorporation. Year-only dates stay year-only. */
+	founded?: CompanyProfileFounding | null;
+	employees?: CompanyProfileEmployees | null;
+	/** Empty means no admitted registration facts; older editions may omit this member. */
+	registrations?: CompanyProfileRegistration[] | null;
+	sources?: CompanyProfileSource[] | null;
+}
+export interface CompanyProfile {
+	id: string;
+	name: string;
+	country: string | null;
+	website: string | null;
+	listings: CompanyProfileListing[] | null;
+	address: CompanyProfileAddress | null;
+	deep?: Deep<CompanyProfileDeep>;
+}
+/** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
+export interface CompanyMatch {
+	field?: string | null;
+	value?: string | null;
+	type?: string | null;
+	authority?: string | null;
+	exchange?: string | null;
+}
+export interface CompanyCandidate extends CompanyProfile {
+	match: CompanyMatch;
+}
+export interface CompanySearch {
+	companies: CompanyCandidate[];
+	next: string | null;
+}
+/** Edition counts describe the records available, not all companies in a country. */
+export interface CompanyCoverage {
+	scope: string;
+	label: string;
+	description: string;
+	snapshot_at: string;
+	companies: number;
+	countries: string[];
+	with_website: number;
+	with_listings: number;
+	with_address: number;
+}
+
 /** A direct child industry code. */
 export interface NaicsChild {
 	naics: string;
@@ -1439,7 +1642,33 @@ export interface NameDeep {
 	initials?: string | null;
 }
 
+/** How an offsetless source wall time selected an instant. */
+export interface TimeResolution {
+	kind?: string | null;
+	policy?: string | null;
+	/** Signed wall-clock adjustment. Zero for unique and overlapping times. */
+	adjustment_seconds?: number | null;
+	/** Chronological alternatives. Empty means the wall time is unique. */
+	alternatives?: TimeResolutionAlternative[] | null;
+}
+
+export interface TimeResolutionAlternative {
+	at?: string | null;
+	unix?: number | null;
+	offset?: string | null;
+}
+
 export interface TimezoneDeep {
+	/** Rule-defined standard offset. Seasonal changes may be negative. */
+	standard_offset?: string | null;
+	standard_offset_seconds?: number | null;
+	dst_offset_seconds?: number | null;
+	/** Current DST-flag interval, or the next within 400 days. */
+	season?: TimeSeason | null;
+	/** Pinned rules used by canonical Time. */
+	timezone_database_version?: string | null;
+	/** Null when no offsetless conversion was resolved. */
+	resolution?: TimeResolution | null;
 	name: string | null;
 	/** Whole minutes, truncated toward zero for historical second offsets. */
 	offset_minutes: number | null;
@@ -1535,6 +1764,24 @@ export interface PropertyTax {
 	currency: string;
 	/** Reporting period, YYYY-YYYY. Monetary amounts use the final year of this period. */
 	period: string;
+}
+
+export interface TimeLocationInput { type: string; value: string; }
+export interface TimeLocationCandidate {
+	id: string | null;
+	name: string | null;
+	country: string | null;
+	state: string | null;
+	timezone: string | null;
+	latitude: number | null;
+	longitude: number | null;
+}
+export interface TimeLocation {
+	input: TimeLocationInput;
+	status: string;
+	candidates: TimeLocationCandidate[];
+	truncated: boolean;
+	source: string;
 }
 
 // Industry names for the existing US NAICS response contract.

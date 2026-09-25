@@ -36,6 +36,22 @@ async function main() {
       return new Response(JSON.stringify({ bin:'00123456',brand:null,brand_name:null,logo:'https://cdn.parseapi.com/card/generic.svg',deep:{prefix:'001234',country:null,issuer:null,type:null,prepaid:false} }));
     }
     if (url.pathname === '/country/RETRY') return new Response('{"code":"rate_limited","message":"Wait","request_id":"req_fixture"}', { status: 429, headers: { 'Retry-After': '60' } });
+    if (url.pathname === '/elevation') {
+      if (url.searchParams.get('path') !== '0,0|0,2' || url.searchParams.get('samples') !== '3') throw new Error('Elevation path/sample mapping differs');
+      return new Response(JSON.stringify({ points: [{ latitude: 0, longitude: 0, elevation: 0, elevation_ft: 0, resolution: 460 }, { latitude: 0, longitude: 1, elevation: null, elevation_ft: null, resolution: null }, { latitude: 0, longitude: 2, elevation: -20, elevation_ft: -66, resolution: 460 }] }));
+    }
+    const directoryProfile = { id: 'co_222222222222', name: 'Acme', country: 'US', website: null, listings: [], address: null, deep: { description: null, logo: null, socials: [], founded: { value: '1998', precision: 'year' }, employees: { count: 0, as_of: '2025-12-31', scope: 'consolidated_group', method: 'future_method', approximate: false }, sources: [] } };
+    if (url.pathname.startsWith('/company/id/')) return new Response(JSON.stringify(directoryProfile));
+    if (url.pathname === '/company') {
+      if (url.searchParams.has('industry')) {
+        const discoveryParams: Record<string, string> = {}; url.searchParams.forEach((value, key) => { discoveryParams[key] = value; });
+        if (JSON.stringify(discoveryParams) !== JSON.stringify({country:'US',industry:'0700',industry_type:'sic',limit:'2',cursor:'opaque+/=',deep:'true'})) throw new Error('Packed SIC filters/cursor mapping differs');
+      } else if (!url.searchParams.has('q')) {
+        if (url.search !== '?country=US') throw new Error('Packed country-only discovery differs');
+      } else if (url.searchParams.get('q') !== 'Acme' || url.searchParams.get('deep') !== 'true') throw new Error('Directory selector/deep mapping differs');
+      return new Response(JSON.stringify({ companies: [{ ...directoryProfile, match: url.searchParams.has('q') ? { field: 'name', value: 'Acme' } : { field: 'filters', value: null } }], next: null }));
+    }
+    if (url.pathname === '/company/directory/coverage') return new Response(JSON.stringify({ companies: 1, scope: 'sample' }));
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
@@ -66,6 +82,9 @@ async function main() {
   if (maximum !== null || estimate.budget?.enforced !== false) throw new Error('Preflight must preserve unknowns and advisory budgets');
   await parse.country.states('US', { signal: new AbortController().signal });
   await parse.timezone.at(0, 0);
+  const path = await parse.elevation.path([[0, 0], [0, 2]], 3, { retries: 0, timeoutMs: 1000 });
+  const elevation: number | null = path.points[0].elevation;
+  if (elevation !== 0 || path.points[1].elevation !== null || path.points[2].elevation !== -20) throw new Error('Packed Elevation path must preserve zero, null and negative samples');
   await parse.city.search('den', { country: 'US' });
   await parse.address.search('1600 Penn', { country: 'US' });
   const oldName = parse.name;
@@ -74,13 +93,26 @@ async function main() {
   const initials: string | null | undefined = name.deep?.initials;
   const company = await parse.company(' ');
   const number: string | null = company.company;
+  const directory = await parse.company.id('co_222222222222', { deep: true });
+  const founding: string | null | undefined = directory.deep?.founded?.value;
+  if (founding !== '1998') throw new Error('Packed directory deep must preserve founding precision');
+  const employees: CompanyProfileEmployees | null | undefined = directory.deep?.employees;
+  if (employees?.count !== 0 || employees.as_of !== '2025-12-31' || employees.scope !== 'consolidated_group' || employees.method !== 'future_method' || employees.approximate !== false) throw new Error('Packed directory employees must preserve zero, date, scope, future method and false');
+  const candidates = await parse.company.search({ query: 'Acme', deep: true, signal: new AbortController().signal });
+  if (candidates.companies[0]?.id !== directory.id || candidates.next !== null) throw new Error('Packed directory search differs');
+  if (JSON.stringify(candidates.companies[0]?.deep?.employees) !== JSON.stringify(employees)) throw new Error('Packed search employees differ from ID output');
+  await parse.company.search({ country: 'US' });
+  const discovered = await parse.company.search({country:'US',industry:'0700',industry_type:'sic',limit:2,cursor:'opaque+/=',deep:true});
+  if (discovered.companies[0]?.match.field !== 'filters' || discovered.companies[0]?.match.value !== null) throw new Error('Packed discovery match changed');
+  const coverage = await parse.company.coverage({ retries: 0, timeoutMs: 1000 });
+  if (coverage.companies !== 1) throw new Error('Packed directory coverage differs');
   const tariff: Promise<Tariff> = parse.tariff('8471.30.01.00');
   await tariff;
 }
 main().catch(error => { throw error; });
 `;
-  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Tariff, type Card } from '@parseapi/sdk';\n" + body);
-  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Tariff = sdk.Tariff;\ntype Card = sdk.Card;\n" + body);
+  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Tariff, type Card, type CompanyProfileEmployees } from '@parseapi/sdk';\n" + body);
+  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Tariff = sdk.Tariff;\ntype Card = sdk.Card;\ntype CompanyProfileEmployees = sdk.CompanyProfileEmployees;\n" + body);
   execFileSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--strict', '--skipLibCheck', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--lib', 'ES2022,DOM', 'esm.mts', 'commonjs.cts'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['esm.mjs'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['commonjs.cjs'], { cwd: consumer, stdio: 'inherit' });
