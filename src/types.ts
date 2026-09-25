@@ -342,7 +342,24 @@ export interface Vat {
 	deep?: Deep<VatDeep>;
 }
 
-export interface Iban {
+/** Ordered IBAN checks. States are open strings for future API values. */
+export interface BankChecks {
+	input: string;
+	country: string;
+	length: string;
+	structure: string;
+	checksum: string;
+	national: string;
+}
+
+/** A validation issue. Fields and codes remain open strings. */
+export interface BankIssue {
+	field: string;
+	code: string;
+	message: string;
+}
+
+export interface Bank {
 	iban: string | null;
 	valid: boolean;
 	country: string | null;
@@ -354,17 +371,97 @@ export interface Iban {
 	bank_name: string | null;
 	/** BIC from that same directory. Null when unsourced or missing. */
 	bic: string | null;
-	deep?: Deep<IbanDeep>;
+	/** Core check results. Older responses may omit them. */
+	checks?: BankChecks;
+	/** First blocking validation issue, or an empty list. Older responses may omit it. */
+	issues?: BankIssue[];
+	deep?: Deep<BankDeep>;
 }
 
-export interface Npi {
-	/** Normalized 10-digit NPI. Invalid input still echoes the fold. */
-	npi: string | null;
+/** Directory evidence is optional and present only when a lookup ran. */
+export interface BankDirectory {
+	edition: string;
+	country: string;
+	/** bank, branch, prefix or none; remains open for future API values. */
+	match: string;
+}
+export interface BankRequirementField {
+	key: string;
+	label: string;
+	required: boolean;
+	type: string;
+	length?: number;
+	min_length?: number;
+	max_length?: number;
+	max_input_length?: number;
+	length_unit?: string;
+	pattern?: string;
+	normalization?: string;
+}
+export interface BankRequirements {
+	country: string;
+	format: string;
+	supported: boolean;
+	fields: BankRequirementField[];
+	checks: Record<string, string>;
+	limitations: string[];
+}
+
+/** US ACH syntax/checksum analysis; no account or payment verification. */
+export interface BankUsAchInput {
+	routing: string;
+	account: string;
+}
+export interface BankUsAchChecks {
+	routing_format: string;
+	routing_checksum: string;
+	account_format: string;
+	account_checksum: string;
+}
+export interface BankUsAch {
+	format: string;
+	country: string;
+	routing: string | null;
+	account: string | null;
 	valid: boolean;
-	/** Exists in the CMS NPPES registry. */
+	bank_name: string | null;
+	checks: BankUsAchChecks;
+	issues: BankIssue[];
+}
+
+export interface ProviderTaxonomy {
+	taxonomy?: string | null;
+	specialty?: string | null;
+	primary?: boolean | null;
+	license?: string | null;
+	state?: string | null;
+}
+
+export interface ProviderSource {
+	edition?: string | null;
+	published_at?: string | null;
+	through?: string | null;
+	imported_at?: string | null;
+}
+
+export interface ProviderSources {
+	nppes?: ProviderSource | null;
+	leie?: ProviderSource | null;
+	pecos?: ProviderSource | null;
+	optout?: ProviderSource | null;
+}
+
+export interface Provider {
+	sources?: ProviderSources | null;
+	/** Input with accepted separators removed; null when empty. Invalid values remain visible. */
+	npi: string | null;
+	/** Format and NPI checksum only; does not verify a provider or credentials. */
+	valid: boolean;
+	/** Found in the stored NPPES snapshot. Null when input is invalid. */
 	registered: boolean | null;
+	/** Recorded NPI activation status. Null when unknown; not licensure or practice status. */
 	active: boolean | null;
-	/** On the OIG exclusion list. */
+	/** NPI-only match in the stored OIG LEIE file. False is not complete exclusion clearance. */
 	excluded: boolean | null;
 	/** individual or organization. */
 	type: string | null;
@@ -382,24 +479,28 @@ export interface Npi {
 	postal: string | null;
 	country: string | null;
 	phone: string | null;
-	deep?: Deep<NpiDeep>;
+	deep?: Deep<ProviderDeep>;
 }
 
-export interface NpiEnrollment {
+export interface ProviderEnrollment {
 	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
 	type: string | null;
 	specialty: string | null;
 	state: string | null;
 }
 
-export interface NpiDeep {
-	/** In the published Medicare FFS enrollment extract. */
+export interface ProviderDeep {
+	enumerated_at?: string | null;
+	updated_at?: string | null;
+	reactivated_at?: string | null;
+	taxonomies?: ProviderTaxonomy[] | null;
+	/** Present in the stored Medicare FFS enrollment extract; not payment eligibility. */
 	medicare?: boolean | null;
-	/** On the CMS opt-out affidavit list. Matched by NPI only. */
+	/** NPI-only match in the stored CMS opt-out affidavit list. Null when unavailable. */
 	opt_out?: boolean | null;
-	/** Enrollment rows. [] when medicare is false. */
-	enrollments?: NpiEnrollment[] | null;
-	/** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+	/** Stored enrollment rows. Null when unavailable; [] when no rows are returned. */
+	enrollments?: ProviderEnrollment[] | null;
+	/** Recorded NPI deactivation date, YYYY-MM-DD. Null when active or unavailable. */
 	deactivated_at: string | null;
 }
 
@@ -483,7 +584,7 @@ export interface VinRecall {
 }
 
 export interface VinDeep {
-	/** Open recall campaigns for the decoded vehicle. [] when none, null when the registry did not answer. */
+	/** Recall campaigns for the decoded year, make and model. [] when none, null when the registry did not answer. */
 	recalls?: VinRecall[] | null;
 	series: string | null;
 	doors: number | null;
@@ -633,22 +734,25 @@ export interface Mac {
 	multicast: boolean | null;
 }
 
-/** Card-prefix reference data. Null means unknown, not an invalid payment card. */
-export interface Bin {
+/** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
+export interface Card {
 	bin: string;
-	/** Actual longest matched prefix. May be shorter than the input. */
-	prefix: string | null;
-	country: string | null;
-	issuer: string | null;
-	/** Network key (visa, amex) or co-branded combination. */
 	brand: string | null;
-	/** Display name for brand (American Express). */
 	brand_name: string | null;
-	type: string | null;
-	prepaid: boolean | null;
-	deep?: Record<string, never>;
+	/** SVG URL, with a generic-card fallback. */
+	logo: string;
+	/** Included only when requested; pooled on every plan. */
+	deep?: CardDeep;
 }
 
+export interface CardDeep {
+	/** Longest recorded matching prefix; may be shorter than bin. */
+	prefix: string | null;
+	issuer: string | null;
+	country: string | null;
+	type: string | null;
+	prepaid: boolean | null;
+}
 
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 export interface DnsRecord {
@@ -1336,7 +1440,9 @@ export interface PostalDeep {
 	property_tax?: PropertyTax | null;
 }
 
-export interface IbanDeep {
+export interface BankDeep {
+	/** Source edition and exact match grain, not coverage or account verification. */
+	directory?: BankDirectory;
 	/** Two check digits as a string, keeping a leading zero. */
 	checksum: string | null;
 	/** Branch identifier when that country has one. */
@@ -1534,4 +1640,109 @@ export interface TimeLocation {
 	candidates: TimeLocationCandidate[];
 	truncated: boolean;
 	source: string;
+}
+
+// Industry names for the existing US NAICS response contract.
+export type Industry = Naics;
+export type IndustryChild = NaicsChild;
+export type IndustryCorrection = NaicsCorrection;
+export type IndustryDeep = NaicsDeep;
+export type IndustryExclusion = NaicsExclusion;
+export type IndustryMatch = NaicsMatch;
+export type IndustrySearch = NaicsSearch;
+export type IndustrySearchItem = NaicsSearchItem;
+
+export type Vehicle = Vin;
+export type VehicleDeep = VinDeep;
+export type VehicleRecall = VinRecall;
+
+// Published compatibility types retain their original response shapes.
+export interface Iban {
+	iban: string | null;
+	valid: boolean;
+	country: string | null;
+	/** Print form in groups of four, for display. Null when invalid. */
+	formatted: string | null;
+	/** Bank identifier parsed from the number, not a name. */
+	bank: string | null;
+	/** Institution name from the national bank-code directory. Null when unsourced. */
+	bank_name: string | null;
+	/** BIC from that same directory. Null when unsourced or missing. */
+	bic: string | null;
+	deep?: Deep<IbanDeep>;
+}
+
+
+export interface Npi {
+	/** Normalized 10-digit NPI. Invalid input still echoes the fold. */
+	npi: string | null;
+	valid: boolean;
+	/** Exists in the CMS NPPES registry. */
+	registered: boolean | null;
+	active: boolean | null;
+	/** On the OIG exclusion list. */
+	excluded: boolean | null;
+	/** individual or organization. */
+	type: string | null;
+	name: string | null;
+	first: string | null;
+	last: string | null;
+	credential: string | null;
+	specialty: string | null;
+	/** NUCC taxonomy code. */
+	taxonomy: string | null;
+	address: string | null;
+	city: string | null;
+	state: string | null;
+	state_name: string | null;
+	postal: string | null;
+	country: string | null;
+	phone: string | null;
+	deep?: Deep<NpiDeep>;
+}
+
+
+export interface NpiEnrollment {
+	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
+	type: string | null;
+	specialty: string | null;
+	state: string | null;
+}
+
+
+export interface NpiDeep {
+	/** In the published Medicare FFS enrollment extract. */
+	medicare?: boolean | null;
+	/** On the CMS opt-out affidavit list. Matched by NPI only. */
+	opt_out?: boolean | null;
+	/** Enrollment rows. [] when medicare is false. */
+	enrollments?: NpiEnrollment[] | null;
+	/** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+	deactivated_at: string | null;
+}
+
+
+export interface Bin {
+	bin: string;
+	/** Actual longest matched prefix. May be shorter than the input. */
+	prefix: string | null;
+	country: string | null;
+	issuer: string | null;
+	/** Network key (visa, amex) or co-branded combination. */
+	brand: string | null;
+	/** Display name for brand (American Express). */
+	brand_name: string | null;
+	type: string | null;
+	prepaid: boolean | null;
+	deep?: Record<string, never>;
+}
+
+
+
+export interface IbanDeep {
+	/** Two check digits as a string, keeping a leading zero. */
+	checksum: string | null;
+	/** Branch identifier when that country has one. */
+	branch: string | null;
+	account: string | null;
 }

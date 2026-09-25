@@ -1,7 +1,10 @@
 import type {
+	Iban,
+	Bin,
+	Npi,
 	Asn,
 	Mac,
-	Bin,
+	Card,
 	Measure,
 	MeasureUnits,
 	Address,
@@ -30,12 +33,15 @@ import type {
 	ElevationLocations,
 	Email,
 	Vat,
-	Iban,
+	Bank,
+	BankUsAch,
+	BankUsAchInput,
+	BankRequirements,
 	Emoji,
 	EmojiSearch,
 	Hlr,
-	Naics,
-	NaicsSearch,
+	Industry,
+	IndustrySearch,
 	Tariff,
 	TariffSearch,
 	HolidayDate,
@@ -44,7 +50,7 @@ import type {
 	Language,
 	Mx,
 	Name,
-	Npi,
+	Provider,
 	Phone,
 	Point,
 	Postal,
@@ -57,6 +63,7 @@ import type {
 	TimeZones,
 	Useragent,
 	Vin,
+	Vehicle,
 	Weather,
 } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
@@ -64,7 +71,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 export * from './types.js';
 export * from './preflight.js';
 
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -82,14 +89,17 @@ export class ParseAPIError extends Error {
 	readonly docs: string | null;
 	/** Send this if you contact support */
 	readonly requestId: string | null;
+	/** Original Retry-After response header, when supplied. */
+	readonly retryAfter: string | null;
 
-	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null) {
+	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter: string | null = null) {
 		super(message);
 		this.name = 'ParseAPIError';
 		this.status = status;
 		this.code = code;
 		this.docs = docs;
 		this.requestId = requestId;
+		this.retryAfter = retryAfter;
 	}
 }
 
@@ -158,8 +168,9 @@ export type CompanyOptions = LanguageOption & { country?: string } & DeepOption 
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
 export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
-export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
-export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
+export type BankOptions = { country?: string } & DeepOption & RequestOptions;
+export type BankRequirementsOptions = { format?: string } & RequestOptions;
+export type ProviderOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
@@ -172,8 +183,8 @@ export type StackOptions = { pretty?: boolean } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = LanguageOption & RequestOptions;
 export type MacOptions = RequestOptions;
-/** Card-prefix reference lookup. Deep returns an empty object on every plan. */
-export type BinOptions = DeepOption & RequestOptions;
+/** Request controls for a card-prefix reference lookup. */
+export type CardOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
 export type MeasureUnitsOptions = LanguageOption & { query?: string; type?: string; unit?: string } & RequestOptions;
@@ -182,10 +193,11 @@ export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
+export type VehicleOptions = VinOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
-export type NaicsOptions = DeepOption & RequestOptions;
+export type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
-export type NaicsSearchOptions = { limit?: number } & DeepOption & RequestOptions;
+export type IndustrySearchOptions = { limit?: number } & DeepOption & RequestOptions;
 /** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 export type TariffOptions = {
 	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
@@ -313,18 +325,23 @@ function metered(path: string, query?: Query): boolean {
 		|| (['email', 'vat', 'address'].includes(product ?? '') && query?.deep === true);
 }
 
-function retryDelayMs(attempt: number, retryAfter: string | null): number {
+// Null means the server's requested wait exceeds our automatic retry budget.
+function retryDelayMs(attempt: number, retryAfter: string | null): number | null {
 	if (retryAfter) {
-		const seconds = Number(retryAfter);
-		if (Number.isFinite(seconds) && seconds >= 0) {
-			return Math.min(seconds * 1000, RETRY_AFTER_CAP_MS);
+		const value = retryAfter.trim();
+		if (/^[0-9]+(?:\.[0-9]+)?$/.test(value)) {
+			const seconds = Number(value);
+			return seconds > RETRY_AFTER_CAP_MS / 1000 ? null : seconds * 1000;
 		}
-		if (Number.isNaN(seconds)) {
-			const date = Date.parse(retryAfter);
-			if (Number.isFinite(date)) return Math.min(Math.max(date - Date.now(), 0), RETRY_AFTER_CAP_MS);
+		if (/^[A-Za-z]{3,9},? /.test(value)) {
+			const date = Date.parse(value);
+			if (Number.isFinite(date)) {
+				const delay = Math.max(date - Date.now(), 0);
+				return delay > RETRY_AFTER_CAP_MS ? null : delay;
+			}
 		}
 	}
-	return Math.random() * 250 * 2 ** attempt;
+	return Math.random() * Math.min(250 * 2 ** Math.min(attempt, 16), RETRY_AFTER_CAP_MS);
 }
 
 export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
@@ -362,7 +379,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			const onAbort = () => controller.abort(signal!.reason);
 			signal?.addEventListener('abort', onAbort, { once: true });
 			const timer = setTimeout(() => controller.abort(new DOMException('Request timed out', 'TimeoutError')), attemptTimeout);
-			let retryAfter: string | null = null;
+			let retryDelay: number | null | undefined;
 			try {
 				let res: Response | undefined;
 				try {
@@ -388,8 +405,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						res = undefined;
 					}
 				}
-				if (res && RETRY_STATUS.has(res.status) && attempt < retries) {
-					retryAfter = res.headers.get('Retry-After');
+				if (res) retryDelay = retryDelayMs(attempt, res.headers.get('Retry-After'));
+				if (res && RETRY_STATUS.has(res.status) && attempt < retries && retryDelay !== null) {
 					await res.body?.cancel().catch(() => {});
 				} else if (res) {
 					let body: Record<string, unknown> = {};
@@ -405,14 +422,15 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						typeof body.code === 'string' ? body.code : 'unknown_error',
 						typeof body.message === 'string' ? body.message : `Request failed with status ${res.status}`,
 						typeof body.docs === 'string' ? body.docs : null,
-						typeof body.request_id === 'string' ? body.request_id : null
+						typeof body.request_id === 'string' ? body.request_id : null,
+						res.headers.get('Retry-After')
 					);
 				}
 			} finally {
 				clearTimeout(timer);
 				signal?.removeEventListener('abort', onAbort);
 			}
-			await sleep(retryDelayMs(attempt, retryAfter), signal);
+			await sleep(retryDelay ?? retryDelayMs(attempt, null)!, signal);
 		}
 	}
 
@@ -433,6 +451,14 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			? request('/elevation', query, undefined, opts)
 			: request('/elevation', undefined, undefined, opts, { [selector]: coordinates, ...sampling });
 	}
+
+	const industry = Object.assign(
+			(code: string, opts?: IndustryOptions): Promise<Industry> => request(`/industry/${enc(code)}`, deepQuery(opts), undefined, opts),
+			{
+				search: (query: string, opts?: IndustrySearchOptions): Promise<IndustrySearch> =>
+					request('/industry', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+			}
+		);
 
 	return {
 		/** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
@@ -551,11 +577,29 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				...deepQuery(opts),
 			}, undefined, opts),
 
+		// Keep existing callers on their established HTTP contracts.
 		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
 			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
+		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
+			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
+
 		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
 			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),
+
+		bank: (iban: string, opts?: BankOptions): Promise<Bank> =>
+			request('/bank', undefined, undefined, opts, { iban, country: opts?.country, deep: opts?.deep }),
+
+		/** Check US routing/account syntax using POST. Does not verify ownership, existence or ACH eligibility. */
+		bankUsAch: (input: BankUsAchInput, opts?: RequestOptions): Promise<BankUsAch> =>
+			request('/bank', undefined, undefined, opts, { format: 'us_ach', country: 'US', routing: input.routing, account: input.account }),
+
+		/** Describe supported input fields and check scope; this does not establish country directory coverage. */
+		bankRequirements: (country: string, opts?: BankRequirementsOptions): Promise<BankRequirements> =>
+			request('/bank/requirements', { country, format: opts?.format }, undefined, opts),
+
+		provider: (npi: string, opts?: ProviderOptions): Promise<Provider> =>
+			request(`/provider/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
@@ -585,9 +629,13 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
 
-		/** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
-		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
-			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
+		/** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
+		card: async (bin: string, opts?: CardOptions): Promise<Card> => {
+			if (typeof bin !== 'string' || bin.length > 64 || !/^[0-9]{2,11}$/.test(bin.replace(/[ \t\r\n-]/g, ''))) {
+				throw new TypeError('parseAPI: Card requires a string containing 2 to 11 digits. Send a prefix only.');
+			}
+			return request(`/card/${enc(bin)}`, deepQuery(opts), undefined, opts);
+		},
 
 		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
 		measure: Object.assign(
@@ -609,17 +657,18 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		useragent: (ua: string, opts?: UseragentOptions): Promise<Useragent> =>
 			request('/useragent', deepQuery(opts), { 'User-Agent': ua }, opts),
 
+		/** Identify a vehicle by VIN. Paid deep adds specifications and model-level recall campaigns. */
+		vehicle: (vin: string, opts?: VehicleOptions): Promise<Vehicle> =>
+			request(`/vehicle/${enc(vin)}`, deepQuery(opts), undefined, opts),
+
+		/** Compatibility entry for VIN callers. */
 		vin: (vin: string, opts?: VinOptions): Promise<Vin> =>
 			request(`/vin/${enc(vin)}`, deepQuery(opts), undefined, opts),
 
 		/** US NAICS 2022 definitions and hierarchy. */
-		naics: Object.assign(
-			(code: string, opts?: NaicsOptions): Promise<Naics> => request(`/naics/${enc(code)}`, deepQuery(opts), undefined, opts),
-			{
-				search: (query: string, opts?: NaicsSearchOptions): Promise<NaicsSearch> =>
-					request('/naics', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
-			}
-		),
+		industry,
+		/** Compatibility name for industry. */
+		naics: industry,
 		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
 		tariff: Object.assign(
 			(code: string, opts?: TariffOptions): Promise<Tariff> =>
@@ -742,3 +791,12 @@ function timeTargets(targets: readonly string[] | undefined, to: string | undefi
 	}
 	return targets.join(',');
 }
+
+/** Existing NAICS options remain source compatible. */
+export type NaicsOptions = IndustryOptions;
+export type NaicsSearchOptions = IndustrySearchOptions;
+
+// Compatibility options for existing package consumers.
+export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
+export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
+export type BinOptions = DeepOption & RequestOptions;

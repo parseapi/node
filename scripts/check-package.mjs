@@ -14,6 +14,7 @@ try {
   execFileSync('tar', ['-xzf', join(consumer, packed.filename), '--strip-components=1', '-C', installed]);
   const body = `
 async function main() {
+	let cardRequests = 0;
   const parse = parseAPI('fixture', { fetch: async (_input, init) => {
     const headers = new Headers(init?.headers);
     if (headers.get('Parse-Version') !== '2.0.0') throw new Error('Packaged SDK must pin API 2.0.0');
@@ -32,9 +33,28 @@ async function main() {
       if (url.searchParams.get('path') !== '0,0|0,2' || url.searchParams.get('samples') !== '3') throw new Error('Elevation path/sample mapping differs');
       return new Response(JSON.stringify({ points: [{ latitude: 0, longitude: 0, elevation: 0, elevation_ft: 0, resolution: 460 }, { latitude: 0, longitude: 1, elevation: null, elevation_ft: null, resolution: null }, { latitude: 0, longitude: 2, elevation: -20, elevation_ft: -66, resolution: 460 }] }));
     }
+    if (url.pathname.startsWith('/card/')) {
+      cardRequests++;
+      if (url.pathname === '/card/51' && url.search === '') return new Response(JSON.stringify({bin:'51',brand:'mastercard',brand_name:'Mastercard',logo:'https://cdn.parseapi.com/card/mastercard.svg'}));
+      if (url.pathname !== '/card/00%201234-56' || url.search !== '?deep=true') throw new Error('Packed Card must preserve and encode the BIN once');
+      return new Response(JSON.stringify({ bin:'00123456',brand:null,brand_name:null,logo:'https://cdn.parseapi.com/card/generic.svg',deep:{prefix:'001234',country:null,issuer:null,type:null,prepaid:false} }));
+    }
+    if (url.pathname === '/country/RETRY') return new Response('{"code":"rate_limited","message":"Wait","request_id":"req_fixture"}', { status: 429, headers: { 'Retry-After': '60' } });
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
+  const core: Card = await parse.card('51');
+  if (core.brand !== 'mastercard' || !core.logo.endsWith('/mastercard.svg') || core.deep !== undefined) throw new Error('Packed Card core differs');
+  const card: Card = await parse.card('00 1234-56', {deep:true});
+  if (card.bin !== '00123456' || card.deep?.prefix !== '001234' || card.deep?.prepaid !== false || card.deep?.country !== null) throw new Error('Packed Card must preserve nullable prefix fields');
+  if (typeof parse.bin !== 'function' || typeof parse.iban !== 'function' || typeof parse.npi !== 'function') throw new Error('Published compatibility methods are missing');
+  try { await parse.card('4242424242424242'); throw new Error('Card accepted a full number'); }
+  catch (error) { if (!(error instanceof TypeError)) throw error; }
+  if (cardRequests !== 2) throw new Error('Packed Card dispatched a rejected input');
+  try { await parse.country('RETRY'); throw new Error('Expected rate limit'); }
+  catch (error) {
+    if (!(error instanceof ParseAPIError) || error.retryAfter !== '60' || error.requestId !== 'req_fixture') throw error;
+  }
   const email = await parse.email('jane+news@example.com', { deep: true });
   const suggestedName: string | null | undefined = email.deep?.first_name;
   const noReply: boolean | null | undefined = email.deep?.no_reply;
@@ -67,8 +87,8 @@ async function main() {
 }
 main().catch(error => { throw error; });
 `;
-  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, type Tariff } from '@parseapi/sdk';\n" + body);
-  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI } = sdk;\ntype Tariff = sdk.Tariff;\n" + body);
+  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Tariff, type Card } from '@parseapi/sdk';\n" + body);
+  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Tariff = sdk.Tariff;\ntype Card = sdk.Card;\n" + body);
   execFileSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--strict', '--skipLibCheck', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--lib', 'ES2022,DOM', 'esm.mts', 'commonjs.cts'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['esm.mjs'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['commonjs.cjs'], { cwd: consumer, stdio: 'inherit' });

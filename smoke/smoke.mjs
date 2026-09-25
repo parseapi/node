@@ -93,15 +93,15 @@ await expectOk('address.search', parse.address.search('1600 Pennsylvania', { cou
 await expectOk('company junk', parse.company('junk'), (r) => r.valid === false ? null : 'expected invalid');
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
 await expectOk('vat', parse.vat('DE136695976'), (r) => (r.valid === true && r.country === 'DE' ? null : 'not valid DE'));
-await expectOk('bin', parse.bin('00 0000', { deep: true }), (r) => r.bin === '000000' && r.deep && Object.keys(r.deep).length === 0 ? null : 'BIN echo or deep mismatch');
-await expectOk('iban', parse.iban('DE89370400440532013000'), (r) =>
+await expectOk('card', parse.card('00 0000'), (r) => r.bin === '000000' && r.brand === null && r.logo === 'https://cdn.parseapi.com/card/generic.svg' ? null : 'BIN echo or prefix mismatch');
+await expectOk('bank', parse.bank('DE89370400440532013000'), (r) =>
 	r.valid === true && r.country === 'DE' && r.bank === '37040044' ? null : 'not valid DE'
 );
-await expectOk('iban junk', parse.iban('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
-await expectOk('npi', parse.npi('1881018208'), (r) =>
+await expectOk('bank junk', parse.bank('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
+await expectOk('npi', parse.provider('1881018208'), (r) =>
 	r.valid === true && r.registered === true ? null : 'not registered'
 );
-await expectOk('npi junk', parse.npi('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
+await expectOk('npi junk', parse.provider('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('phone', parse.phone('+14155552671'), (r) => (r.phone === '+14155552671' ? null : 'wrong phone'));
 // Metered core siblings: junk numbers answer 200 valid false, free, no vendor dip.
 await expectOk('carrier junk free', parse.carrier('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));

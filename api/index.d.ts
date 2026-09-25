@@ -305,7 +305,22 @@ interface Vat {
     from?: string;
     deep?: Deep<VatDeep>;
 }
-interface Iban {
+/** Ordered IBAN checks. States are open strings for future API values. */
+interface BankChecks {
+    input: string;
+    country: string;
+    length: string;
+    structure: string;
+    checksum: string;
+    national: string;
+}
+/** A validation issue. Fields and codes remain open strings. */
+interface BankIssue {
+    field: string;
+    code: string;
+    message: string;
+}
+interface Bank {
     iban: string | null;
     valid: boolean;
     country: string | null;
@@ -317,16 +332,91 @@ interface Iban {
     bank_name: string | null;
     /** BIC from that same directory. Null when unsourced or missing. */
     bic: string | null;
-    deep?: Deep<IbanDeep>;
+    /** Core check results. Older responses may omit them. */
+    checks?: BankChecks;
+    /** First blocking validation issue, or an empty list. Older responses may omit it. */
+    issues?: BankIssue[];
+    deep?: Deep<BankDeep>;
 }
-interface Npi {
-    /** Normalized 10-digit NPI. Invalid input still echoes the fold. */
-    npi: string | null;
+/** Directory evidence is optional and present only when a lookup ran. */
+interface BankDirectory {
+    edition: string;
+    country: string;
+    /** bank, branch, prefix or none; remains open for future API values. */
+    match: string;
+}
+interface BankRequirementField {
+    key: string;
+    label: string;
+    required: boolean;
+    type: string;
+    length?: number;
+    min_length?: number;
+    max_length?: number;
+    max_input_length?: number;
+    length_unit?: string;
+    pattern?: string;
+    normalization?: string;
+}
+interface BankRequirements {
+    country: string;
+    format: string;
+    supported: boolean;
+    fields: BankRequirementField[];
+    checks: Record<string, string>;
+    limitations: string[];
+}
+/** US ACH syntax/checksum analysis; no account or payment verification. */
+interface BankUsAchInput {
+    routing: string;
+    account: string;
+}
+interface BankUsAchChecks {
+    routing_format: string;
+    routing_checksum: string;
+    account_format: string;
+    account_checksum: string;
+}
+interface BankUsAch {
+    format: string;
+    country: string;
+    routing: string | null;
+    account: string | null;
     valid: boolean;
-    /** Exists in the CMS NPPES registry. */
+    bank_name: string | null;
+    checks: BankUsAchChecks;
+    issues: BankIssue[];
+}
+interface ProviderTaxonomy {
+    taxonomy?: string | null;
+    specialty?: string | null;
+    primary?: boolean | null;
+    license?: string | null;
+    state?: string | null;
+}
+interface ProviderSource {
+    edition?: string | null;
+    published_at?: string | null;
+    through?: string | null;
+    imported_at?: string | null;
+}
+interface ProviderSources {
+    nppes?: ProviderSource | null;
+    leie?: ProviderSource | null;
+    pecos?: ProviderSource | null;
+    optout?: ProviderSource | null;
+}
+interface Provider {
+    sources?: ProviderSources | null;
+    /** Input with accepted separators removed; null when empty. Invalid values remain visible. */
+    npi: string | null;
+    /** Format and NPI checksum only; does not verify a provider or credentials. */
+    valid: boolean;
+    /** Found in the stored NPPES snapshot. Null when input is invalid. */
     registered: boolean | null;
+    /** Recorded NPI activation status. Null when unknown; not licensure or practice status. */
     active: boolean | null;
-    /** On the OIG exclusion list. */
+    /** NPI-only match in the stored OIG LEIE file. False is not complete exclusion clearance. */
     excluded: boolean | null;
     /** individual or organization. */
     type: string | null;
@@ -344,22 +434,26 @@ interface Npi {
     postal: string | null;
     country: string | null;
     phone: string | null;
-    deep?: Deep<NpiDeep>;
+    deep?: Deep<ProviderDeep>;
 }
-interface NpiEnrollment {
+interface ProviderEnrollment {
     /** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
     type: string | null;
     specialty: string | null;
     state: string | null;
 }
-interface NpiDeep {
-    /** In the published Medicare FFS enrollment extract. */
+interface ProviderDeep {
+    enumerated_at?: string | null;
+    updated_at?: string | null;
+    reactivated_at?: string | null;
+    taxonomies?: ProviderTaxonomy[] | null;
+    /** Present in the stored Medicare FFS enrollment extract; not payment eligibility. */
     medicare?: boolean | null;
-    /** On the CMS opt-out affidavit list. Matched by NPI only. */
+    /** NPI-only match in the stored CMS opt-out affidavit list. Null when unavailable. */
     opt_out?: boolean | null;
-    /** Enrollment rows. [] when medicare is false. */
-    enrollments?: NpiEnrollment[] | null;
-    /** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+    /** Stored enrollment rows. Null when unavailable; [] when no rows are returned. */
+    enrollments?: ProviderEnrollment[] | null;
+    /** Recorded NPI deactivation date, YYYY-MM-DD. Null when active or unavailable. */
     deactivated_at: string | null;
 }
 interface TariffMeasure {
@@ -436,7 +530,7 @@ interface VinRecall {
     summary: string | null;
 }
 interface VinDeep {
-    /** Open recall campaigns for the decoded vehicle. [] when none, null when the registry did not answer. */
+    /** Recall campaigns for the decoded year, make and model. [] when none, null when the registry did not answer. */
     recalls?: VinRecall[] | null;
     series: string | null;
     doors: number | null;
@@ -572,20 +666,23 @@ interface Mac {
     local: boolean | null;
     multicast: boolean | null;
 }
-/** Card-prefix reference data. Null means unknown, not an invalid payment card. */
-interface Bin {
+/** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
+interface Card {
     bin: string;
-    /** Actual longest matched prefix. May be shorter than the input. */
-    prefix: string | null;
-    country: string | null;
-    issuer: string | null;
-    /** Network key (visa, amex) or co-branded combination. */
     brand: string | null;
-    /** Display name for brand (American Express). */
     brand_name: string | null;
+    /** SVG URL, with a generic-card fallback. */
+    logo: string;
+    /** Included only when requested; pooled on every plan. */
+    deep?: CardDeep;
+}
+interface CardDeep {
+    /** Longest recorded matching prefix; may be shorter than bin. */
+    prefix: string | null;
+    issuer: string | null;
+    country: string | null;
     type: string | null;
     prepaid: boolean | null;
-    deep?: Record<string, never>;
 }
 /** A published DNS record. Value is DNS presentation text, including TXT quoting. */
 interface DnsRecord {
@@ -1208,7 +1305,9 @@ interface PostalDeep {
     /** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
     property_tax?: PropertyTax | null;
 }
-interface IbanDeep {
+interface BankDeep {
+    /** Source edition and exact match grain, not coverage or account verification. */
+    directory?: BankDirectory;
     /** Two check digits as a string, keeping a leading zero. */
     checksum: string | null;
     /** Branch identifier when that country has one. */
@@ -1387,6 +1486,95 @@ interface TimeLocation {
     truncated: boolean;
     source: string;
 }
+type Industry = Naics;
+type IndustryChild = NaicsChild;
+type IndustryCorrection = NaicsCorrection;
+type IndustryDeep = NaicsDeep;
+type IndustryExclusion = NaicsExclusion;
+type IndustryMatch = NaicsMatch;
+type IndustrySearch = NaicsSearch;
+type IndustrySearchItem = NaicsSearchItem;
+type Vehicle = Vin;
+type VehicleDeep = VinDeep;
+type VehicleRecall = VinRecall;
+interface Iban {
+    iban: string | null;
+    valid: boolean;
+    country: string | null;
+    /** Print form in groups of four, for display. Null when invalid. */
+    formatted: string | null;
+    /** Bank identifier parsed from the number, not a name. */
+    bank: string | null;
+    /** Institution name from the national bank-code directory. Null when unsourced. */
+    bank_name: string | null;
+    /** BIC from that same directory. Null when unsourced or missing. */
+    bic: string | null;
+    deep?: Deep<IbanDeep>;
+}
+interface Npi {
+    /** Normalized 10-digit NPI. Invalid input still echoes the fold. */
+    npi: string | null;
+    valid: boolean;
+    /** Exists in the CMS NPPES registry. */
+    registered: boolean | null;
+    active: boolean | null;
+    /** On the OIG exclusion list. */
+    excluded: boolean | null;
+    /** individual or organization. */
+    type: string | null;
+    name: string | null;
+    first: string | null;
+    last: string | null;
+    credential: string | null;
+    specialty: string | null;
+    /** NUCC taxonomy code. */
+    taxonomy: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    state_name: string | null;
+    postal: string | null;
+    country: string | null;
+    phone: string | null;
+    deep?: Deep<NpiDeep>;
+}
+interface NpiEnrollment {
+    /** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
+    type: string | null;
+    specialty: string | null;
+    state: string | null;
+}
+interface NpiDeep {
+    /** In the published Medicare FFS enrollment extract. */
+    medicare?: boolean | null;
+    /** On the CMS opt-out affidavit list. Matched by NPI only. */
+    opt_out?: boolean | null;
+    /** Enrollment rows. [] when medicare is false. */
+    enrollments?: NpiEnrollment[] | null;
+    /** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
+    deactivated_at: string | null;
+}
+interface Bin {
+    bin: string;
+    /** Actual longest matched prefix. May be shorter than the input. */
+    prefix: string | null;
+    country: string | null;
+    issuer: string | null;
+    /** Network key (visa, amex) or co-branded combination. */
+    brand: string | null;
+    /** Display name for brand (American Express). */
+    brand_name: string | null;
+    type: string | null;
+    prepaid: boolean | null;
+    deep?: Record<string, never>;
+}
+interface IbanDeep {
+    /** Two check digits as a string, keeping a leading zero. */
+    checksum: string | null;
+    /** Branch identifier when that country has one. */
+    branch: string | null;
+    account: string | null;
+}
 
 /** A proposed task contains operation counts, never lookup inputs. */
 interface PreflightOperation {
@@ -1494,7 +1682,9 @@ declare class ParseAPIError extends Error {
     readonly docs: string | null;
     /** Send this if you contact support */
     readonly requestId: string | null;
-    constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null);
+    /** Original Retry-After response header, when supplied. */
+    readonly retryAfter: string | null;
+    constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter?: string | null);
 }
 /** Optional output language for supported display fields. Input parsing stays unchanged. */
 interface LanguageOption {
@@ -1593,10 +1783,13 @@ type VatOptions = {
     country?: string;
     from?: string;
 } & DeepOption & RequestOptions;
-type IbanOptions = {
+type BankOptions = {
     country?: string;
 } & DeepOption & RequestOptions;
-type NpiOptions = LanguageOption & DeepOption & RequestOptions;
+type BankRequirementsOptions = {
+    format?: string;
+} & RequestOptions;
+type ProviderOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 type PhoneOptions = {
     country?: string;
@@ -1619,8 +1812,8 @@ type StackOptions = {
 type DomainOptions = DeepOption & RequestOptions;
 type AsnOptions = LanguageOption & RequestOptions;
 type MacOptions = RequestOptions;
-/** Card-prefix reference lookup. Deep returns an empty object on every plan. */
-type BinOptions = DeepOption & RequestOptions;
+/** Request controls for a card-prefix reference lookup. */
+type CardOptions = DeepOption & RequestOptions;
 /** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
 type MeasureOptions = {
     to?: string;
@@ -1639,10 +1832,11 @@ type DnsOptions = {
 type MxOptions = RequestOptions;
 type UseragentOptions = DeepOption & RequestOptions;
 type VinOptions = DeepOption & RequestOptions;
+type VehicleOptions = VinOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
-type NaicsOptions = DeepOption & RequestOptions;
+type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
-type NaicsSearchOptions = {
+type IndustrySearchOptions = {
     limit?: number;
 } & DeepOption & RequestOptions;
 /** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
@@ -1794,7 +1988,14 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     /** Check VAT format and checksum. `deep: true` requests a metered registry check where supported, with no automatic retries by default. */
     vat: (number: string, opts?: VatOptions) => Promise<Vat>;
     iban: (iban: string, opts?: IbanOptions) => Promise<Iban>;
+    bin: (bin: string, opts?: BinOptions) => Promise<Bin>;
     npi: (npi: string, opts?: NpiOptions) => Promise<Npi>;
+    bank: (iban: string, opts?: BankOptions) => Promise<Bank>;
+    /** Check US routing/account syntax using POST. Does not verify ownership, existence or ACH eligibility. */
+    bankUsAch: (input: BankUsAchInput, opts?: RequestOptions) => Promise<BankUsAch>;
+    /** Describe supported input fields and check scope; this does not establish country directory coverage. */
+    bankRequirements: (country: string, opts?: BankRequirementsOptions) => Promise<BankRequirements>;
+    provider: (npi: string, opts?: ProviderOptions) => Promise<Provider>;
     /** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
     phone: (number: string, opts?: PhoneOptions) => Promise<Phone>;
     /** Request a metered carrier lookup. No automatic retries by default. */
@@ -1809,8 +2010,8 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
     mac: (mac: string, opts?: MacOptions) => Promise<Mac>;
-    /** Look up a 6-11 digit card prefix. Keep leading zeros in the input string. */
-    bin: (bin: string, opts?: BinOptions) => Promise<Bin>;
+    /** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
+    card: (bin: string, opts?: CardOptions) => Promise<Card>;
     /** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
     measure: ((measure: string, opts?: MeasureOptions) => Promise<Measure>) & {
         /** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
@@ -1820,10 +2021,17 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     dns: (domain: string, opts?: DnsOptions) => Promise<Dns>;
     mx: (domain: string, opts?: MxOptions) => Promise<Mx>;
     useragent: (ua: string, opts?: UseragentOptions) => Promise<Useragent>;
+    /** Identify a vehicle by VIN. Paid deep adds specifications and model-level recall campaigns. */
+    vehicle: (vin: string, opts?: VehicleOptions) => Promise<Vehicle>;
+    /** Compatibility entry for VIN callers. */
     vin: (vin: string, opts?: VinOptions) => Promise<Vin>;
     /** US NAICS 2022 definitions and hierarchy. */
-    naics: ((code: string, opts?: NaicsOptions) => Promise<Naics>) & {
-        search: (query: string, opts?: NaicsSearchOptions) => Promise<NaicsSearch>;
+    industry: ((code: string, opts?: IndustryOptions) => Promise<Industry>) & {
+        search: (query: string, opts?: IndustrySearchOptions) => Promise<IndustrySearch>;
+    };
+    /** Compatibility name for industry. */
+    naics: ((code: string, opts?: IndustryOptions) => Promise<Industry>) & {
+        search: (query: string, opts?: IndustrySearchOptions) => Promise<IndustrySearch>;
     };
     /** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
     tariff: ((code: string, opts?: TariffOptions) => Promise<Tariff>) & {
@@ -1864,5 +2072,13 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
+/** Existing NAICS options remain source compatible. */
+type NaicsOptions = IndustryOptions;
+type NaicsSearchOptions = IndustrySearchOptions;
+type IbanOptions = {
+    country?: string;
+} & DeepOption & RequestOptions;
+type NpiOptions = LanguageOption & DeepOption & RequestOptions;
+type BinOptions = DeepOption & RequestOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

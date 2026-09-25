@@ -122,20 +122,20 @@ describe('url mapping', () => {
 		['email', (p) => p.email('a@b.com'), 'https://api.parseapi.com/email/a%40b.com'],
 		['vat', (p) => p.vat('DE136695976'), 'https://api.parseapi.com/vat/DE136695976'],
 		[
-			'iban',
-			(p) => p.iban('DE89370400440532013000'),
-			'https://api.parseapi.com/iban/DE89370400440532013000',
+			'bank',
+			(p) => p.bank('DE89370400440532013000'),
+			'https://api.parseapi.com/bank',
 		],
 		[
-			'iban country',
-			(p) => p.iban('89370400440532013000', { country: 'DE' }),
-			'https://api.parseapi.com/iban/89370400440532013000?country=DE',
+			'bank country',
+			(p) => p.bank('89370400440532013000', { country: 'DE' }),
+			'https://api.parseapi.com/bank',
 		],
-		['npi', (p) => p.npi('1881018208'), 'https://api.parseapi.com/npi/1881018208'],
+		['npi', (p) => p.provider('1881018208'), 'https://api.parseapi.com/provider/1881018208'],
 		[
 			'npi deep',
-			(p) => p.npi('1881018208', { deep: true }),
-			'https://api.parseapi.com/npi/1881018208?deep=true',
+			(p) => p.provider('1881018208', { deep: true }),
+			'https://api.parseapi.com/provider/1881018208?deep=true',
 		],
 		[
 			'vat from deep',
@@ -164,6 +164,16 @@ describe('url mapping', () => {
 		['mac', (p) => p.mac('00:1B:63:84:45:E6'), 'https://api.parseapi.com/mac/00%3A1B%3A63%3A84%3A45%3AE6'],
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
+		[
+			'vehicle',
+			(p) => p.vehicle('1HGCM82633A004352'),
+			'https://api.parseapi.com/vehicle/1HGCM82633A004352',
+		],
+		[
+			'vehicle deep',
+			(p) => p.vehicle('1HGCM82633A004352', { deep: true }),
+			'https://api.parseapi.com/vehicle/1HGCM82633A004352?deep=true',
+		],
 		[
 			'vin',
 			(p) => p.vin('1HGCM82633A004352'),
