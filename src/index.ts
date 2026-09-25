@@ -58,6 +58,7 @@ import type {
 	Time,
 	Useragent,
 	Vin,
+	Vehicle,
 	Weather,
 } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
@@ -187,6 +188,7 @@ export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
 export type UseragentOptions = DeepOption & RequestOptions;
 export type VinOptions = DeepOption & RequestOptions;
+export type VehicleOptions = VinOptions;
 /** US NAICS 2022 code lookup, using pooled requests. */
 export type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
@@ -571,6 +573,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		useragent: (ua: string, opts?: UseragentOptions): Promise<Useragent> =>
 			request('/useragent', deepQuery(opts), { 'User-Agent': ua }, opts),
 
+		/** Identify a vehicle by VIN. Paid deep adds specifications and model-level recall campaigns. */
+		vehicle: (vin: string, opts?: VehicleOptions): Promise<Vehicle> =>
+			request(`/vehicle/${enc(vin)}`, deepQuery(opts), undefined, opts),
+
+		/** Compatibility entry for VIN callers. */
 		vin: (vin: string, opts?: VinOptions): Promise<Vin> =>
 			request(`/vin/${enc(vin)}`, deepQuery(opts), undefined, opts),
 

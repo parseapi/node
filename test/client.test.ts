@@ -153,6 +153,16 @@ describe('url mapping', () => {
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
 		[
+			'vehicle',
+			(p) => p.vehicle('1HGCM82633A004352'),
+			'https://api.parseapi.com/vehicle/1HGCM82633A004352',
+		],
+		[
+			'vehicle deep',
+			(p) => p.vehicle('1HGCM82633A004352', { deep: true }),
+			'https://api.parseapi.com/vehicle/1HGCM82633A004352?deep=true',
+		],
+		[
 			'vin',
 			(p) => p.vin('1HGCM82633A004352'),
 			'https://api.parseapi.com/vin/1HGCM82633A004352',

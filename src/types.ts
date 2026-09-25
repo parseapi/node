@@ -572,7 +572,7 @@ export interface VinRecall {
 }
 
 export interface VinDeep {
-	/** Open recall campaigns for the decoded vehicle. [] when none, null when the registry did not answer. */
+	/** Recall campaigns for the decoded year, make and model. [] when none, null when the registry did not answer. */
 	recalls?: VinRecall[] | null;
 	series: string | null;
 	doors: number | null;
@@ -1546,3 +1546,7 @@ export type IndustryExclusion = NaicsExclusion;
 export type IndustryMatch = NaicsMatch;
 export type IndustrySearch = NaicsSearch;
 export type IndustrySearchItem = NaicsSearchItem;
+
+export type Vehicle = Vin;
+export type VehicleDeep = VinDeep;
+export type VehicleRecall = VinRecall;
