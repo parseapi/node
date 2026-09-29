@@ -1132,6 +1132,180 @@ interface Company {
     postal: string | null;
     deep?: Deep<CompanyDeep>;
 }
+/** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
+interface CompanyProfileListing {
+    exchange: string;
+    symbol: string;
+}
+interface CompanyProfileAddress {
+    type: string;
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postal: string | null;
+    country: string | null;
+}
+interface CompanyProfileJurisdiction {
+    country: string | null;
+    state: string | null;
+}
+interface CompanyProfileWebsite {
+    domain: string;
+    url: string | null;
+}
+interface CompanyProfileIdentifier {
+    type: string;
+    authority: string;
+    value: string;
+}
+interface CompanyProfileIndustry {
+    type: string;
+    code: string;
+    name: string | null;
+}
+/** Source-stated founding value. Precision is year, month, day, or a future open value. */
+interface CompanyProfileFounding {
+    value: string;
+    precision: string;
+}
+/** Reported workforce count for the stated basis, scope and measurement date. */
+interface CompanyProfileEmployees {
+    count: number;
+    as_of: string;
+    /** Open string: headcount, full_time or full_time_equivalent. Older responses omit it. */
+    basis?: string | null;
+    /** Open string, currently legal_entity or consolidated_group. */
+    scope: string;
+    /** Open string, currently reported. */
+    method: string;
+    approximate: boolean;
+}
+/** Legal form recorded by a register; codes remain open strings. */
+interface CompanyProfileRegistrationLegalForm {
+    code: string;
+    name: string;
+}
+/** Source-recorded principal address. State and country_raw are not inferred ISO codes. */
+interface CompanyProfileRegistrationAddress {
+    kind: string;
+    line1: string | null;
+    line2: string | null;
+    city: string | null;
+    state: string | null;
+    postal: string | null;
+    country_raw: string | null;
+}
+/** Registry-scoped legal facts; registration does not establish current operation or tax exemption. */
+interface CompanyProfileRegistration {
+    authority: string;
+    number: string;
+    jurisdiction: CompanyProfileJurisdiction;
+    role: string;
+    legal_form: CompanyProfileRegistrationLegalForm;
+    status: string;
+    /** This register's reported entity-form date, not universal incorporation or founding. */
+    formation_date: string | null;
+    address: CompanyProfileRegistrationAddress | null;
+}
+/** Attribution for selected enrichment fields, not the whole company profile. */
+interface CompanyProfileSource {
+    type: string;
+    url: string;
+    fields: string[];
+    observed_at: string;
+    /** Explicit source update timestamp or null; employee measurement dates remain in as_of. */
+    updated_at: string | null;
+}
+/** Selected public business contacts. Purpose is source-reported or null. */
+interface CompanyProfilePhone {
+    number: string;
+    kind: string | null;
+}
+interface CompanyProfileEmail {
+    address: string;
+    kind: string | null;
+}
+/** An associated domain and its recorded URL, when known. */
+type CompanyProfileDomain = CompanyProfileWebsite;
+interface CompanySocialProfile {
+    platform: string | null;
+    url: string;
+    handle: string | null;
+}
+interface CompanyPhoneNumber {
+    number: string;
+    type: string | null;
+}
+interface CompanyEmailAddress {
+    address: string;
+    type: string | null;
+}
+/** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
+interface CompanyProfileDeep {
+    legal_name?: string | null;
+    aliases?: string[] | null;
+    jurisdiction?: CompanyProfileJurisdiction | null;
+    status?: string | null;
+    domains?: CompanyProfileDomain[] | null;
+    social_profiles?: CompanySocialProfile[] | null;
+    phone_numbers?: CompanyPhoneNumber[] | null;
+    email_addresses?: CompanyEmailAddress[] | null;
+    /** Earlier directory responses. */
+    websites?: CompanyProfileWebsite[] | null;
+    identifiers?: CompanyProfileIdentifier[] | null;
+    incorporated?: string | null;
+    addresses?: CompanyProfileAddress[] | null;
+    industries?: CompanyProfileIndustry[] | null;
+    parent?: string | null;
+    description?: string | null;
+    /** Returned asset URL only. The SDK does not fetch it. */
+    logo?: string | null;
+    socials?: string[] | null;
+    phones?: CompanyProfilePhone[] | null;
+    emails?: CompanyProfileEmail[] | null;
+    /** Founding claim, distinct from legal incorporation. Year-only dates stay year-only. */
+    founded?: CompanyProfileFounding | null;
+    employees?: CompanyProfileEmployees | null;
+    /** Empty means no admitted registration facts; older editions may omit this member. */
+    registrations?: CompanyProfileRegistration[] | null;
+    sources?: CompanyProfileSource[] | null;
+}
+interface CompanyProfile {
+    id: string;
+    name: string;
+    country: string | null;
+    website: string | null;
+    listings: CompanyProfileListing[] | null;
+    address: CompanyProfileAddress | null;
+    deep?: Deep<CompanyProfileDeep>;
+}
+/** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
+interface CompanyMatch {
+    field?: string | null;
+    value?: string | null;
+    type?: string | null;
+    authority?: string | null;
+    exchange?: string | null;
+}
+interface CompanyCandidate extends CompanyProfile {
+    match: CompanyMatch;
+}
+interface CompanySearch {
+    companies: CompanyCandidate[];
+    next: string | null;
+}
+/** Edition counts describe the records available, not all companies in a country. */
+interface CompanyCoverage {
+    scope: string;
+    label: string;
+    description: string;
+    snapshot_at: string;
+    companies: number;
+    countries: string[];
+    with_website: number;
+    with_listings: number;
+    with_address: number;
+}
 /** A direct child industry code. */
 interface NaicsChild {
     naics: string;
@@ -1776,6 +1950,30 @@ type AddressSearchOptions = {
 type CompanyOptions = LanguageOption & {
     country?: string;
 } & DeepOption & RequestOptions;
+/** Refetch a directory company by its stable co_ ID. */
+type CompanyIdOptions = DeepOption & RequestOptions;
+/** Choose at most one selector, or discover by country, exact industry. The API validates filters and cursors. */
+type CompanySearchOptions = {
+    /** Company name search. Sent as q. */
+    query?: string;
+    domain?: string;
+    ticker?: string;
+    identifier?: string;
+    /** ISO2 country filter. */
+    country?: string;
+    /** Exact four-digit SIC code string, preserving leading zeros. Requires industry_type. */
+    industry?: string;
+    /** Industry namespace; currently sic. Requires industry. */
+    industry_type?: string;
+    /** Exchange filter for ticker searches. */
+    exchange?: string;
+    /** Issuing authority filter for identifier searches. */
+    authority?: string;
+    limit?: number;
+    /** Opaque next-page cursor. Keep the same selector and filters. */
+    cursor?: string;
+} & DeepOption & RequestOptions;
+type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
@@ -1978,7 +2176,14 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         /** Find address suggestions using the context supplied. Prefer postal, or city and state, from the form. ip is an optional end-user locality hint for server-side calls. An empty result has reason more_input, missing_context or no_matches. Suggestions have reason null. Operational failures are errors. */
         search: (query: string, opts?: AddressSearchOptions) => Promise<AddressSearch>;
     };
-    company: (number: string, opts?: CompanyOptions) => Promise<Company>;
+    company: ((number: string, opts?: CompanyOptions) => Promise<Company>) & {
+        /** Look up a stable directory ID. Requested deep belongs to this profile. */
+        id: (id: string, opts?: CompanyIdOptions) => Promise<CompanyProfile>;
+        /** Return candidates without selecting a match. Use one selector, country, exact industry, filters. */
+        search: (opts: CompanySearchOptions) => Promise<CompanySearch>;
+        /** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
+        coverage: (opts?: CompanyCoverageOptions) => Promise<CompanyCoverage>;
+    };
     /**
      * Parse an email and check its format and domain.
      * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
@@ -2081,4 +2286,4 @@ type IbanOptions = {
 type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 type BinOptions = DeepOption & RequestOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCountry, type CompanyDeep, type CompanyOptions, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

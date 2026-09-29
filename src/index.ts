@@ -10,6 +10,9 @@ import type {
 	Address,
 	AddressSearch,
 	Company,
+	CompanyProfile,
+	CompanySearch,
+	CompanyCoverage,
 	Bloc,
 	BlocCountries,
 	Caller,
@@ -164,6 +167,30 @@ export type AddressSearchOptions = {
 	ip?: string;
 } & RequestOptions;
 export type CompanyOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+/** Refetch a directory company by its stable co_ ID. */
+export type CompanyIdOptions = DeepOption & RequestOptions;
+/** Choose at most one selector, or discover by country, exact industry. The API validates filters and cursors. */
+export type CompanySearchOptions = {
+	/** Company name search. Sent as q. */
+	query?: string;
+	domain?: string;
+	ticker?: string;
+	identifier?: string;
+	/** ISO2 country filter. */
+	country?: string;
+	/** Exact four-digit SIC code string, preserving leading zeros. Requires industry_type. */
+	industry?: string;
+	/** Industry namespace; currently sic. Requires industry. */
+	industry_type?: string;
+	/** Exchange filter for ticker searches. */
+	exchange?: string;
+	/** Issuing authority filter for identifier searches. */
+	authority?: string;
+	limit?: number;
+	/** Opaque next-page cursor. Keep the same selector and filters. */
+	cursor?: string;
+} & DeepOption & RequestOptions;
+export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
 /** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
@@ -293,6 +320,8 @@ interface DeepOption {
 }
 
 type Query = Record<string, string | number | boolean | undefined>;
+
+const requestControls = (opts?: RequestOptions): RequestOptions => ({ signal: opts?.signal, timeoutMs: opts?.timeoutMs, retries: opts?.retries });
 
 function env(name: string): string | undefined {
 	return typeof process !== 'undefined' ? process.env?.[name] : undefined;
@@ -556,8 +585,21 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		company: (number: string, opts?: CompanyOptions): Promise<Company> =>
-			request(`/company/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+		company: Object.assign(
+			(number: string, opts?: CompanyOptions): Promise<Company> =>
+				request(`/company/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+			{
+				/** Look up a stable directory ID. Requested deep belongs to this profile. */
+				id: (id: string, opts?: CompanyIdOptions): Promise<CompanyProfile> =>
+					request(`/company/id/${enc(id)}`, deepQuery(opts), undefined, requestControls(opts)),
+				/** Return candidates without selecting a match. Use one selector, country, exact industry, filters. */
+				search: (opts: CompanySearchOptions): Promise<CompanySearch> =>
+					request('/company', { q: opts.query, domain: opts.domain, ticker: opts.ticker, identifier: opts.identifier, country: opts.country, industry: opts.industry, industry_type: opts.industry_type, exchange: opts.exchange, authority: opts.authority, limit: opts.limit, cursor: opts.cursor, ...deepQuery(opts) }, undefined, requestControls(opts)),
+				/** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
+				coverage: (opts?: CompanyCoverageOptions): Promise<CompanyCoverage> =>
+					request('/company/directory/coverage', undefined, undefined, requestControls(opts)),
+			}
+		),
 
 		/**
 		 * Parse an email and check its format and domain.

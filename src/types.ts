@@ -1254,6 +1254,165 @@ export interface Company {
 	deep?: Deep<CompanyDeep>;
 }
 
+/** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
+export interface CompanyProfileListing {
+	exchange: string;
+	symbol: string;
+}
+export interface CompanyProfileAddress {
+	type: string;
+	street: string | null;
+	city: string | null;
+	state: string | null;
+	postal: string | null;
+	country: string | null;
+}
+export interface CompanyProfileJurisdiction {
+	country: string | null;
+	state: string | null;
+}
+export interface CompanyProfileWebsite {
+	domain: string;
+	url: string | null;
+}
+export interface CompanyProfileIdentifier {
+	type: string;
+	authority: string;
+	value: string;
+}
+export interface CompanyProfileIndustry {
+	type: string;
+	code: string;
+	name: string | null;
+}
+/** Source-stated founding value. Precision is year, month, day, or a future open value. */
+export interface CompanyProfileFounding {
+	value: string;
+	precision: string;
+}
+/** Reported workforce count for the stated basis, scope and measurement date. */
+export interface CompanyProfileEmployees {
+	count: number;
+	as_of: string;
+	/** Open string: headcount, full_time or full_time_equivalent. Older responses omit it. */
+	basis?: string | null;
+	/** Open string, currently legal_entity or consolidated_group. */
+	scope: string;
+	/** Open string, currently reported. */
+	method: string;
+	approximate: boolean;
+}
+/** Legal form recorded by a register; codes remain open strings. */
+export interface CompanyProfileRegistrationLegalForm {
+	code: string;
+	name: string;
+}
+/** Source-recorded principal address. State and country_raw are not inferred ISO codes. */
+export interface CompanyProfileRegistrationAddress {
+	kind: string;
+	line1: string | null;
+	line2: string | null;
+	city: string | null;
+	state: string | null;
+	postal: string | null;
+	country_raw: string | null;
+}
+/** Registry-scoped legal facts; registration does not establish current operation or tax exemption. */
+export interface CompanyProfileRegistration {
+	authority: string;
+	number: string;
+	jurisdiction: CompanyProfileJurisdiction;
+	role: string;
+	legal_form: CompanyProfileRegistrationLegalForm;
+	status: string;
+	/** This register's reported entity-form date, not universal incorporation or founding. */
+	formation_date: string | null;
+	address: CompanyProfileRegistrationAddress | null;
+}
+/** Attribution for selected enrichment fields, not the whole company profile. */
+export interface CompanyProfileSource {
+	type: string;
+	url: string;
+	fields: string[];
+	observed_at: string;
+	/** Explicit source update timestamp or null; employee measurement dates remain in as_of. */
+	updated_at: string | null;
+}
+/** Selected public business contacts. Purpose is source-reported or null. */
+export interface CompanyProfilePhone { number: string; kind: string | null; }
+export interface CompanyProfileEmail { address: string; kind: string | null; }
+/** An associated domain and its recorded URL, when known. */
+export type CompanyProfileDomain = CompanyProfileWebsite;
+export interface CompanySocialProfile { platform: string | null; url: string; handle: string | null; }
+export interface CompanyPhoneNumber { number: string; type: string | null; }
+export interface CompanyEmailAddress { address: string; type: string | null; }
+/** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
+export interface CompanyProfileDeep {
+	legal_name?: string | null;
+	aliases?: string[] | null;
+	jurisdiction?: CompanyProfileJurisdiction | null;
+	status?: string | null;
+	domains?: CompanyProfileDomain[] | null;
+	social_profiles?: CompanySocialProfile[] | null;
+	phone_numbers?: CompanyPhoneNumber[] | null;
+	email_addresses?: CompanyEmailAddress[] | null;
+	/** Earlier directory responses. */
+	websites?: CompanyProfileWebsite[] | null;
+	identifiers?: CompanyProfileIdentifier[] | null;
+	incorporated?: string | null;
+	addresses?: CompanyProfileAddress[] | null;
+	industries?: CompanyProfileIndustry[] | null;
+	parent?: string | null;
+	description?: string | null;
+	/** Returned asset URL only. The SDK does not fetch it. */
+	logo?: string | null;
+	socials?: string[] | null;
+	phones?: CompanyProfilePhone[] | null;
+	emails?: CompanyProfileEmail[] | null;
+	/** Founding claim, distinct from legal incorporation. Year-only dates stay year-only. */
+	founded?: CompanyProfileFounding | null;
+	employees?: CompanyProfileEmployees | null;
+	/** Empty means no admitted registration facts; older editions may omit this member. */
+	registrations?: CompanyProfileRegistration[] | null;
+	sources?: CompanyProfileSource[] | null;
+}
+export interface CompanyProfile {
+	id: string;
+	name: string;
+	country: string | null;
+	website: string | null;
+	listings: CompanyProfileListing[] | null;
+	address: CompanyProfileAddress | null;
+	deep?: Deep<CompanyProfileDeep>;
+}
+/** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
+export interface CompanyMatch {
+	field?: string | null;
+	value?: string | null;
+	type?: string | null;
+	authority?: string | null;
+	exchange?: string | null;
+}
+export interface CompanyCandidate extends CompanyProfile {
+	match: CompanyMatch;
+}
+export interface CompanySearch {
+	companies: CompanyCandidate[];
+	next: string | null;
+}
+/** Edition counts describe the records available, not all companies in a country. */
+export interface CompanyCoverage {
+	scope: string;
+	label: string;
+	description: string;
+	snapshot_at: string;
+	companies: number;
+	countries: string[];
+	with_website: number;
+	with_listings: number;
+	with_address: number;
+}
+
 /** A direct child industry code. */
 export interface NaicsChild {
 	naics: string;
