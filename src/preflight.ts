@@ -1,6 +1,6 @@
 /** A proposed task contains operation counts, never lookup inputs. */
 export interface PreflightOperation {
-	operation: 'email' | 'domain' | 'dns' | 'mx' | 'country';
+	operation: 'email' | 'domain' | 'dns' | 'mx' | 'country' | 'vat' | 'carrier' | 'caller' | 'hlr' | 'ip' | 'phone' | 'postal';
 	/** Positive integer, at most 100000. */
 	count: number;
 	deep?: boolean;
@@ -88,6 +88,9 @@ export interface Preflight {
 	operations: PreflightOperationEstimate[];
 	cost: PreflightCost;
 	capacity: {
+		meters?: Record<string, { advisory: true; required_max: number; included_limit: number;
+			reserved_at_snapshot: number | null; unallocated_included_at_snapshot: number | null;
+			on_demand_enabled: boolean | null; on_demand_unit_price_usd: string | null; reset_at: number }>;
 		pooled_requests: PreflightPooledCapacity;
 		email_verifications: PreflightEmailCapacity;
 		shared_on_demand_spend: PreflightSpendCapacity;

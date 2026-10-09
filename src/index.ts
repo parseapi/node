@@ -70,9 +70,11 @@ import type {
 	Weather,
 } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
+import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
 export * from './types.js';
 export * from './preflight.js';
+export * from './task.js';
 
 const VERSION = '1.9.0';
 const API_VERSION = '2.0.0';
@@ -490,6 +492,18 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		);
 
 	return {
+		/** Create a bounded task. Reuse the same request ID and inputs on retries. */
+		task: Object.assign(
+			(input: AgentTaskInput, requestId: string, opts?: RequestOptions): Promise<AgentTask> =>
+				request('/task', undefined, { 'Idempotency-Key': requestId }, opts, input),
+			{
+				get: (id: string, opts?: RequestOptions): Promise<AgentTask> => request(`/task/${enc(id)}`, undefined, undefined, opts),
+				cancel: (id: string, opts?: RequestOptions): Promise<AgentTask> => request(`/task/${enc(id)}/cancel`, undefined, undefined, opts, {}),
+				/** Reuse requestId with identical inputs to recover the saved result without another lookup or charge. */
+				lookup: <T = unknown>(id: string, input: AgentTaskLookupInput, requestId: string, opts?: RequestOptions): Promise<AgentTaskResult<T>> =>
+					request(`/task/${enc(id)}/lookup`, undefined, { 'Idempotency-Key': requestId }, opts, input),
+			}
+		),
 		/** Estimate task access, capacity and additional charges. Requires a secret key. Reserves no units or money and does not enforce the supplied budget. */
 		preflight: (task: PreflightTask, opts?: RequestOptions): Promise<Preflight> =>
 			request('/preflight', undefined, undefined, opts, task),
