@@ -1173,7 +1173,67 @@ export interface Emoji {
 export interface EmojiSearch {
 	q: string;
 	emojis: Emoji[];
+	total?: number;
+	next_offset?: number | null;
 }
+
+export interface EmojiBrowse {
+	emojis: Emoji[];
+	total: number;
+	next_offset: number | null;
+}
+
+export interface EmojiVariant { emoji: string; tones: string[]; }
+export interface EmojiArtwork {
+  svg?: string; png?: Record<string, string>;
+  /** Only present when this asset has different rights from its provider. */
+  license?: string; license_url?: string; attribution?: string;
+}
+export interface EmojiSource {
+  id: string; version: string | null; source_url: string; license: string; license_url: string;
+}
+export interface EmojiNotice { id: string; license: string; notice: string; }
+export interface EmojiArtworkSource {
+  style: string; version: string | null; unicode_version: string | null; source_url: string;
+  license: string; license_url: string; attribution: string; notices: string[];
+  loaded_coverage?: { svg: number; png: number };
+  flag_license?: { license: string; license_url: string; description: string };
+}
+export interface EmojiMetadata {
+  edition: string; max_version: string | null; source_version: string;
+  total: number;
+  sources: EmojiSource[]; artwork_sources: EmojiArtworkSource[]; notices: EmojiNotice[];
+  completeness: { missing_count: number; unexpected_count: number };
+  shortcode_sources?: Record<string, EmojiShortcodeSourceMetadata>;
+  [field: string]: unknown;
+}
+export interface EmojiCatalogScope { filters: Record<string, string>; total: number; complete_inventory: boolean; }
+export interface EmojiNativeSearchFacts { name: string | null; keywords: string[]; order?: number | null; }
+export interface EmojiCatalogSearchFacts { native: Record<string, EmojiNativeSearchFacts>; localized_keywords?: string[]; }
+export interface EmojiCatalogData {
+  profile?: 'full' | 'compact';
+  scope?: Omit<EmojiCatalogScope,'total'>;
+  search?: EmojiCatalogSearchFacts;
+  localization?: EmojiCatalogLocalization;
+  metadata: EmojiMetadata; total: number; emojis: Emoji[];
+  forms: Record<string, string>;
+  shortcodes: Record<'cldr' | 'github' | 'slack' | 'discord', Record<string, string[]>>;
+  legacy: Record<string, string>;
+}
+export interface EmojiCatalogLocalization {
+  requested_locale: string | null; resolved_locale: string | null;
+  translated_names: number; translated_keywords: number; fallback_names: number; fallback_keywords: number;
+}
+export interface EmojiShortcodeSourceMetadata {
+  records: number; missing_records: number; ambiguous_aliases: number;
+}
+
+export interface EmojiCategory { category: string; subcategories: string[]; }
+export interface EmojiCategories { categories: EmojiCategory[]; }
+/** UTF-16 code-unit positions. End is exclusive. */
+export interface EmojiPosition { start: number; end: number; }
+/** Original input UTF-16 positions; end is exclusive. */
+export interface EmojiUnresolved extends EmojiPosition { emoji?: string; shortcode?: string; reason: 'unknown' | 'ambiguous' | 'unavailable'; }
 
 
 export interface Address {
@@ -1718,12 +1778,16 @@ export interface DateInfoDeep {
 }
 
 export interface EmojiDeep {
+	subcategory?: string | null;
+	base?: string | null;
+	variants?: EmojiVariant[];
 	codepoints: string[];
 	hex: string;
 	status: string | null;
 	version: string | null;
 	keywords: string[];
 	skins: EmojiSkin[];
+	artwork?: Record<string, EmojiArtwork>;
 }
 
 export interface NaicsDeep {
@@ -1905,3 +1969,6 @@ export interface IbanDeep {
 	branch: string | null;
 	account: string | null;
 }
+
+export interface EmojiParse { emojis: (Emoji & {positions: EmojiPosition[]})[]; }
+export interface EmojiConversion { text: string; unresolved: EmojiUnresolved[]; }

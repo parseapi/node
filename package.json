@@ -1,6 +1,6 @@
 {
 	"name": "@parseapi/sdk",
-	"version": "1.10.0",
+	"version": "1.10.1",
 	"description": "Official ParseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
 	"keywords": [
 		"parseapi",
@@ -37,6 +37,16 @@
 				"types": "./dist/index.d.cts",
 				"default": "./dist/index.cjs"
 			}
+		},
+		"./offline": {
+			"import": {
+				"types": "./dist/offline.d.ts",
+				"default": "./dist/offline.js"
+			},
+			"require": {
+				"types": "./dist/offline.d.cts",
+				"default": "./dist/offline.cjs"
+			}
 		}
 	},
 	"files": [
@@ -47,7 +57,7 @@
 		"node": ">=18"
 	},
 	"scripts": {
-		"build": "tsup src/index.ts --format esm,cjs --dts --target node18 --clean",
+		"build": "tsup src/index.ts --format esm,cjs --dts --target node18 --clean && tsup src/offline.ts --format esm,cjs --dts --target node18",
 		"prepublishOnly": "npm test && npm run typecheck && npm run api:check",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit",

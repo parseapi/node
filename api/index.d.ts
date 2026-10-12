@@ -1059,6 +1059,128 @@ interface Emoji {
 interface EmojiSearch {
     q: string;
     emojis: Emoji[];
+    total?: number;
+    next_offset?: number | null;
+}
+interface EmojiBrowse {
+    emojis: Emoji[];
+    total: number;
+    next_offset: number | null;
+}
+interface EmojiVariant {
+    emoji: string;
+    tones: string[];
+}
+interface EmojiArtwork {
+    svg?: string;
+    png?: Record<string, string>;
+    /** Only present when this asset has different rights from its provider. */
+    license?: string;
+    license_url?: string;
+    attribution?: string;
+}
+interface EmojiSource {
+    id: string;
+    version: string | null;
+    source_url: string;
+    license: string;
+    license_url: string;
+}
+interface EmojiNotice {
+    id: string;
+    license: string;
+    notice: string;
+}
+interface EmojiArtworkSource {
+    style: string;
+    version: string | null;
+    unicode_version: string | null;
+    source_url: string;
+    license: string;
+    license_url: string;
+    attribution: string;
+    notices: string[];
+    loaded_coverage?: {
+        svg: number;
+        png: number;
+    };
+    flag_license?: {
+        license: string;
+        license_url: string;
+        description: string;
+    };
+}
+interface EmojiMetadata {
+    edition: string;
+    max_version: string | null;
+    source_version: string;
+    total: number;
+    sources: EmojiSource[];
+    artwork_sources: EmojiArtworkSource[];
+    notices: EmojiNotice[];
+    completeness: {
+        missing_count: number;
+        unexpected_count: number;
+    };
+    shortcode_sources?: Record<string, EmojiShortcodeSourceMetadata>;
+    [field: string]: unknown;
+}
+interface EmojiCatalogScope {
+    filters: Record<string, string>;
+    total: number;
+    complete_inventory: boolean;
+}
+interface EmojiNativeSearchFacts {
+    name: string | null;
+    keywords: string[];
+    order?: number | null;
+}
+interface EmojiCatalogSearchFacts {
+    native: Record<string, EmojiNativeSearchFacts>;
+    localized_keywords?: string[];
+}
+interface EmojiCatalogData {
+    profile?: 'full' | 'compact';
+    scope?: Omit<EmojiCatalogScope, 'total'>;
+    search?: EmojiCatalogSearchFacts;
+    localization?: EmojiCatalogLocalization;
+    metadata: EmojiMetadata;
+    total: number;
+    emojis: Emoji[];
+    forms: Record<string, string>;
+    shortcodes: Record<'cldr' | 'github' | 'slack' | 'discord', Record<string, string[]>>;
+    legacy: Record<string, string>;
+}
+interface EmojiCatalogLocalization {
+    requested_locale: string | null;
+    resolved_locale: string | null;
+    translated_names: number;
+    translated_keywords: number;
+    fallback_names: number;
+    fallback_keywords: number;
+}
+interface EmojiShortcodeSourceMetadata {
+    records: number;
+    missing_records: number;
+    ambiguous_aliases: number;
+}
+interface EmojiCategory {
+    category: string;
+    subcategories: string[];
+}
+interface EmojiCategories {
+    categories: EmojiCategory[];
+}
+/** UTF-16 code-unit positions. End is exclusive. */
+interface EmojiPosition {
+    start: number;
+    end: number;
+}
+/** Original input UTF-16 positions; end is exclusive. */
+interface EmojiUnresolved extends EmojiPosition {
+    emoji?: string;
+    shortcode?: string;
+    reason: 'unknown' | 'ambiguous' | 'unavailable';
 }
 interface Address {
     address: string | null;
@@ -1586,12 +1708,16 @@ interface DateInfoDeep {
     days_in_month: number | null;
 }
 interface EmojiDeep {
+    subcategory?: string | null;
+    base?: string | null;
+    variants?: EmojiVariant[];
     codepoints: string[];
     hex: string;
     status: string | null;
     version: string | null;
     keywords: string[];
     skins: EmojiSkin[];
+    artwork?: Record<string, EmojiArtwork>;
 }
 interface NaicsDeep {
     description: string | null;
@@ -1748,6 +1874,15 @@ interface IbanDeep {
     /** Branch identifier when that country has one. */
     branch: string | null;
     account: string | null;
+}
+interface EmojiParse {
+    emojis: (Emoji & {
+        positions: EmojiPosition[];
+    })[];
+}
+interface EmojiConversion {
+    text: string;
+    unresolved: EmojiUnresolved[];
 }
 
 /** A proposed task contains operation counts, never lookup inputs. */
@@ -1906,6 +2041,73 @@ interface AgentTaskResult<T = unknown> {
         api_version: string;
         retry_after?: string;
     };
+}
+
+interface EmojiCatalogLookupOptions {
+    deep?: boolean;
+    shortcodeSource?: string;
+}
+interface EmojiCatalogSearchOptions {
+    deep?: boolean;
+    limit?: number;
+    offset?: number;
+    category?: string;
+    subcategory?: string;
+    version?: string;
+    maxVersion?: string;
+    includeSkinTones?: boolean;
+}
+interface EmojiCatalogParseOptions {
+    deep?: boolean;
+}
+interface EmojiCatalogConvertOptions {
+    direction: 'to_shortcodes' | 'to_emoji';
+    shortcodeSource: 'cldr' | 'github' | 'slack' | 'discord';
+}
+interface EmojiCatalogRegexOptions {
+    qualifiedOnly?: boolean;
+    components?: boolean;
+}
+/** A local validation or resolution failure. No HTTP request was made. */
+declare class EmojiCatalogError extends Error {
+    readonly code: 'validation_error' | 'not_found' | 'invalid_catalog';
+    constructor(code: 'validation_error' | 'not_found' | 'invalid_catalog', message: string);
+}
+/** Immutable local snapshot. All operations are synchronous and use no network. */
+declare class EmojiCatalog {
+    private readonly data;
+    private readonly byGlyph;
+    private readonly names;
+    private readonly aliases;
+    private readonly sourceAliases;
+    private readonly encodings;
+    private readonly searchFacts;
+    private readonly categoryKeys;
+    private readonly subcategoryKeys;
+    private readonly filterCache;
+    private searchReady;
+    private readonly compareNames;
+    private segmenter?;
+    constructor(data: EmojiCatalogData);
+    /** Build once on first search; shared normalized strings avoid repeated annotation copies. */
+    private ensureSearch;
+    private encoding;
+    /** Evidence for the full server inventory; scope() identifies this downloaded subset. */
+    metadata(): EmojiMetadata;
+    /** Filters, local record count and whether this download contains the full server inventory. */
+    scope(): EmojiCatalogScope;
+    lookup(input: string, options?: EmojiCatalogLookupOptions): Emoji;
+    search(query: string, options?: EmojiCatalogSearchOptions): EmojiSearch;
+    browse(options?: EmojiCatalogSearchOptions): EmojiBrowse;
+    /** Unknown and ambiguous inputs remain literal; positions refer to untouched input. */
+    convert(text: string, options: EmojiCatalogConvertOptions): EmojiConversion;
+    /** Whole-grapheme predicate. Use parse() to extract emoji from prose with positions. */
+    regex(options?: EmojiCatalogRegexOptions): RegExp;
+    categories(): EmojiCategories;
+    parse(text: string, options?: EmojiCatalogParseOptions): EmojiParse;
+    private project;
+    private page;
+    private filtered;
 }
 
 /** Every non-2xx response from the API. Branch on `code`, never on `message`. */
@@ -2194,10 +2396,28 @@ type WeatherOptions = DeepOption & {
     /** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
     date?: string;
 } & RequestOptions;
-type EmojiOptions = LanguageOption & DeepOption & RequestOptions;
+type EmojiOptions = LanguageOption & {
+    shortcodeSource?: string;
+} & DeepOption & RequestOptions;
 type EmojiSearchOptions = LanguageOption & {
     limit?: number;
+    category?: string;
+    subcategory?: string;
+    version?: string;
+    maxVersion?: string;
+    includeSkinTones?: boolean;
+    offset?: number;
 } & DeepOption & RequestOptions;
+/** Complete catalog download; Deep defaults true. JSON supports offline EmojiCatalog. */
+type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset'> & {
+    profile?: 'full' | 'compact';
+};
+type EmojiBrowseOptions = EmojiSearchOptions;
+type EmojiParseOptions = LanguageOption & DeepOption & RequestOptions;
+type EmojiConvertOptions = RequestOptions & {
+    direction: 'to_shortcodes' | 'to_emoji';
+    shortcodeSource: 'cldr' | 'github' | 'slack' | 'discord';
+};
 interface DeepOption {
     /** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
     deep?: boolean;
@@ -2343,6 +2563,13 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     weather: (lat: number, lon: number, opts?: WeatherOptions) => Promise<Weather>;
     emoji: ((emoji: string, opts?: EmojiOptions) => Promise<Emoji>) & {
         search: (query: string, opts?: EmojiSearchOptions) => Promise<EmojiSearch>;
+        browse: (opts?: EmojiBrowseOptions) => Promise<EmojiBrowse>;
+        categories: (opts?: RequestOptions) => Promise<EmojiCategories>;
+        convert: (text: string, opts: EmojiConvertOptions) => Promise<EmojiConversion>;
+        /** Extract complete sequences. Positions use UTF-16 code units; end is exclusive. */
+        catalog: (opts?: EmojiCatalogOptions) => Promise<EmojiCatalogData>;
+        metadata: (opts?: RequestOptions) => Promise<EmojiMetadata>;
+        parse: (text: string, opts?: EmojiParseOptions) => Promise<EmojiParse>;
     };
 };
 type ParseAPIClient = ReturnType<typeof parseAPI>;
@@ -2355,4 +2582,4 @@ type IbanOptions = {
 type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 type BinOptions = DeepOption & RequestOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

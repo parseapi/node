@@ -42,6 +42,12 @@ import type {
 	BankRequirements,
 	Emoji,
 	EmojiSearch,
+	EmojiBrowse,
+	EmojiCategories,
+	EmojiParse,
+	EmojiConversion,
+	EmojiCatalogData,
+	EmojiMetadata,
 	Hlr,
 	Industry,
 	IndustrySearch,
@@ -73,6 +79,7 @@ import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
 export * from './types.js';
+export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
@@ -313,8 +320,21 @@ export type WeatherOptions = DeepOption & {
 	/** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
 	date?: string;
 } & RequestOptions;
-export type EmojiOptions = LanguageOption & DeepOption & RequestOptions;
-export type EmojiSearchOptions = LanguageOption & { limit?: number } & DeepOption & RequestOptions;
+export type EmojiOptions = LanguageOption & { shortcodeSource?: string } & DeepOption & RequestOptions;
+export type EmojiSearchOptions = LanguageOption & {
+	limit?: number;
+	category?: string;
+	subcategory?: string;
+	version?: string;
+	maxVersion?: string;
+	includeSkinTones?: boolean;
+	offset?: number;
+} & DeepOption & RequestOptions;
+/** Complete catalog download; Deep defaults true. JSON supports offline EmojiCatalog. */
+export type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset'> & { profile?: 'full' | 'compact' };
+export type EmojiBrowseOptions = EmojiSearchOptions;
+export type EmojiParseOptions = LanguageOption & DeepOption & RequestOptions;
+export type EmojiConvertOptions = RequestOptions & { direction: 'to_shortcodes' | 'to_emoji'; shortcodeSource: 'cldr' | 'github' | 'slack' | 'discord' };
 
 interface DeepOption {
 	/** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
@@ -812,16 +832,34 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }, undefined, opts),
 
 		emoji: Object.assign(
-			(emoji: string, opts?: EmojiOptions): Promise<Emoji> => request(`/emoji/${enc(emoji)}`, deepQuery(opts), undefined, opts),
+			(emoji: string, opts?: EmojiOptions): Promise<Emoji> => request(`/emoji/${enc(emoji)}`, { shortcode_source: opts?.shortcodeSource, ...deepQuery(opts) }, undefined, opts),
 			{
 				search: (query: string, opts?: EmojiSearchOptions): Promise<EmojiSearch> =>
-					request('/emoji', { q: query, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+					request('/emoji', { q: query, ...emojiFilters(opts), ...deepQuery(opts) }, undefined, opts),
+				browse: (opts?: EmojiBrowseOptions): Promise<EmojiBrowse> =>
+					request('/emoji', { ...emojiFilters(opts), ...deepQuery(opts) }, undefined, opts),
+				categories: (opts?: RequestOptions): Promise<EmojiCategories> =>
+					request('/emoji/categories', undefined, undefined, requestControls(opts)),
+				convert: (text: string, opts: EmojiConvertOptions): Promise<EmojiConversion> =>
+					request('/emoji/convert', { direction: opts.direction, shortcode_source: opts.shortcodeSource }, undefined, opts, { text }),
+				/** Extract complete sequences. Positions use UTF-16 code units; end is exclusive. */
+				catalog: (opts?: EmojiCatalogOptions): Promise<EmojiCatalogData> =>
+					request('/emoji/catalog', { ...emojiFilters(opts), profile: opts?.profile, deep: opts?.deep ?? true }, undefined, opts),
+				metadata: (opts?: RequestOptions): Promise<EmojiMetadata> =>
+					request('/emoji/metadata', undefined, undefined, requestControls(opts)),
+				parse: (text: string, opts?: EmojiParseOptions): Promise<EmojiParse> =>
+					request('/emoji/parse', deepQuery(opts), undefined, opts, { text }),
 			}
 		),
 	};
 }
 
 export type ParseAPIClient = ReturnType<typeof parseAPI>;
+
+function emojiFilters(opts?: EmojiSearchOptions): Query {
+	return { limit: opts?.limit, category: opts?.category, subcategory: opts?.subcategory, version: opts?.version, max_version: opts?.maxVersion, include_skin_tones: opts?.includeSkinTones, offset: opts?.offset };
+}
+
 
 function timeSource(timezone: string | undefined, options: TimeOptions = {}): Record<string, string | undefined> {
 	const values = { ip: options.ip, city: options.city, country: options.country, state: options.state, iata: options.iata, icao: options.icao, unlocode: options.unlocode, address: options.address };
