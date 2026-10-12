@@ -862,10 +862,104 @@ export interface CurrencyRate {
 	date: string;
 	/** With amount= only: echo of the amount asked. */
 	amount?: number;
-	/** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
+	/** With amount= only: the held reference ratio, rounded to the quote currency minor-unit digits. */
 	converted?: number;
 	source?: string;
+	/** Present and true only when an underlying observation is stale. */
+	stale?: boolean;
+	dates?: CurrencyRateDates;
+	units?: CurrencyRateUnits;
 }
+
+export type CurrencyUnit = 'currency_unit' | 'troy_ounce' | 'indexed_unit';
+/** Original observation dates, present only when different from the result date. */
+export interface CurrencyRateDates { base?: string[]; quote?: string[] }
+/** Non-currency units, present only for the sides that need qualification. */
+export interface CurrencyRateUnits { base?: CurrencyUnit; quote?: CurrencyUnit }
+
+/** A requested amount may have unknown historical minor-unit precision. */
+export interface CurrencyReferenceRate extends Omit<CurrencyRate, 'converted'> { converted?: number | null }
+export interface CurrencyRateMissing { quote: string; reason: string }
+/** A quote keyed by currency code, with base and amount on the envelope. */
+export interface CurrencyQuote extends Omit<CurrencyReferenceRate, 'base' | 'quote' | 'amount' | 'source'> {}
+/** A dated observation for a pair identified by the history envelope. */
+export interface CurrencyObservation extends CurrencyQuote { requested_date: string }
+export interface CurrencyQuoteObservation extends CurrencyObservation { quote: string }
+
+export interface CurrencyRates {
+	base: string;
+	amount?: number;
+	requested_date?: string;
+	rates: Record<string, CurrencyQuote>;
+	missing?: CurrencyRateMissing[];
+}
+
+export interface CurrencyHistory {
+	base: string;
+	quote: string;
+	from: string;
+	to: string;
+	amount?: number;
+	interval?: 'day' | 'week' | 'month';
+	data: CurrencyObservation[];
+	missing?: string[];
+}
+
+export interface CurrencyHistoryMissing extends CurrencyRateMissing {
+	requested_date: string;
+}
+
+export interface CurrencyRatesHistory {
+	base: string;
+	quotes: string[];
+	from: string;
+	to: string;
+	amount?: number;
+	interval?: 'day' | 'week' | 'month';
+	data: CurrencyQuoteObservation[];
+	missing?: CurrencyHistoryMissing[];
+}
+
+/** A period uses actual daily pair publications, without weighting held weekends again. */
+export interface CurrencyRateSummary {
+	quote: string;
+	from: string;
+	to: string;
+	average: number;
+	min: number;
+	max: number;
+	observation_count: number;
+	first_date: string;
+	last_date: string;
+	missing_day_count: number;
+	stale?: true;
+	units?: CurrencyRateUnits;
+}
+export interface CurrencySummaryMissing {
+	quote: string;
+	from: string;
+	to: string;
+	reason: string;
+	missing_day_count: number;
+}
+export interface CurrencyRatesSummary {
+	base: string;
+	quotes: string[];
+	from: string;
+	to: string;
+	interval: 'month' | 'quarter' | 'year';
+	data: CurrencyRateSummary[];
+	missing?: CurrencySummaryMissing[];
+}
+
+export interface CurrencyResource extends Currency {
+	unit?: 'troy_ounce' | 'indexed_unit';
+}
+
+export interface CurrencyList {
+	data: CurrencyResource[];
+}
+
 
 export interface TimezoneNextDst {
 	at: string;

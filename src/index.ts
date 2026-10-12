@@ -1,4 +1,14 @@
 import type {
+	Currency,
+	CurrencyRate,
+	CurrencyReferenceRate,
+	CurrencyRates,
+	CurrencyHistory,
+	CurrencyRatesHistory,
+	CurrencyRatesSummary,
+	CurrencyList,
+
+
 	Iban,
 	Bin,
 	Npi,
@@ -25,8 +35,6 @@ import type {
 	ContinentCountries,
 	Country,
 	CountryStates,
-	Currency,
-	CurrencyRate,
 	DateInfo,
 	District,
 	Dns,
@@ -246,7 +254,16 @@ function tariffSelection<T extends { edition?: string; date?: string | null }>(r
 	return result;
 }
 export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
-export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
+/** Select an independent held reference vector, or the default reference and peg policy. */
+export type CurrencyMetalCode = 'XAU' | 'XAG' | 'XPD' | 'XPT' | 'xau' | 'xag' | 'xpd' | 'xpt';
+export type CurrencyRateOptions = { date?: string; amount?: number; pretty?: boolean } & RequestOptions;
+export type CurrencyListOptions = { q?: string; country?: string; pretty?: boolean } & LanguageOption & DeepOption & RequestOptions;
+export type CurrencyRatesOptions = CurrencyRateOptions;
+/** Daily held history, or week/month samples anchored to from with to included. */
+export type CurrencyHistoryOptions = { interval?: 'day' | 'week' | 'month'; amount?: number; pretty?: boolean } & RequestOptions;
+export type CurrencyRatesHistoryOptions = CurrencyHistoryOptions;
+/** Daily pair rates averaged once per actual publication, with explicit calendar gaps. */
+export type CurrencyRatesSummaryOptions = { interval?: 'month' | 'quarter' | 'year'; pretty?: boolean } & RequestOptions;
 export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 export type NameOptions = {
@@ -375,6 +392,7 @@ function retryDelayMs(attempt: number, retryAfter: string | null): number | null
 	return Math.random() * Math.min(250 * 2 ** Math.min(attempt, 16), RETRY_AFTER_CAP_MS);
 }
 
+
 export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 	/*! You found Dev. https://parseapi.com/dev */
 	const key = apiKey || env('PARSEAPI_KEY');
@@ -491,7 +509,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		);
 
-	return {
+		const currencyQuery = (opts?: CurrencyHistoryOptions): Query => ({ amount: opts?.amount, pretty: opts?.pretty });
+	const currencyQuotes = (quotes: readonly string[]): string => {
+		if (!Array.isArray(quotes) || quotes.length < 1 || quotes.length > 50 || quotes.some(code => typeof code !== 'string' || !/^[A-Za-z]{3}$/.test(code)) || new Set(quotes.map(code => code.toUpperCase())).size !== quotes.length) {
+			throw new TypeError('parseapi: Currency quotes must contain 1 to 50 distinct three-letter codes.');
+		}
+		return quotes.join(',');
+	};
+	function currencyRate(base: string, quote: CurrencyMetalCode, opts?: CurrencyRatesOptions): Promise<CurrencyReferenceRate>;
+	function currencyRate(base: string, quote: string, opts?: CurrencyRateOptions): Promise<CurrencyRate>;
+	function currencyRate(base: string, quote: string, opts?: CurrencyRatesOptions): Promise<CurrencyReferenceRate> {
+		return request(`/currency/${enc(base)}/${enc(quote)}`, { date: opts?.date, amount: opts?.amount, pretty: opts?.pretty }, undefined, opts);
+	}
+return {
 		/** Create a bounded task. Reuse the same request ID and inputs on retries. */
 		task: Object.assign(
 			(input: AgentTaskInput, requestId: string, opts?: RequestOptions): Promise<AgentTask> =>
@@ -737,15 +767,20 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		currency: Object.assign(
 			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, deepQuery(opts), undefined, opts),
 			{
-				rate: (
-					base: string,
-					quote: string,
-					opts?: CurrencyRateOptions
-				): Promise<CurrencyRate> =>
-					request(`/currency/${enc(base)}/${enc(quote)}`, {
-						date: opts?.date,
-						amount: opts?.amount,
-					}, undefined, opts),
+				rate: currencyRate,
+				list: (opts?: CurrencyListOptions): Promise<CurrencyList> =>
+					request('/currency', { q: opts?.q, country: opts?.country, pretty: opts?.pretty, ...deepQuery(opts) }, undefined, opts),
+				/** Omit quotes for all available maintained quotes, or request 1–50 distinct codes. */
+				rates: (base: string, quotes?: readonly string[], opts?: CurrencyRatesOptions): Promise<CurrencyRates> =>
+					request(`/currency/${enc(base)}/rates`, { quotes: quotes === undefined ? undefined : currencyQuotes(quotes), date: opts?.date, ...currencyQuery(opts) }, undefined, opts),
+				history: (base: string, quote: string, from: string, to: string, opts?: CurrencyHistoryOptions): Promise<CurrencyHistory> =>
+					request(`/currency/${enc(base)}/${enc(quote)}/history`, { from, to, interval: opts?.interval, ...currencyQuery(opts) }, undefined, opts),
+				/** Up to 5000 sampled quote-dates including gaps, under a bounded complete read. */
+				ratesHistory: (base: string, quotes: readonly string[], from: string, to: string, opts?: CurrencyRatesHistoryOptions): Promise<CurrencyRatesHistory> =>
+					request(`/currency/${enc(base)}/rates/history`, { quotes: currencyQuotes(quotes), from, to, interval: opts?.interval, ...currencyQuery(opts) }, undefined, opts),
+				/** Monthly, quarterly or yearly publication averages, extrema and honest gap counts. */
+				ratesSummary: (base: string, quotes: readonly string[], from: string, to: string, opts?: CurrencyRatesSummaryOptions): Promise<CurrencyRatesSummary> =>
+					request(`/currency/${enc(base)}/rates/summary`, { quotes: currencyQuotes(quotes), from, to, interval: opts?.interval, pretty: opts?.pretty }, undefined, opts),
 			}
 		),
 

@@ -779,9 +779,109 @@ interface CurrencyRate {
     date: string;
     /** With amount= only: echo of the amount asked. */
     amount?: number;
-    /** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
+    /** With amount= only: the held reference ratio, rounded to the quote currency minor-unit digits. */
     converted?: number;
     source?: string;
+    /** Present and true only when an underlying observation is stale. */
+    stale?: boolean;
+    dates?: CurrencyRateDates;
+    units?: CurrencyRateUnits;
+}
+type CurrencyUnit = 'currency_unit' | 'troy_ounce' | 'indexed_unit';
+/** Original observation dates, present only when different from the result date. */
+interface CurrencyRateDates {
+    base?: string[];
+    quote?: string[];
+}
+/** Non-currency units, present only for the sides that need qualification. */
+interface CurrencyRateUnits {
+    base?: CurrencyUnit;
+    quote?: CurrencyUnit;
+}
+/** A requested amount may have unknown historical minor-unit precision. */
+interface CurrencyReferenceRate extends Omit<CurrencyRate, 'converted'> {
+    converted?: number | null;
+}
+interface CurrencyRateMissing {
+    quote: string;
+    reason: string;
+}
+/** A quote keyed by currency code, with base and amount on the envelope. */
+interface CurrencyQuote extends Omit<CurrencyReferenceRate, 'base' | 'quote' | 'amount' | 'source'> {
+}
+/** A dated observation for a pair identified by the history envelope. */
+interface CurrencyObservation extends CurrencyQuote {
+    requested_date: string;
+}
+interface CurrencyQuoteObservation extends CurrencyObservation {
+    quote: string;
+}
+interface CurrencyRates {
+    base: string;
+    amount?: number;
+    requested_date?: string;
+    rates: Record<string, CurrencyQuote>;
+    missing?: CurrencyRateMissing[];
+}
+interface CurrencyHistory {
+    base: string;
+    quote: string;
+    from: string;
+    to: string;
+    amount?: number;
+    interval?: 'day' | 'week' | 'month';
+    data: CurrencyObservation[];
+    missing?: string[];
+}
+interface CurrencyHistoryMissing extends CurrencyRateMissing {
+    requested_date: string;
+}
+interface CurrencyRatesHistory {
+    base: string;
+    quotes: string[];
+    from: string;
+    to: string;
+    amount?: number;
+    interval?: 'day' | 'week' | 'month';
+    data: CurrencyQuoteObservation[];
+    missing?: CurrencyHistoryMissing[];
+}
+/** A period uses actual daily pair publications, without weighting held weekends again. */
+interface CurrencyRateSummary {
+    quote: string;
+    from: string;
+    to: string;
+    average: number;
+    min: number;
+    max: number;
+    observation_count: number;
+    first_date: string;
+    last_date: string;
+    missing_day_count: number;
+    stale?: true;
+    units?: CurrencyRateUnits;
+}
+interface CurrencySummaryMissing {
+    quote: string;
+    from: string;
+    to: string;
+    reason: string;
+    missing_day_count: number;
+}
+interface CurrencyRatesSummary {
+    base: string;
+    quotes: string[];
+    from: string;
+    to: string;
+    interval: 'month' | 'quarter' | 'year';
+    data: CurrencyRateSummary[];
+    missing?: CurrencySummaryMissing[];
+}
+interface CurrencyResource extends Currency {
+    unit?: 'troy_ounce' | 'indexed_unit';
+}
+interface CurrencyList {
+    data: CurrencyResource[];
 }
 interface TimezoneNextDst {
     at: string;
@@ -2113,9 +2213,30 @@ type TariffSearchOptions = {
     date?: string;
 } & RequestOptions;
 type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
+/** Select an independent held reference vector, or the default reference and peg policy. */
+type CurrencyMetalCode = 'XAU' | 'XAG' | 'XPD' | 'XPT' | 'xau' | 'xag' | 'xpd' | 'xpt';
 type CurrencyRateOptions = {
     date?: string;
     amount?: number;
+    pretty?: boolean;
+} & RequestOptions;
+type CurrencyListOptions = {
+    q?: string;
+    country?: string;
+    pretty?: boolean;
+} & LanguageOption & DeepOption & RequestOptions;
+type CurrencyRatesOptions = CurrencyRateOptions;
+/** Daily held history, or week/month samples anchored to from with to included. */
+type CurrencyHistoryOptions = {
+    interval?: 'day' | 'week' | 'month';
+    amount?: number;
+    pretty?: boolean;
+} & RequestOptions;
+type CurrencyRatesHistoryOptions = CurrencyHistoryOptions;
+/** Daily pair rates averaged once per actual publication, with explicit calendar gaps. */
+type CurrencyRatesSummaryOptions = {
+    interval?: 'month' | 'quarter' | 'year';
+    pretty?: boolean;
 } & RequestOptions;
 type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
@@ -2312,7 +2433,18 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         search: (query: string, opts?: TariffSearchOptions) => Promise<TariffSearch>;
     };
     currency: ((code: string, opts?: CurrencyOptions) => Promise<Currency>) & {
-        rate: (base: string, quote: string, opts?: CurrencyRateOptions) => Promise<CurrencyRate>;
+        rate: {
+            (base: string, quote: CurrencyMetalCode, opts?: CurrencyRatesOptions): Promise<CurrencyReferenceRate>;
+            (base: string, quote: string, opts?: CurrencyRateOptions): Promise<CurrencyRate>;
+        };
+        list: (opts?: CurrencyListOptions) => Promise<CurrencyList>;
+        /** Omit quotes for all available maintained quotes, or request 1–50 distinct codes. */
+        rates: (base: string, quotes?: readonly string[], opts?: CurrencyRatesOptions) => Promise<CurrencyRates>;
+        history: (base: string, quote: string, from: string, to: string, opts?: CurrencyHistoryOptions) => Promise<CurrencyHistory>;
+        /** Up to 5000 sampled quote-dates including gaps, under a bounded complete read. */
+        ratesHistory: (base: string, quotes: readonly string[], from: string, to: string, opts?: CurrencyRatesHistoryOptions) => Promise<CurrencyRatesHistory>;
+        /** Monthly, quarterly or yearly publication averages, extrema and honest gap counts. */
+        ratesSummary: (base: string, quotes: readonly string[], from: string, to: string, opts?: CurrencyRatesSummaryOptions) => Promise<CurrencyRatesSummary>;
     };
     language: (code: string, opts?: LanguageOptions) => Promise<Language>;
     name: (name: string, opts?: NameOptions) => Promise<Name>;
@@ -2355,4 +2487,4 @@ type IbanOptions = {
 type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 type BinOptions = DeepOption & RequestOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyHistory, type CurrencyHistoryMissing, type CurrencyHistoryOptions, type CurrencyList, type CurrencyListOptions, type CurrencyMetalCode, type CurrencyObservation, type CurrencyOptions, type CurrencyQuote, type CurrencyQuoteObservation, type CurrencyRate, type CurrencyRateDates, type CurrencyRateMissing, type CurrencyRateOptions, type CurrencyRateSummary, type CurrencyRateUnits, type CurrencyRates, type CurrencyRatesHistory, type CurrencyRatesHistoryOptions, type CurrencyRatesOptions, type CurrencyRatesSummary, type CurrencyRatesSummaryOptions, type CurrencyReferenceRate, type CurrencyResource, type CurrencySummaryMissing, type CurrencyUnit, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
