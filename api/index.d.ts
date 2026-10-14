@@ -905,7 +905,8 @@ interface PointDeep {
     city: PointCity | null;
     elevation: number | null;
     elevation_ft: number | null;
-    resolution: number | null;
+    /** @deprecated Retained for older Point responses. Grid resolution is returned by the Elevation API. */
+    resolution?: number | null;
 }
 interface Point {
     latitude: number;
