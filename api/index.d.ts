@@ -19,7 +19,9 @@ interface Measure {
     type: string | null;
     amount: string | null;
     unit: string | null;
+    /** Failure reason. Omitted wire fields remain readable as null. */
     reason: string | null;
+    /** Unit alternatives. Omitted wire fields remain readable as an empty array. */
     choices: MeasureChoice[];
 }
 interface MeasureUnit {

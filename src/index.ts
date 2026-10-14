@@ -83,7 +83,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.10.0';
+const VERSION = '1.10.2';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -715,8 +715,13 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
 		measure: Object.assign(
-			(measure: string, opts?: MeasureOptions): Promise<Measure> =>
-				request(`/measure/${enc(measure)}`, { to: opts?.to, locale: opts?.locale, system: opts?.system }, undefined, opts),
+			async (measure: string, opts?: MeasureOptions): Promise<Measure> => {
+				const result = await request<Measure>(`/measure/${enc(measure)}`, { to: opts?.to, locale: opts?.locale, system: opts?.system }, undefined, opts);
+				// Keep published typed access while serializing only fields sent by the API.
+				if (!Object.prototype.hasOwnProperty.call(result, 'reason')) Object.defineProperty(result, 'reason', { value: null, writable: true, configurable: true });
+				if (!Object.prototype.hasOwnProperty.call(result, 'choices')) Object.defineProperty(result, 'choices', { value: [], writable: true, configurable: true });
+				return result;
+			},
 			{
 				/** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
 				units: (opts?: MeasureUnitsOptions): Promise<MeasureUnits> =>
