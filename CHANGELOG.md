@@ -6,6 +6,10 @@
 - Keep existing City calls and response defaults compatible; expose ambiguity candidates when requested.
 - Remove population observation periods from public examples; retain published typed members only for source compatibility.
 
+## 1.10.4 — 2026-10-15
+
+- Report the installed package version in the SDK User-Agent.
+
 ## 1.10.3 — 2026-10-15
 
 - Accept ordinary API responses with retired source metadata omitted; TypeScript marks those members optional.
