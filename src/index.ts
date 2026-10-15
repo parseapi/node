@@ -83,7 +83,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.10.2';
+const VERSION = '1.10.4';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;

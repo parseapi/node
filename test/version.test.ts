@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseAPI } from '../src/index.js';
+
+const artifactVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 describe('SDK API contract', () => {
 	it('pins the supported contract on retries, self lookups and custom user agents', async () => {
@@ -22,6 +25,7 @@ describe('SDK API contract', () => {
 			expect(headers.get('X-API-Key')).toBe('same-production-key');
 			expect(new URL(url).search).toBe('');
 			expect(init.redirect).toBe('manual');
+			if (new URL(url).pathname !== '/useragent') expect(headers.get('User-Agent')).toBe(`parseapi-node/${artifactVersion}`);
 		}
 		expect(new Headers(calls[3]!.init.headers).get('User-Agent')).toBe('Custom browser');
 	});

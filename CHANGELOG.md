@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.4 — 2026-10-15
+
+- Report the installed package version in the SDK User-Agent.
+
 ## 1.10.3 — 2026-10-15
 
 - Accept ordinary API responses with retired source metadata omitted; TypeScript marks those members optional.
