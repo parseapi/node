@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { parseAPI, type Bank, type BankChecks, type BankIssue } from '../src/index.js';
+import { parseAPI, type Bank, type BankDeep, type BankChecks, type BankIssue } from '../src/index.js';
 
 const fixture = JSON.parse(readFileSync(new URL('./bank-fixtures.json', import.meta.url), 'utf8')) as { records: Bank[]; inputs: string[] };
 
@@ -92,4 +92,14 @@ it('the published deterministic Bank fixture kit round-trips through the SDK', a
 		if (row.response.status < 400) await expect(result, row.id).resolves.toEqual(row.response.body);
 		else await expect(result, row.id).rejects.toMatchObject({ status: 503, code: 'service_unavailable', message: row.response.body.message, requestId: 'bank-fixture' });
 	}
+});
+
+
+it('current Bank Deep decodes without extracted checksum digits', async () => {
+	const deep: BankDeep = { branch: null, account: '0532013000' };
+	const payload: Bank = { ...fixture.records[1]!, deep };
+	const client = parseAPI('test_key', { retries: 0, fetch: async () => new Response(JSON.stringify(payload)) });
+	const result = await client.bank(payload.iban!, { deep: true });
+	expect(result.deep).toEqual(deep);
+	expect(result.checks?.checksum).toBe('passed');
 });
