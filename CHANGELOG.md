@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.3 — 2026-10-15
+
+- Accept ordinary API responses with retired source metadata omitted; TypeScript marks those members optional.
+- Allow offline Emoji catalogs to identify their content edition without source-version bookkeeping.
+
 ## 1.10.1 — 2026-10-12
 
 - Add Emoji search/browse, categories, catalog, metadata, parsing and conversion; keep existing lookup calls and response decoding compatible.

@@ -52,7 +52,7 @@ export class EmojiCatalog {
   private segmenter?: Intl.Segmenter;
 
   constructor(data: EmojiCatalogData) {
-    if (!data || !Array.isArray(data.emojis) || !data.forms || !data.shortcodes || !data.legacy || !data.metadata?.source_version) {
+    if (!data || !Array.isArray(data.emojis) || !data.forms || !data.shortcodes || !data.legacy || !(data.metadata?.source_version || data.metadata?.edition)) {
       throw new EmojiCatalogError('invalid_catalog', 'Use the JSON response from GET /emoji/catalog.');
     }
     this.data = structuredClone(data);
@@ -109,7 +109,9 @@ export class EmojiCatalog {
   }
 
   /** Evidence for the full server inventory; scope() identifies this downloaded subset. */
-  metadata(): EmojiMetadata { return structuredClone(this.data.metadata); }
+  metadata(): EmojiMetadata {
+    return structuredClone(this.data.metadata);
+  }
 
   /** Filters, local record count and whether this download contains the full server inventory. */
   scope(): EmojiCatalogScope {
@@ -223,7 +225,7 @@ export class EmojiCatalog {
     for (const [key, known] of [['category', this.categoryKeys], ['subcategory', this.subcategoryKeys]] as const) {
       if (options[key] !== undefined && (!options[key]!.trim() || !known.has(filterKey(options[key]!)))) invalid(`Unknown emoji ${key}. Use categories() to find supported values.`);
     }
-    for (const key of ['version', 'maxVersion'] as const) if (options[key] !== undefined && (!/^\d{1,2}\.\d{1,2}$/.test(options[key]!) || versionCompare(options[key]!, this.data.metadata.source_version) > 0)) invalid(`${key} must be an Emoji version no newer than ${this.data.metadata.source_version}.`);
+    for (const key of ['version', 'maxVersion'] as const) if (options[key] !== undefined && (!/^\d{1,2}\.\d{1,2}$/.test(options[key]!) || versionCompare(options[key]!, (this.data.metadata.source_version || this.data.metadata.max_version || '0.0')) > 0)) invalid(`${key} must be an Emoji version no newer than ${(this.data.metadata.source_version || this.data.metadata.max_version || '0.0')}.`);
     let rows = this.filtered(options);
     if (query) {
       this.ensureSearch();
@@ -253,7 +255,7 @@ export class EmojiCatalog {
     for (const [key, known] of [['category', this.categoryKeys], ['subcategory', this.subcategoryKeys]] as const) {
       if (options[key] !== undefined && (!options[key]!.trim() || !known.has(filterKey(options[key]!)))) invalid(`Unknown emoji ${key}. Use categories() to find supported values.`);
     }
-    for (const key of ['version', 'maxVersion'] as const) if (options[key] !== undefined && (!/^\d{1,2}\.\d{1,2}$/.test(options[key]!) || versionCompare(options[key]!, this.data.metadata.source_version) > 0)) invalid(`${key} must be an Emoji version no newer than ${this.data.metadata.source_version}.`);
+    for (const key of ['version', 'maxVersion'] as const) if (options[key] !== undefined && (!/^\d{1,2}\.\d{1,2}$/.test(options[key]!) || versionCompare(options[key]!, (this.data.metadata.source_version || this.data.metadata.max_version || '0.0')) > 0)) invalid(`${key} must be an Emoji version no newer than ${(this.data.metadata.source_version || this.data.metadata.max_version || '0.0')}.`);
     if(options.includeSkinTones!==false&&options.category===undefined&&options.subcategory===undefined&&options.version===undefined&&options.maxVersion===undefined)return this.data.emojis;
     const key=JSON.stringify([options.includeSkinTones===false,options.category===undefined?null:filterKey(options.category),options.subcategory===undefined?null:filterKey(options.subcategory),options.version,options.maxVersion]);
     const cached=this.filterCache.get(key);if(cached)return cached;

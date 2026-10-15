@@ -551,8 +551,8 @@ export interface Tariff {
 	lineage: string[];
 	/** Column 1 general rate, verbatim. */
 	general: string | null;
-	/** The official release that answered (2026HTSRev17). */
-	revision: string;
+	/** @deprecated Omitted from current API responses. */
+	revision?: string;
 	deep?: Deep<TariffDeep>;
 }
 
@@ -570,7 +570,7 @@ export interface TariffSearch {
 	/** Answering date, or null for an undated edition query. */
 	date?: string | null;
 	q: string;
-	revision: string;
+	revision?: string;
 	/** Up to 20 tariff lines, best match first. */
 	lines: TariffSearchHit[];
 }
@@ -900,9 +900,9 @@ export interface Time extends Timezone {
 	targets?: TimezoneConversionTarget[] | null;
 }
 
-/** Serving timezone identifiers and their pinned rule edition. */
+/** Available timezone identifiers. */
 export interface TimeZones {
-	timezone_database_version: string;
+	timezone_database_version?: string;
 	timezones: string[];
 	/** Present with details=true. The one instant used for all rows. */
 	at?: string;
@@ -1202,7 +1202,7 @@ export interface EmojiArtworkSource {
   flag_license?: { license: string; license_url: string; description: string };
 }
 export interface EmojiMetadata {
-  edition: string; max_version: string | null; source_version: string;
+  edition: string; max_version: string | null; source_version?: string;
   total: number;
   sources: EmojiSource[]; artwork_sources: EmojiArtworkSource[]; notices: EmojiNotice[];
   completeness: { missing_count: number; unexpected_count: number };
@@ -1361,7 +1361,7 @@ export interface CompanyProfileEmployees {
 	/** Open string, currently legal_entity or consolidated_group. */
 	scope: string;
 	/** Open string, currently reported. */
-	method: string;
+	method?: string;
 	approximate: boolean;
 }
 /** Legal form recorded by a register; codes remain open strings. */
@@ -1467,7 +1467,7 @@ export interface CompanyCoverage {
 	scope: string;
 	label: string;
 	description: string;
-	snapshot_at: string;
+	snapshot_at?: string;
 	companies: number;
 	countries: string[];
 	with_website: number;
@@ -1851,20 +1851,20 @@ export interface PropertyTax {
 
 export interface TimeLocationInput { type: string; value: string; }
 export interface TimeLocationCandidate {
-	id: string | null;
-	name: string | null;
-	country: string | null;
-	state: string | null;
-	timezone: string | null;
-	latitude: number | null;
-	longitude: number | null;
+	id?: string | null;
+	name?: string | null;
+	country?: string | null;
+	state?: string | null;
+	timezone?: string | null;
+	latitude?: number | null;
+	longitude?: number | null;
 }
 export interface TimeLocation {
 	input: TimeLocationInput;
 	status: string;
 	candidates: TimeLocationCandidate[];
 	truncated: boolean;
-	source: string;
+	source?: string;
 }
 
 // Industry names for the existing US NAICS response contract.
