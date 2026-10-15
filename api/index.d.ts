@@ -1625,7 +1625,7 @@ interface BankDeep {
     /** Source edition and exact match grain, not coverage or account verification. */
     directory?: BankDirectory;
     /** Two check digits as a string, keeping a leading zero. */
-    checksum: string | null;
+    checksum?: string | null;
     /** Branch identifier when that country has one. */
     branch: string | null;
     account: string | null;
