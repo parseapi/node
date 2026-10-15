@@ -58,7 +58,7 @@ interface Continent {
     region: string;
     subregion: string;
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
     area: number | null;
     emoji: string;
@@ -135,7 +135,7 @@ interface StateDistrictItem {
 }
 interface StateDistrictDeep {
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
 }
 interface StateDistricts {
@@ -160,8 +160,12 @@ interface District {
     deep?: Deep<DistrictDeep>;
 }
 interface City {
+    /** Present for explicit search matching when the server returns suggestion evidence. */
+    match?: CityMatch;
     name: string;
     name_local: string | null;
+    name_romanized?: string | null;
+    romanization_language?: string | null;
     type: string | null;
     state: string | null;
     state_name: string | null;
@@ -174,6 +178,10 @@ interface City {
     timezone: string | null;
     /** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
     id: string;
+    /** Returned with hierarchy=true. Null means the layer has not been reviewed. */
+    grain?: CityGrain | null;
+    /** Reviewed immediate parent; null when no reviewed relationship exists. */
+    parent?: CityParent | null;
     deep?: Deep<CityDeep>;
 }
 /** Nearest-city lookups add the distance from the query point. */
@@ -185,7 +193,12 @@ interface CitySearch {
     q: string;
     country?: string;
     state?: string;
+    type?: string;
+    grain?: CityGrain;
+    aliases?: boolean;
     cities: City[];
+    /** Present with page=true or a continuation cursor; null when this is the last page. */
+    next_cursor?: string | null;
 }
 interface CityNearby {
     city: string;
@@ -194,6 +207,7 @@ interface CityNearby {
     radius: number;
     unit: string;
     nearby: CityNearest[];
+    next_cursor?: string | null;
 }
 /** An area's share of ZIP addresses, with category shares measured independently. */
 interface PostalMetro {
@@ -1486,7 +1500,7 @@ interface CountryDeep {
     region: string | null;
     subregion: string | null;
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
     area: number | null;
     /** Land area in km2. */
@@ -1531,7 +1545,7 @@ interface CountryElevationPoint {
 }
 interface StateDeep {
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
     /** Total area in km2. */
     area: number | null;
@@ -1545,7 +1559,7 @@ interface StateDeep {
 }
 interface DistrictDeep {
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
     /** Total area in km2 (land + water, or the official total). */
     area: number | null;
@@ -1563,8 +1577,12 @@ interface CityDeep {
     elevation: number | null;
     elevation_ft: number | null;
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
+    /** Exact observation date for a reviewed same-grain count; omitted for legacy undated counts. */
+    population_observed_on?: string;
+    /** Published population basis, for example registered_population. */
+    population_basis?: string;
     /** Total area in km2 (land + water, or the official total). */
     area: number | null;
     /** Land area in km2. Null when the source publishes total only. */
@@ -1576,7 +1594,7 @@ interface PostalDeep {
     elevation: number | null;
     elevation_ft: number | null;
     population: number | null;
-    /** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+    /** @deprecated No longer returned. Retained for source compatibility. */
     population_period?: string | null;
     /** Total area in km2. Null when the source has no water split. */
     area: number | null;
@@ -1886,6 +1904,79 @@ interface EmojiConversion {
     text: string;
     unresolved: EmojiUnresolved[];
 }
+type CityGrain = 'municipality' | 'subdivision' | 'locality' | 'metropolitan_area';
+interface CityParent {
+    id: string;
+    name: string | null;
+    name_local: string | null;
+    country: string;
+    state: string | null;
+    type: string | null;
+    grain: CityGrain | null;
+}
+interface CityMatch {
+    type: string;
+    source: string;
+    value: string;
+    language: string | null;
+    edit_distance: number | null;
+}
+interface CityAmbiguityCandidate {
+    id: string;
+    object: 'city';
+    name?: string | null;
+    name_local?: string | null;
+    country?: string | null;
+    country_name?: string | null;
+    state?: string | null;
+    state_name?: string | null;
+    type?: string | null;
+}
+type CityResource = City & {
+    object: 'city';
+    distance?: number;
+    distance_mi?: number;
+};
+interface CityCollection {
+    object: 'list';
+    data: CityResource[];
+    has_more?: boolean;
+    url?: string;
+    /** Opaque, query-bound continuation. Keep the same options on the next call. */
+    next_cursor: string | null;
+    q?: string;
+    country?: string;
+    state?: string | null;
+    type?: string;
+    grain?: CityGrain;
+    aliases?: boolean;
+    city?: string;
+    radius?: number;
+    unit?: string;
+}
+interface CityList extends CityCollection {
+}
+interface CityRelations extends CityCollection {
+    city_id: string;
+    relationship: 'children' | 'ancestors' | 'siblings';
+    coverage: 'partial';
+    parent_id?: string | null;
+}
+interface CityDistance {
+    object: 'city_distance';
+    from: string;
+    to: string;
+    /** Great-circle kilometers between stored centers; null when coordinates are unknown. */
+    distance: number | null;
+    distance_mi: number | null;
+    method: 'great_circle';
+}
+interface CityNearbyCoordinates extends CityCollection {
+    latitude: number;
+    longitude: number;
+    radius: number;
+    unit: string;
+}
 
 /** A proposed task contains operation counts, never lookup inputs. */
 interface PreflightOperation {
@@ -2124,6 +2215,7 @@ declare class ParseAPIError extends Error {
     readonly requestId: string | null;
     /** Original Retry-After response header, when supplied. */
     readonly retryAfter: string | null;
+    candidates?: CityAmbiguityCandidate[];
     constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter?: string | null);
 }
 /** Optional output language for supported display fields. Input parsing stays unchanged. */
@@ -2167,23 +2259,34 @@ type DistrictOptions = LanguageOption & {
     country?: string;
     state?: string;
 } & DeepOption & RequestOptions;
-type CityOptions = LanguageOption & {
-    country?: string;
-    state?: string;
+type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & {
+    format?: 'resource';
+    aliases?: boolean;
+    ambiguity?: 'error';
 } & DeepOption & RequestOptions;
-type CityIdOptions = LanguageOption & DeepOption & RequestOptions;
-type CitySearchOptions = LanguageOption & {
-    country?: string;
-    state?: string;
+type CityIdOptions = LanguageOption & CityResponseOptions & {
+    format?: 'resource';
+    hierarchy?: boolean;
+} & DeepOption & RequestOptions;
+type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & {
+    format?: 'list';
+    aliases?: boolean;
     limit?: number;
+    sort?: CitySort;
+    match?: 'exact' | 'prefix' | 'fuzzy';
+    maxDistance?: 1 | 2;
 } & DeepOption & RequestOptions;
-type CityNearestOptions = LanguageOption & DeepOption & RequestOptions;
-type CityNearbyOptions = LanguageOption & {
+type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & {
+    format?: 'resource';
+} & DeepOption & RequestOptions;
+type CityNearbyOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & {
+    format?: 'list';
+    aliases?: boolean;
+    ambiguity?: 'error';
     radius?: number;
     unit?: 'km' | 'mi';
-    country?: string;
-    state?: string;
     limit?: number;
+    sort?: CitySort;
 } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
 type PostalOptions = LanguageOption & {
@@ -2452,11 +2555,21 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         districts: (code: string, opts?: StateDistrictsOptions) => Promise<StateDistricts>;
     };
     district: (code: string, opts?: DistrictOptions) => Promise<District>;
-    city: ((name: string, opts?: CityOptions) => Promise<City>) & {
-        id: (id: string, opts?: CityIdOptions) => Promise<City>;
-        search: (query: string, opts?: CitySearchOptions) => Promise<CitySearch>;
-        nearest: (lat: number, lon: number, opts?: CityNearestOptions) => Promise<CityNearest>;
-        nearby: (name: string, opts?: CityNearbyOptions) => Promise<CityNearby>;
+    city: CityLookupCall & {
+        id: CityIdCall;
+        search: CitySearchCall;
+        /** Canonical list resource. Reuse next_cursor with exactly the same options. */
+        list: (opts?: CityListOptions) => Promise<CityList>;
+        nearbyCoordinates: (lat: number, lon: number, opts?: CityNearbyCoordinatesOptions) => Promise<CityNearbyCoordinates>;
+        nearest: CityNearestCall;
+        nearby: CityNearbyCall;
+        /** Reviewed immediate children; coverage is partial. */
+        children: (id: string, opts?: CityRelationsOptions) => Promise<CityRelations>;
+        /** Immediate parent first, following only reviewed parent facts. */
+        ancestors: (id: string, opts?: CityAncestorsOptions) => Promise<CityRelations>;
+        siblings: (id: string, opts?: CityRelationsOptions) => Promise<CityRelations>;
+        /** Great-circle distance between stored centers, not travel distance or containment. */
+        distance: (from: string, to: string, opts?: CityDistanceOptions) => Promise<CityDistance>;
     };
     /** Look up a postal area. Pass country when known. Check nullable latitude/longitude before another location lookup. */
     postal: ((code: string, opts?: PostalOptions) => Promise<Postal>) & {
@@ -2583,5 +2696,92 @@ type IbanOptions = {
 } & DeepOption & RequestOptions;
 type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 type BinOptions = DeepOption & RequestOptions;
+type CityScopeOptions = {
+    country?: string;
+    state?: string;
+    type?: string;
+    grain?: CityGrain;
+    hierarchy?: boolean;
+};
+type CityResponseOptions = {
+    romanized?: boolean;
+};
+type CityCollectionFilters = {
+    minPopulation?: number;
+    maxPopulation?: number;
+    minElevation?: number;
+    maxElevation?: number;
+    countries?: string | readonly string[];
+    excludeCountries?: string | readonly string[];
+    timezone?: string;
+    timezones?: string | readonly string[];
+    /** Center-coordinate box: west,south,east,north. West > east crosses the date line. */
+    bbox?: string;
+};
+type CityPagingOptions = {
+    page?: boolean;
+    cursor?: string;
+    order?: 'asc' | 'desc';
+};
+type CitySort = string;
+type CityListOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
+    limit?: number;
+    cursor?: string;
+    sort?: CitySort;
+    order?: 'asc' | 'desc';
+} & DeepOption & RequestOptions;
+type CityNearbyCoordinatesOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
+    radius?: number;
+    unit?: 'km' | 'mi';
+    limit?: number;
+    cursor?: string;
+    sort?: CitySort;
+    order?: 'asc' | 'desc';
+} & DeepOption & RequestOptions;
+type CityRelationsOptions = LanguageOption & CityResponseOptions & {
+    limit?: number;
+    cursor?: string;
+    hierarchy?: boolean;
+} & DeepOption & RequestOptions;
+type CityAncestorsOptions = Omit<CityRelationsOptions, 'limit' | 'cursor'>;
+type CityDistanceOptions = RequestOptions;
+type ClassicCityOptions<T> = T & {
+    format?: never;
+};
+interface CityLookupCall {
+    (name: string, opts?: ClassicCityOptions<CityOptions>): Promise<City>;
+    (name: string, opts: CityOptions & {
+        format: 'resource';
+    }): Promise<CityResource>;
+    (name: string, opts: CityOptions): Promise<City>;
+}
+interface CityIdCall {
+    (id: string, opts?: ClassicCityOptions<CityIdOptions>): Promise<City>;
+    (id: string, opts: CityIdOptions & {
+        format: 'resource';
+    }): Promise<CityResource>;
+    (id: string, opts: CityIdOptions): Promise<City>;
+}
+interface CityNearestCall {
+    (lat: number, lon: number, opts?: ClassicCityOptions<CityNearestOptions>): Promise<CityNearest>;
+    (lat: number, lon: number, opts: CityNearestOptions & {
+        format: 'resource';
+    }): Promise<CityResource & Pick<CityNearest, 'distance' | 'distance_mi'>>;
+    (lat: number, lon: number, opts: CityNearestOptions): Promise<CityNearest>;
+}
+interface CitySearchCall {
+    (query: string, opts?: ClassicCityOptions<CitySearchOptions>): Promise<CitySearch>;
+    (query: string, opts: CitySearchOptions & {
+        format: 'list';
+    }): Promise<CityCollection>;
+    (query: string, opts: CitySearchOptions): Promise<CitySearch | CityCollection>;
+}
+interface CityNearbyCall {
+    (name: string, opts?: ClassicCityOptions<CityNearbyOptions>): Promise<CityNearby>;
+    (name: string, opts: CityNearbyOptions & {
+        format: 'list';
+    }): Promise<CityCollection>;
+    (name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
+}
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityDeep, type CityIdOptions, type CityNearby, type CityNearbyOptions, type CityNearest, type CityNearestOptions, type CityOptions, type CitySearch, type CitySearchOptions, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bank, type BankChecks, type BankDeep, type BankDirectory, type BankIssue, type BankOptions, type BankRequirementField, type BankRequirements, type BankRequirementsOptions, type BankUsAch, type BankUsAchChecks, type BankUsAchInput, type Bin, type BinOptions, type Bloc, type BlocCountries, type BlocCountriesOptions, type BlocCountryItem, type BlocOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Iban, type IbanDeep, type IbanOptions, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type Npi, type NpiDeep, type NpiEnrollment, type NpiOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type Provider, type ProviderDeep, type ProviderEnrollment, type ProviderOptions, type ProviderSource, type ProviderSources, type ProviderTaxonomy, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Tariff, type TariffDeep, type TariffMeasure, type TariffOptions, type TariffSearch, type TariffSearchHit, type TariffSearchOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Vat, type VatAddress, type VatDeep, type VatOptions, type Vehicle, type VehicleDeep, type VehicleOptions, type VehicleRecall, type Vin, type VinDeep, type VinOptions, type VinRecall, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

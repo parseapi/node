@@ -64,7 +64,7 @@ export interface Continent {
 	region: string;
 	subregion: string;
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	area: number | null;
 	emoji: string;
@@ -152,7 +152,7 @@ export interface StateDistrictItem {
 
 export interface StateDistrictDeep {
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 
 }
@@ -181,8 +181,12 @@ export interface District {
 }
 
 export interface City {
+	/** Present for explicit search matching when the server returns suggestion evidence. */
+	match?: CityMatch;
 	name: string;
 	name_local: string | null;
+	name_romanized?: string | null;
+	romanization_language?: string | null;
 	type: string | null;
 	state: string | null;
 	state_name: string | null;
@@ -195,6 +199,10 @@ export interface City {
 	timezone: string | null;
 	/** Minted parse id (`city_` + 12 chars). Stable pin via `/city/id/{id}`. */
 	id: string;
+	/** Returned with hierarchy=true. Null means the layer has not been reviewed. */
+	grain?: CityGrain | null;
+	/** Reviewed immediate parent; null when no reviewed relationship exists. */
+	parent?: CityParent | null;
 	deep?: Deep<CityDeep>;
 }
 
@@ -208,7 +216,12 @@ export interface CitySearch {
 	q: string;
 	country?: string;
 	state?: string;
+	type?: string;
+	grain?: CityGrain;
+	aliases?: boolean;
 	cities: City[];
+	/** Present with page=true or a continuation cursor; null when this is the last page. */
+	next_cursor?: string | null;
 }
 
 export interface CityNearby {
@@ -218,6 +231,7 @@ export interface CityNearby {
 	radius: number;
 	unit: string;
 	nearby: CityNearest[];
+	next_cursor?: string | null;
 }
 
 /** An area's share of ZIP addresses, with category shares measured independently. */
@@ -1538,7 +1552,7 @@ export interface CountryDeep {
 	region: string | null;
 	subregion: string | null;
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	area: number | null;
 	/** Land area in km2. */
@@ -1585,7 +1599,7 @@ export interface CountryElevationPoint {
 
 export interface StateDeep {
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	/** Total area in km2. */
 	area: number | null;
@@ -1600,7 +1614,7 @@ export interface StateDeep {
 
 export interface DistrictDeep {
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	/** Total area in km2 (land + water, or the official total). */
 	area: number | null;
@@ -1619,8 +1633,12 @@ export interface CityDeep {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
+	/** Exact observation date for a reviewed same-grain count; omitted for legacy undated counts. */
+	population_observed_on?: string;
+	/** Published population basis, for example registered_population. */
+	population_basis?: string;
 	/** Total area in km2 (land + water, or the official total). */
 	area: number | null;
 	/** Land area in km2. Null when the source publishes total only. */
@@ -1633,7 +1651,7 @@ export interface PostalDeep {
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
-	/** Reporting year or period for population (YYYY or YYYY-YYYY). Null when unknown or unverifiable. */
+	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	/** Total area in km2. Null when the source has no water split. */
 	area: number | null;
@@ -1974,3 +1992,76 @@ export interface IbanDeep {
 
 export interface EmojiParse { emojis: (Emoji & {positions: EmojiPosition[]})[]; }
 export interface EmojiConversion { text: string; unresolved: EmojiUnresolved[]; }
+
+
+export type CityGrain = 'municipality' | 'subdivision' | 'locality' | 'metropolitan_area';
+
+export interface CityParent {
+	id: string;
+	name: string | null;
+	name_local: string | null;
+	country: string;
+	state: string | null;
+	type: string | null;
+	grain: CityGrain | null;
+}
+
+export interface CityMatch { type: string; source: string; value: string; language: string | null; edit_distance: number | null }
+
+export interface CityAmbiguityCandidate {
+	id: string;
+	object: 'city';
+	name?: string | null;
+	name_local?: string | null;
+	country?: string | null;
+	country_name?: string | null;
+	state?: string | null;
+	state_name?: string | null;
+	type?: string | null;
+}
+
+export type CityResource = City & { object: 'city'; distance?: number; distance_mi?: number };
+
+export interface CityCollection {
+	object: 'list';
+	data: CityResource[];
+	has_more?: boolean;
+	url?: string;
+	/** Opaque, query-bound continuation. Keep the same options on the next call. */
+	next_cursor: string | null;
+	q?: string;
+	country?: string;
+	state?: string | null;
+	type?: string;
+	grain?: CityGrain;
+	aliases?: boolean;
+	city?: string;
+	radius?: number;
+	unit?: string;
+}
+
+export interface CityList extends CityCollection {}
+
+export interface CityRelations extends CityCollection {
+	city_id: string;
+	relationship: 'children' | 'ancestors' | 'siblings';
+	coverage: 'partial';
+	parent_id?: string | null;
+}
+
+export interface CityDistance {
+	object: 'city_distance';
+	from: string;
+	to: string;
+	/** Great-circle kilometers between stored centers; null when coordinates are unknown. */
+	distance: number | null;
+	distance_mi: number | null;
+	method: 'great_circle';
+}
+
+export interface CityNearbyCoordinates extends CityCollection {
+	latitude: number;
+	longitude: number;
+	radius: number;
+	unit: string;
+}

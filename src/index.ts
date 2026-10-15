@@ -1,80 +1,4 @@
-import type {
-	Iban,
-	Bin,
-	Npi,
-	Asn,
-	Mac,
-	Card,
-	Measure,
-	MeasureUnits,
-	Address,
-	AddressSearch,
-	Company,
-	CompanyProfile,
-	CompanySearch,
-	CompanyCoverage,
-	Bloc,
-	BlocCountries,
-	Caller,
-	Carrier,
-	City,
-	CityNearby,
-	CityNearest,
-	CitySearch,
-	Continent,
-	ContinentCountries,
-	Country,
-	CountryStates,
-	Currency,
-	CurrencyRate,
-	DateInfo,
-	District,
-	Dns,
-	Stack,
-	Domain,
-	Elevation,
-	ElevationLocations,
-	Email,
-	Vat,
-	Bank,
-	BankUsAch,
-	BankUsAchInput,
-	BankRequirements,
-	Emoji,
-	EmojiSearch,
-	EmojiBrowse,
-	EmojiCategories,
-	EmojiParse,
-	EmojiConversion,
-	EmojiCatalogData,
-	EmojiMetadata,
-	Hlr,
-	Industry,
-	IndustrySearch,
-	Tariff,
-	TariffSearch,
-	HolidayDate,
-	HolidayYear,
-	Ip,
-	Language,
-	Mx,
-	Name,
-	Provider,
-	Phone,
-	Point,
-	Postal,
-	PostalDistance,
-	PostalNearby,
-	State,
-	StateDistricts,
-	Timezone,
-	Time,
-	TimeZones,
-	Useragent,
-	Vin,
-	Vehicle,
-	Weather,
-} from './types.js';
+import type { Iban, Bin, Npi, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Bloc, BlocCountries, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Vat, Bank, BankUsAch, BankUsAchInput, BankRequirements, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, Tariff, TariffSearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Provider, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Vin, Vehicle, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
@@ -83,7 +7,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.10.2';
+const VERSION = '1.11.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -103,6 +27,8 @@ export class ParseAPIError extends Error {
 	readonly requestId: string | null;
 	/** Original Retry-After response header, when supplied. */
 	readonly retryAfter: string | null;
+
+	declare candidates?: CityAmbiguityCandidate[];
 
 	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter: string | null = null) {
 		super(message);
@@ -152,11 +78,11 @@ export type CountryStatesOptions = LanguageOption & RequestOptions;
 export type StateOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type StateDistrictsOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type DistrictOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
-export type CityOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
-export type CityIdOptions = LanguageOption & DeepOption & RequestOptions;
-export type CitySearchOptions = LanguageOption & { country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
-export type CityNearestOptions = LanguageOption & DeepOption & RequestOptions;
-export type CityNearbyOptions = LanguageOption & { radius?: number; unit?: 'km' | 'mi'; country?: string; state?: string; limit?: number } & DeepOption & RequestOptions;
+export type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { format?: 'resource'; aliases?: boolean; ambiguity?: 'error' } & DeepOption & RequestOptions;
+export type CityIdOptions = LanguageOption & CityResponseOptions & { format?: 'resource'; hierarchy?: boolean } & DeepOption & RequestOptions;
+export type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { format?: 'list'; aliases?: boolean; limit?: number; sort?: CitySort; match?: 'exact' | 'prefix' | 'fuzzy'; maxDistance?: 1 | 2 } & DeepOption & RequestOptions;
+export type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { format?: 'resource' } & DeepOption & RequestOptions;
+export type CityNearbyOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { format?: 'list'; aliases?: boolean; ambiguity?: 'error'; radius?: number; unit?: 'km' | 'mi'; limit?: number; sort?: CitySort } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
 export type PostalOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type PostalNearbyOptions = LanguageOption & { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
@@ -468,7 +394,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						controller.signal.throwIfAborted();
 					}
 					signal?.throwIfAborted();
-					throw new ParseAPIError(
+					const error = new ParseAPIError(
 						res.status,
 						typeof body.code === 'string' ? body.code : 'unknown_error',
 						typeof body.message === 'string' ? body.message : `Request failed with status ${res.status}`,
@@ -476,6 +402,11 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 						typeof body.request_id === 'string' ? body.request_id : null,
 						res.headers.get('Retry-After')
 					);
+					if (error.status === 409 && error.code === 'ambiguous_city') {
+						const candidates = cityErrorCandidates(body.candidates);
+						if (candidates) error.candidates = candidates;
+					}
+					throw error;
 				}
 			} finally {
 				clearTimeout(timer);
@@ -571,23 +502,37 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 
 		city: Object.assign(
-			(name: string, opts?: CityOptions): Promise<City> =>
-				request(`/city/${enc(name)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
+			((name: string, opts?: CityOptions): Promise<City> =>
+				request(`/city/${enc(name)}`, { ...cityScopeQuery(opts), ...cityResponseQuery(opts), aliases: opts?.aliases ? 'true' : undefined, ambiguity: opts?.ambiguity, ...deepQuery(opts) }, undefined, opts)) as CityLookupCall,
 			{
-				id: (id: string, opts?: CityIdOptions): Promise<City> => request(`/city/id/${enc(id)}`, deepQuery(opts), undefined, opts),
-				search: (query: string, opts?: CitySearchOptions): Promise<CitySearch> =>
-					request('/city', { q: query, country: opts?.country, state: opts?.state, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
-				nearest: (lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest> => request('/city', { lat, lon, ...deepQuery(opts) }, undefined, opts),
-				nearby: (
-					name: string,
-					opts?: CityNearbyOptions
-				): Promise<CityNearby> =>
+				id: ((id: string, opts?: CityIdOptions): Promise<City> => request(`/city/id/${enc(id)}`, { hierarchy: opts?.hierarchy ? 'true' : undefined, ...cityResponseQuery(opts), ...deepQuery(opts) }, undefined, opts)) as CityIdCall,
+				search: (async (query: string, opts?: CitySearchOptions): Promise<CitySearch | CityCollection> => {
+					const spelling = opts?.match !== undefined || opts?.maxDistance !== undefined;
+					const result = await request<CitySearch | CityCollection>(spelling ? '/city/search' : '/city', { q: query, match: opts?.match, max_distance: opts?.maxDistance, ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), aliases: opts?.aliases ? 'true' : undefined, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts);
+					if (spelling && opts?.format !== 'list') {
+						const list = result as CityCollection;
+						return { q: query, ...(opts?.country ? { country: opts.country } : {}), ...(opts?.state ? { state: opts.state } : {}), cities: list.data, next_cursor: list.next_cursor };
+					}
+					return result;
+				}) as CitySearchCall,
+				/** Canonical list resource. Reuse next_cursor with exactly the same options. */
+				list: (opts?: CityListOptions): Promise<CityList> => request('/city', { browse: 'true', ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), format: 'list', limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+				nearbyCoordinates: (lat: number, lon: number, opts?: CityNearbyCoordinatesOptions): Promise<CityNearbyCoordinates> => request('/city', {
+					lat, lon, nearby: 'true', radius: opts?.radius, unit: opts?.unit,
+					...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), format: 'list', limit: opts?.limit, ...deepQuery(opts),
+				}, undefined, opts),
+				nearest: ((lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest> => request('/city', { lat, lon, ...cityScopeQuery(opts), ...cityResponseQuery(opts), ...deepQuery(opts) }, undefined, opts)) as CityNearestCall,
+				nearby: ((name: string, opts?: CityNearbyOptions): Promise<CityNearby | CityCollection> =>
 					request(`/city/${enc(name)}/nearby`, {
-						radius: opts?.radius,
-						unit: opts?.unit,
-						country: opts?.country,
-						state: opts?.state,
-						limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+						radius: opts?.radius, unit: opts?.unit, ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts),
+						aliases: opts?.aliases ? 'true' : undefined, ambiguity: opts?.ambiguity, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts)) as CityNearbyCall,
+				/** Reviewed immediate children; coverage is partial. */
+				children: (id: string, opts?: CityRelationsOptions): Promise<CityRelations> => request(`/city/id/${enc(id)}/children`, { limit: opts?.limit, cursor: opts?.cursor, ...cityResponseQuery(opts), hierarchy: opts?.hierarchy ? 'true' : undefined, ...deepQuery(opts) }, undefined, opts),
+				/** Immediate parent first, following only reviewed parent facts. */
+				ancestors: (id: string, opts?: CityAncestorsOptions): Promise<CityRelations> => request(`/city/id/${enc(id)}/ancestors`, { ...cityResponseQuery(opts), hierarchy: opts?.hierarchy ? 'true' : undefined, ...deepQuery(opts) }, undefined, opts),
+				siblings: (id: string, opts?: CityRelationsOptions): Promise<CityRelations> => request(`/city/id/${enc(id)}/siblings`, { limit: opts?.limit, cursor: opts?.cursor, ...cityResponseQuery(opts), hierarchy: opts?.hierarchy ? 'true' : undefined, ...deepQuery(opts) }, undefined, opts),
+				/** Great-circle distance between stored centers, not travel distance or containment. */
+				distance: (from: string, to: string, opts?: CityDistanceOptions): Promise<CityDistance> => request(`/city/id/${enc(from)}/distance/${enc(to)}`, undefined, undefined, opts),
 			}
 		),
 
@@ -899,3 +844,93 @@ export type NaicsSearchOptions = IndustrySearchOptions;
 export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
 export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 export type BinOptions = DeepOption & RequestOptions;
+
+
+export type CityScopeOptions = { country?: string; state?: string; type?: string; grain?: CityGrain; hierarchy?: boolean };
+
+export type CityResponseOptions = { romanized?: boolean };
+
+export type CityCollectionFilters = {
+	minPopulation?: number; maxPopulation?: number; minElevation?: number; maxElevation?: number;
+	countries?: string | readonly string[]; excludeCountries?: string | readonly string[];
+	timezone?: string; timezones?: string | readonly string[];
+	/** Center-coordinate box: west,south,east,north. West > east crosses the date line. */
+	bbox?: string;
+};
+
+export type CityPagingOptions = { page?: boolean; cursor?: string; order?: 'asc' | 'desc' };
+
+export type CitySort = string;
+
+export type CityListOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
+	limit?: number; cursor?: string; sort?: CitySort; order?: 'asc' | 'desc';
+} & DeepOption & RequestOptions;
+
+export type CityNearbyCoordinatesOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
+	radius?: number; unit?: 'km' | 'mi'; limit?: number; cursor?: string; sort?: CitySort; order?: 'asc' | 'desc';
+} & DeepOption & RequestOptions;
+
+export type CityRelationsOptions = LanguageOption & CityResponseOptions & { limit?: number; cursor?: string; hierarchy?: boolean } & DeepOption & RequestOptions;
+
+export type CityAncestorsOptions = Omit<CityRelationsOptions, 'limit' | 'cursor'>;
+
+export type CityDistanceOptions = RequestOptions;
+
+
+type ClassicCityOptions<T> = T & { format?: never };
+
+export interface CityLookupCall {
+	(name: string, opts?: ClassicCityOptions<CityOptions>): Promise<City>;
+	(name: string, opts: CityOptions & { format: 'resource' }): Promise<CityResource>;
+	(name: string, opts: CityOptions): Promise<City>;
+}
+
+export interface CityIdCall {
+	(id: string, opts?: ClassicCityOptions<CityIdOptions>): Promise<City>;
+	(id: string, opts: CityIdOptions & { format: 'resource' }): Promise<CityResource>;
+	(id: string, opts: CityIdOptions): Promise<City>;
+}
+
+export interface CityNearestCall {
+	(lat: number, lon: number, opts?: ClassicCityOptions<CityNearestOptions>): Promise<CityNearest>;
+	(lat: number, lon: number, opts: CityNearestOptions & { format: 'resource' }): Promise<CityResource & Pick<CityNearest, 'distance' | 'distance_mi'>>;
+	(lat: number, lon: number, opts: CityNearestOptions): Promise<CityNearest>;
+}
+
+export interface CitySearchCall {
+	(query: string, opts?: ClassicCityOptions<CitySearchOptions>): Promise<CitySearch>;
+	(query: string, opts: CitySearchOptions & { format: 'list' }): Promise<CityCollection>;
+	(query: string, opts: CitySearchOptions): Promise<CitySearch | CityCollection>;
+}
+
+export interface CityNearbyCall {
+	(name: string, opts?: ClassicCityOptions<CityNearbyOptions>): Promise<CityNearby>;
+	(name: string, opts: CityNearbyOptions & { format: 'list' }): Promise<CityCollection>;
+	(name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
+}
+
+
+function cityErrorCandidates(input: unknown): CityAmbiguityCandidate[] | undefined {
+	if (!Array.isArray(input)) return undefined;
+	const fields = ['name', 'name_local', 'country', 'country_name', 'state', 'state_name', 'type'] as const;
+	return input.slice(0, 2).flatMap(row => {
+		if (!row || typeof row !== 'object' || typeof row.id !== 'string' || !/^city_[23456789abcdefghjkmnpqrstuvwxyz]{12}$/.test(row.id)) return [];
+		const candidate: CityAmbiguityCandidate = { id: row.id, object: 'city' };
+		for (const field of fields) if (Object.hasOwn(row, field) && (row[field] === null || typeof row[field] === 'string' && row[field].length <= 255)) candidate[field] = row[field];
+		return [candidate];
+	});
+}
+
+function cityCsv(value?: string | readonly string[]): string | undefined { return typeof value === 'string' ? value : value?.join(','); }
+
+function cityResponseQuery(opts?: CityResponseOptions & { format?: string }): Query { return { format: opts?.format, romanized: opts?.romanized ? 'true' : undefined }; }
+
+function cityScopeQuery(opts?: CityScopeOptions): Query {
+	return { country: opts?.country, state: opts?.state, type: opts?.type, grain: opts?.grain, hierarchy: opts?.hierarchy ? 'true' : undefined };
+}
+
+function cityCollectionQuery(opts?: CityCollectionFilters & { page?: boolean; cursor?: string; sort?: string; order?: string }): Query {
+	return { min_population: opts?.minPopulation, max_population: opts?.maxPopulation, min_elevation: opts?.minElevation, max_elevation: opts?.maxElevation,
+		countries: cityCsv(opts?.countries), exclude_countries: cityCsv(opts?.excludeCountries), timezones: cityCsv(opts?.timezones), timezone: opts?.timezone, bbox: opts?.bbox,
+		page: opts?.page ? 'true' : undefined, cursor: opts?.cursor, sort: opts?.sort, order: opts?.order };
+}
