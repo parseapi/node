@@ -170,9 +170,12 @@ export type TariffOptions = {
 	date?: string;
 } & DeepOption & RequestOptions;
 export type TariffSearchOptions = { edition?: string; date?: string } & RequestOptions;
+function tariffEditionId(value: unknown): value is string {
+ return typeof value === 'string' && ((value.length === 64 && /^[a-f0-9]{64}$/.test(value)) || (/^ted_[1-9][0-9]{0,19}(?![\s\S])/.test(value) && (value.length < 24 || value.slice(4) <= '18446744073709551615')));
+}
 function tariffSelection<T extends { edition?: string; date?: string | null }>(result: T, opts?: { edition?: string; date?: string }): T {
 	if ((opts?.edition !== undefined || opts?.date !== undefined) &&
-		(typeof result.edition !== 'string' || result.edition.length !== 64 || !/^[a-f0-9]{64}$/.test(result.edition) || (opts.edition !== undefined && result.edition !== opts.edition) ||
+		(!tariffEditionId(result.edition) || (opts.edition !== undefined && result.edition !== opts.edition) ||
 		(opts.date !== undefined ? result.date !== opts.date : result.date != null))) {
 		throw new ParseAPIError(0, 'tariff_selection_mismatch', 'Tariff response did not confirm the requested edition/date. The server may not support this selection.', null, null);
 	}
