@@ -6,6 +6,11 @@
 - Keep existing City calls and response defaults compatible; expose ambiguity candidates when requested.
 - Remove population observation periods from public examples; retain published typed members only for source compatibility.
 
+## 1.10.3 — 2026-10-15
+
+- Accept ordinary API responses with retired source metadata omitted; TypeScript marks those members optional.
+- Allow offline Emoji catalogs to identify their content edition without source-version bookkeeping.
+
 ## 1.10.1 — 2026-10-12
 
 - Add Emoji search/browse, categories, catalog, metadata, parsing and conversion; keep existing lookup calls and response decoding compatible.

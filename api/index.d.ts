@@ -515,8 +515,8 @@ interface Tariff {
     lineage: string[];
     /** Column 1 general rate, verbatim. */
     general: string | null;
-    /** The official release that answered (2026HTSRev17). */
-    revision: string;
+    /** @deprecated Omitted from current API responses. */
+    revision?: string;
     deep?: Deep<TariffDeep>;
 }
 interface TariffSearchHit {
@@ -532,7 +532,7 @@ interface TariffSearch {
     /** Answering date, or null for an undated edition query. */
     date?: string | null;
     q: string;
-    revision: string;
+    revision?: string;
     /** Up to 20 tariff lines, best match first. */
     lines: TariffSearchHit[];
 }
@@ -827,9 +827,9 @@ interface Time extends Timezone {
     /** With targets only. Order and duplicates are preserved. Null means the source timezone is unresolved. */
     targets?: TimezoneConversionTarget[] | null;
 }
-/** Serving timezone identifiers and their pinned rule edition. */
+/** Available timezone identifiers. */
 interface TimeZones {
-    timezone_database_version: string;
+    timezone_database_version?: string;
     timezones: string[];
     /** Present with details=true. The one instant used for all rows. */
     at?: string;
@@ -1129,7 +1129,7 @@ interface EmojiArtworkSource {
 interface EmojiMetadata {
     edition: string;
     max_version: string | null;
-    source_version: string;
+    source_version?: string;
     total: number;
     sources: EmojiSource[];
     artwork_sources: EmojiArtworkSource[];
@@ -1315,7 +1315,7 @@ interface CompanyProfileEmployees {
     /** Open string, currently legal_entity or consolidated_group. */
     scope: string;
     /** Open string, currently reported. */
-    method: string;
+    method?: string;
     approximate: boolean;
 }
 /** Legal form recorded by a register; codes remain open strings. */
@@ -1437,7 +1437,7 @@ interface CompanyCoverage {
     scope: string;
     label: string;
     description: string;
-    snapshot_at: string;
+    snapshot_at?: string;
     companies: number;
     countries: string[];
     with_website: number;
@@ -1791,20 +1791,20 @@ interface TimeLocationInput {
     value: string;
 }
 interface TimeLocationCandidate {
-    id: string | null;
-    name: string | null;
-    country: string | null;
-    state: string | null;
-    timezone: string | null;
-    latitude: number | null;
-    longitude: number | null;
+    id?: string | null;
+    name?: string | null;
+    country?: string | null;
+    state?: string | null;
+    timezone?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
 }
 interface TimeLocation {
     input: TimeLocationInput;
     status: string;
     candidates: TimeLocationCandidate[];
     truncated: boolean;
-    source: string;
+    source?: string;
 }
 type Industry = Naics;
 type IndustryChild = NaicsChild;

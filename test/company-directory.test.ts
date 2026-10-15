@@ -107,7 +107,7 @@ it('preserves dated employee headcount, zero, false, null and future codes on ID
 	expectTypeOf<CompanyProfileDeep['employees']>().toEqualTypeOf<CompanyProfileEmployees | null | undefined>();
 	expectTypeOf<CompanyProfileEmployees['basis']>().toEqualTypeOf<string | null | undefined>();
 	expectTypeOf<CompanyProfileEmployees['scope']>().toEqualTypeOf<string>();
-	expectTypeOf<CompanyProfileEmployees['method']>().toEqualTypeOf<string>();
+	expectTypeOf<CompanyProfileEmployees['method']>().toEqualTypeOf<string | undefined>();
 	const observations: (CompanyProfileEmployees | null | undefined)[] = [
 		undefined, null,
 		{ count: 0, as_of: '2025-12-31', scope: 'legal_entity', method: 'reported', approximate: false },
