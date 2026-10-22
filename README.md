@@ -109,17 +109,14 @@ Discovery example: `await parse.company.search({ country: 'US', industry: '0700'
 Supply `industry` and `industry_type` together. The supported namespace is `sic`, with an exact four-digit string such as `0700`; leading zeros are meaningful. Country-only discovery is also supported. Filters intersect and may narrow an existing selector. Country matches the profile country, not a headquarters or operating-presence claim. Unknown values do not match a requested filter. Filter-only candidates use `match.field: "filters"` and `match.value: null`; reuse the same filters and limit with a returned cursor. Counts describe this directory edition, not complete country coverage.
 
 
-
 One method per endpoint, named after the route.
 
 ```ts
 await parse.ip('8.8.8.8');
 await parse.ip.self();
 await parse.email('hello@gmail.com');
-await parse.vat('DE136695976');
 await parse.bank('DE89370400440532013000');
 await parse.card('424242');
-await parse.provider('1881018208');
 await parse.phone('+14155552671');
 await parse.carrier('+14155552671');
 await parse.caller('+14155552671');
@@ -150,8 +147,6 @@ await parse.district('37081');
 await parse.district('guilford county');
 await parse.continent('NA');
 await parse.continent.countries('NA');
-await parse.bloc('EU');
-await parse.bloc.countries('EU');
 await parse.currency('USD');
 await parse.currency.rate('USD', 'EUR');
 await parse.language('en');
@@ -180,8 +175,6 @@ await parse.dns('_dmarc.example.com', { type: 'TXT' });
 await parse.useragent(uaString);
 await parse.industry('541511');
 await parse.industry.search('coffee shop', { limit: 5 });
-await parse.tariff('8471.30.01.00');
-await parse.tariff.search('sunglasses');
 await parse.emoji('rocket');
 await parse.emoji.search('fire');
 ```
@@ -282,19 +275,6 @@ Weather returns current conditions by default. Paid deep adds specialist current
 await parse.weather(40.7128, -74.006, { deep: true, date: '2026-08-15' });
 ```
 
-Tariff starts with the general schedule line. Paid deep adds units and the special and other schedule columns. An optional origin then resolves country-specific measures. The three calls below show those successive choices. Without origin, schedule detail is still returned and origin-dependent fields are null. A null effective rate is not a zero rate.
-
-Tariff lookup and search accept the `edition` ID returned by Tariff, such as `ted_3`, and an optional `date` (`YYYY-MM-DD`). The edition pins exact immutable source bytes. A date is accepted only when verified source coverage exists. An edition without a date returns undated schedule context (`date: null`). Default requests use today. Paid detail exposes an open-string `reason` when `effective_rate` is null, including `incomplete_coverage`. A null rate never means zero. Explicit selections fail with `tariff_selection_mismatch` if an older server ignores the requested scope.
-
-Origin means where the goods originate, not where they ship from. The effective rate covers matched stored schedule measures only. It is not complete duty or landed cost.
-
-Codes contain 4, 6, 8 or 10 ASCII digits; dots and whitespace are optional. Search returns up to 20 description matches with parent `lineage` so a result named "Other" has context. Search is not product classification. In deep, `measures: null` means origin-dependent measures were not resolved. `measures: []` means the resolved lookup found none.
-
-```ts
-await parse.tariff('8471.30.01.00');
-await parse.tariff('8471.30.01.00', { deep: true });
-await parse.tariff('8471.30.01.00', { deep: true, origin: 'CN' });
-```
 
 Address search uses context from the form: prefer postal, or city and state. An optional end-user `ip` is a locality hint for server-side calls. An empty result explains itself with `reason`: `more_input`, `missing_context` or `no_matches`. With suggestions, reason is null. Older responses may omit it, and future reasons remain strings. Catalog and lookup failures use the existing API errors.
 
@@ -311,21 +291,6 @@ await parse.bankRequirements('US', { format: 'us_ach' });
 await parse.bankUsAch({ routing: '011000015', account: '0001234567' });
 ```
 
-## Provider lookup
-
-```ts
-const provider = await parse.provider('1881018208');
-const profile = await parse.provider('1881018208', { deep: true });
-```
-
-Pass the original NPI as a string. `valid` checks its format and checksum; `registered` means a match in the stored NPPES snapshot. `active` reflects recorded NPI deactivation, not licensure. `excluded` is an NPI-only OIG LEIE match; `false` is not a complete exclusion clearance. These directory facts do not verify credentials, current practice contact or payment eligibility.
-
-Invalid input returns `valid: false` with unknown provider fields. A checksum-valid number missing from the snapshot returns `registered: false`; unavailable storage remains an API error. Preserve `null` as unknown.
-
-The default pooled lookup includes provider identity, specialty and practice contact where held. Paid `deep` adds `deactivated_at`, `medicare`, `opt_out` and `enrollments` from stored source files, with no separate check meter or live verification. `enrollments: null` means unavailable; `[]` means no enrollment rows are returned. The API omits unrequested `deep` and returns `{}` when requested on Free.
-
-Paid Deep also returns `taxonomies` in published order, with taxonomy code, specialty label, primary flag and provider-reported license number/state, plus `enumerated_at`, `updated_at` and `reactivated_at` record dates. Reported licenses are not verified licenses. Null lists mean unavailable; empty lists mean the edition contains no entries. Provider record dates describe the provider record. Unknown dates stay null.
-
 ## Deep
 
 Choose enrichment for the question you need answered.
@@ -335,11 +300,10 @@ Choose enrichment for the question you need answered.
 | IP | Richer IP fields included with a paid plan. No separate check meter. |
 | Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
-| VAT | A metered registry check where supported, using included VAT checks or enabled on-demand usage. |
 | Phone, Time, Date, Currency, Language, Emoji, Bank, Point | Optional detail in the same pooled request on every plan. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
-| Tariff, Company (national number) | The complete product detail bag on paid plans. |
+| Company (national number) | The complete product detail bag on paid plans. |
 | Company directory | Profile detail in the same pooled request on every plan. Search detail belongs to each company result. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
 | Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |
@@ -392,7 +356,7 @@ const country = await parse.country('US', {
 
 Requires Node 18 or later. Zero dependencies.
 
-Ordinary lookups retry network failures, 429, and 500/502/503/504 responses twice by default. Carrier, caller, HLR, and email or VAT with `deep: true` make one attempt by default. Address with `deep: true` also uses one attempt, reserving the same behavior for future verification.
+Ordinary lookups retry network failures, 429, and 500/502/503/504 responses twice by default. Carrier, caller, HLR, and email with `deep: true` make one attempt by default. Address with `deep: true` also uses one attempt, reserving the same behavior for future verification.
 
 An explicit `retries` setting on the client or call overrides those defaults. Another attempt can consume additional usage if the earlier response was lost. Cancellation stops the request and any retry wait. Automatic redirects are disabled.
 
@@ -501,7 +465,6 @@ Search defaults to prefix matching. Exact and fuzzy matching are explicit; fuzzy
 Reviewed children, ancestors and siblings use canonical lists with partial relationship coverage. Empty data does not prove there are no geographic relatives. Children/siblings accept page controls; ancestors do not. Distance reports great-circle kilometers and miles between stored centers: zero is known zero, null is unknown, and it does not imply travel time or containment.
 
 Strict `ambiguity=error` can return HTTP 409 `ambiguous_city` with up to two safe candidate identities. The existing error constructor and unrelated error metadata are preserved; candidates are retained only for that status/code and never contain Deep. GeoJSON is available through HTTP; these typed City list methods do not return GeoJSON.
-
 
 
 Reviewed name forms:

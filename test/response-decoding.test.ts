@@ -1,12 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, expectTypeOf, it, vi } from 'vitest';
-import { EmojiCatalog, parseAPI, type TimeZones, type TimeLocation, type TimeLocationCandidate, type Tariff, type TariffSearch, type EmojiMetadata, type CompanyCoverage, type CompanyProfileEmployees } from '../src/index.js';
+import { EmojiCatalog, parseAPI, type TimeZones, type TimeLocation, type TimeLocationCandidate, type EmojiMetadata, type CompanyCoverage, type CompanyProfileEmployees } from '../src/index.js';
 
 it('describes removed metadata and compact candidates as optional', () => {
   expectTypeOf<TimeZones['timezone_database_version']>().toEqualTypeOf<string | undefined>();
   expectTypeOf<TimeLocation['source']>().toEqualTypeOf<string | undefined>();
-  expectTypeOf<Tariff['revision']>().toEqualTypeOf<string | undefined>();
-  expectTypeOf<TariffSearch['revision']>().toEqualTypeOf<string | undefined>();
   expectTypeOf<EmojiMetadata['source_version']>().toEqualTypeOf<string | undefined>();
   expectTypeOf<CompanyCoverage['snapshot_at']>().toEqualTypeOf<string | undefined>();
   expectTypeOf<CompanyProfileEmployees['method']>().toEqualTypeOf<string | undefined>();
@@ -50,7 +48,7 @@ it('reads an offline EmojiCatalog without a source version and preserves metadat
 
 it('decodes the actual API handler standard and clean representations with the old getter types', async () => {
   for (const profile of ['standard', 'clean'] as const) {
-    const fixtures = ['timezones', 'time', 'tariff', 'tariff-search', 'emoji-metadata', 'emoji-catalog', 'company-coverage', 'company-profile'];
+    const fixtures = ['timezones', 'time', 'emoji-metadata', 'emoji-catalog', 'company-coverage', 'company-profile'];
     const calls: Headers[] = []; const original: unknown[] = [];
     const parse = parseAPI('fixture', { retries: 0, fetch: async (_input, init) => {
       calls.push(new Headers(init?.headers)); const name = fixtures.shift()!;
@@ -59,16 +57,15 @@ it('decodes the actual API handler standard and clean representations with the o
       return new Response(body);
     } });
     const zones = await parse.time.zones(); const time = await parse.time(undefined, { iata: 'JFK' });
-    const tariff = await parse.tariff('8471'); const search = await parse.tariff.search('computer');
     const metadata = await parse.emoji.metadata(); const downloaded = await parse.emoji.catalog();
     const coverage = await parse.company.coverage(); const company = await parse.company.id('co_fixture', { deep: true });
-    const oldMetadata = [zones.timezone_database_version, time.location!.source, tariff.revision, search.revision, metadata.source_version, coverage.snapshot_at, company.deep!.employees!.method];
-    if(profile === 'clean') expect(oldMetadata).toEqual(Array(7).fill(undefined));
+    const oldMetadata = [zones.timezone_database_version, time.location!.source, metadata.source_version, coverage.snapshot_at, company.deep!.employees!.method];
+    if(profile === 'clean') expect(oldMetadata).toEqual(Array(5).fill(undefined));
     expect(company.deep!.employees!.approximate).toBe(false);
     expect(company.deep!.employees!.count).toBe(12);
     expect(new EmojiCatalog(downloaded).browse({ maxVersion: metadata.max_version!, limit: 1 }).emojis).toHaveLength(1);
     for (const headers of calls) expect(headers.get('Parse-Response')).toBeNull();
-    const actual = [zones,time,tariff,search,metadata,downloaded,coverage,company];
+    const actual = [zones,time,metadata,downloaded,coverage,company];
     expect(actual.map(value => JSON.parse(JSON.stringify(value)))).toEqual(original);
   }
 });

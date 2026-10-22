@@ -1,4 +1,4 @@
-import type { Iban, Bin, Npi, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Bloc, BlocCountries, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Vat, Bank, BankUsAch, BankUsAchInput, BankRequirements, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, Tariff, TariffSearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Provider, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Iban, Bin, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Bank, BankUsAch, BankUsAchInput, BankRequirements, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
@@ -7,7 +7,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.11.1';
+const VERSION = '1.11.2';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -71,8 +71,6 @@ export type IpOptions = LanguageOption & DeepOption & RequestOptions;
 export type IpSelfOptions = LanguageOption & DeepOption & RequestOptions;
 export type ContinentOptions = LanguageOption & RequestOptions;
 export type ContinentCountriesOptions = LanguageOption & RequestOptions;
-export type BlocOptions = RequestOptions;
-export type BlocCountriesOptions = LanguageOption & RequestOptions;
 export type CountryOptions = LanguageOption & DeepOption & RequestOptions;
 export type CountryStatesOptions = LanguageOption & RequestOptions;
 export type StateOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
@@ -128,11 +126,8 @@ export type CompanySearchOptions = {
 export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
-/** `deep: true` requests a metered registry check where supported. `from` is your own VAT number. */
-export type VatOptions = { country?: string; from?: string } & DeepOption & RequestOptions;
 export type BankOptions = { country?: string } & DeepOption & RequestOptions;
 export type BankRequirementsOptions = { format?: string } & RequestOptions;
-export type ProviderOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
@@ -158,27 +153,6 @@ export type UseragentOptions = DeepOption & RequestOptions;
 export type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
 export type IndustrySearchOptions = { limit?: number } & DeepOption & RequestOptions;
-/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
-export type TariffOptions = {
-	/** Origin country (ISO2). With paid deep, resolves country-specific measures. */
-	origin?: string;
-	/** Exact immutable edition fingerprint. */
-	edition?: string;
-	/** YYYY-MM-DD, accepted only with verified source coverage. */
-	date?: string;
-} & DeepOption & RequestOptions;
-export type TariffSearchOptions = { edition?: string; date?: string } & RequestOptions;
-function tariffEditionId(value: unknown): value is string {
- return typeof value === 'string' && ((value.length === 64 && /^[a-f0-9]{64}$/.test(value)) || (/^ted_[1-9][0-9]{0,19}(?![\s\S])/.test(value) && (value.length < 24 || value.slice(4) <= '18446744073709551615')));
-}
-function tariffSelection<T extends { edition?: string; date?: string | null }>(result: T, opts?: { edition?: string; date?: string }): T {
-	if ((opts?.edition !== undefined || opts?.date !== undefined) &&
-		(!tariffEditionId(result.edition) || (opts.edition !== undefined && result.edition !== opts.edition) ||
-		(opts.date !== undefined ? result.date !== opts.date : result.date != null))) {
-		throw new ParseAPIError(0, 'tariff_selection_mismatch', 'Tariff response did not confirm the requested edition/date. The server may not support this selection.', null, null);
-	}
-	return result;
-}
 export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
@@ -264,7 +238,7 @@ export type EmojiParseOptions = LanguageOption & DeepOption & RequestOptions;
 export type EmojiConvertOptions = RequestOptions & { direction: 'to_shortcodes' | 'to_emoji'; shortcodeSource: 'cldr' | 'github' | 'slack' | 'discord' };
 
 interface DeepOption {
-	/** Request endpoint-specific enrichment. Email/VAT checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
+	/** Request endpoint-specific enrichment. Email checks are metered. Reference depth can be pooled or included with a paid plan. See the operation's help. */
 	deep?: boolean;
 }
 
@@ -476,13 +450,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		bloc: Object.assign(
-			(code: string, opts?: BlocOptions): Promise<Bloc> => request(`/bloc/${enc(code)}`, undefined, undefined, opts),
-			{
-				countries: (code: string, opts?: BlocCountriesOptions): Promise<BlocCountries> => request(`/bloc/${enc(code)}/countries`, undefined, undefined, opts),
-			}
-		),
-
 		country: Object.assign(
 			(code: string, opts?: CountryOptions): Promise<Country> => request(`/country/${enc(code)}`, deepQuery(opts), undefined, opts),
 			{
@@ -588,26 +555,12 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		 */
 		email: (email: string, opts?: EmailOptions): Promise<Email> => request(`/email/${enc(email)}`, deepQuery(opts), undefined, opts),
 
-		/** Check VAT format and checksum. `deep: true` requests a metered registry check where supported, with no automatic retries by default. */
-		vat: (
-			number: string,
-			opts?: VatOptions
-		): Promise<Vat> =>
-			request(`/vat/${enc(number)}`, {
-				country: opts?.country,
-				from: opts?.from,
-				...deepQuery(opts),
-			}, undefined, opts),
-
 		// Keep existing callers on their established HTTP contracts.
 		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
 			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
 		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
 			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
-
-		npi: (npi: string, opts?: NpiOptions): Promise<Npi> =>
-			request(`/npi/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
 		bank: (iban: string, opts?: BankOptions): Promise<Bank> =>
 			request('/bank', undefined, undefined, opts, { iban, country: opts?.country, deep: opts?.deep }),
@@ -619,9 +572,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		/** Describe supported input fields and check scope; this does not establish country directory coverage. */
 		bankRequirements: (country: string, opts?: BankRequirementsOptions): Promise<BankRequirements> =>
 			request('/bank/requirements', { country, format: opts?.format }, undefined, opts),
-
-		provider: (npi: string, opts?: ProviderOptions): Promise<Provider> =>
-			request(`/provider/${enc(npi)}`, deepQuery(opts), undefined, opts),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
@@ -688,14 +638,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		industry,
 		/** Compatibility name for industry. */
 		naics: industry,
-		/** Look up the general US duty schedule line. Paid deep adds units and the special and other schedule columns. Add origin with deep to resolve country-specific measures. Without origin, schedule detail remains available and origin-dependent fields are null. A null effective rate is not a zero rate. */
-		tariff: Object.assign(
-			(code: string, opts?: TariffOptions): Promise<Tariff> =>
-				request<Tariff>(`/tariff/${enc(code)}`, { origin: opts?.origin, edition: opts?.edition, date: opts?.date, ...deepQuery(opts) }, undefined, opts).then(result => tariffSelection(result, opts)),
-			{
-				search: (query: string, opts?: TariffSearchOptions): Promise<TariffSearch> => request<TariffSearch>('/tariff', { q: query, edition: opts?.edition, date: opts?.date }, undefined, opts).then(result => tariffSelection(result, opts)),
-			}
-		),
 
 		currency: Object.assign(
 			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, deepQuery(opts), undefined, opts),
@@ -835,7 +777,6 @@ export type NaicsSearchOptions = IndustrySearchOptions;
 
 // Compatibility options for existing package consumers.
 export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
-export type NpiOptions = LanguageOption & DeepOption & RequestOptions;
 export type BinOptions = DeepOption & RequestOptions;
 
 

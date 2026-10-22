@@ -8,8 +8,7 @@ const failed = () => new Response('{"code":"unavailable"}', { status: 503, heade
 describe('product retry defaults', () => {
 	const paid: [string, (p: ParseAPIClient) => Promise<unknown>][] = [
 		['carrier', p => p.carrier('555-0100')], ['caller', p => p.caller('555-0100')],
-		['hlr', p => p.hlr('555-0100')], ['email deep', p => p.email('a@example.com', { deep: true })],
-		['vat deep', p => p.vat('junk', { deep: true })], ['address deep', p => p.address('junk', { deep: true })],
+		['hlr', p => p.hlr('555-0100')], ['email deep', p => p.email('a@example.com', { deep: true })], ['address deep', p => p.address('junk', { deep: true })],
 	];
 	it.each(paid)('%s makes one attempt by default', async (_name, invoke) => {
 		const fetch = vi.fn(async () => failed());

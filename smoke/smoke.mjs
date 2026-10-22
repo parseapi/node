@@ -46,12 +46,6 @@ await expectOk('continent', parse.continent('NA'), (r) => (r.name === 'North Ame
 await expectOk('continent.countries', parse.continent.countries('NA'), (r) =>
 	Array.isArray(r.countries) && r.countries.length > 0 ? null : 'no countries'
 );
-await expectOk('bloc', parse.bloc('EU'), (r) =>
-	r.name === 'European Union' && r.members === 27 ? null : 'wrong bloc'
-);
-await expectOk('bloc.countries', parse.bloc.countries('SCHENGEN'), (r) =>
-	Array.isArray(r.countries) && r.countries.length === 29 ? null : 'wrong members'
-);
 await expectOk('country', parse.country('US'), (r) => (r.iso3 === 'USA' ? null : 'wrong iso3'));
 await expectOk('country.states', parse.country.states('US'), (r) => (r.states.length >= 50 ? null : 'too few states'));
 await expectOk('state', parse.state('NC', { country: 'US' }), (r) => (r.name === 'North Carolina' ? null : 'wrong name'));
@@ -92,16 +86,11 @@ await expectOk('address junk', parse.address('junk'), (r) => r.valid === false ?
 await expectOk('address.search', parse.address.search('1600 Pennsylvania', { country: 'US', postal: '20500' }), (r) => Array.isArray(r.addresses) ? null : 'missing addresses');
 await expectOk('company junk', parse.company('junk'), (r) => r.valid === false ? null : 'expected invalid');
 await expectOk('email', parse.email('hello@gmail.com'), (r) => (r.valid === true ? null : 'not valid'));
-await expectOk('vat', parse.vat('DE136695976'), (r) => (r.valid === true && r.country === 'DE' ? null : 'not valid DE'));
 await expectOk('card', parse.card('00 0000'), (r) => r.bin === '000000' && r.brand === null && r.logo === 'https://cdn.parseapi.com/card/generic.svg' ? null : 'BIN echo or prefix mismatch');
 await expectOk('bank', parse.bank('DE89370400440532013000'), (r) =>
 	r.valid === true && r.country === 'DE' && r.bank === '37040044' ? null : 'not valid DE'
 );
 await expectOk('bank junk', parse.bank('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
-await expectOk('npi', parse.provider('1881018208'), (r) =>
-	r.valid === true && r.registered === true ? null : 'not registered'
-);
-await expectOk('npi junk', parse.provider('hello'), (r) => (r.valid === false ? null : 'expected invalid'));
 await expectOk('phone', parse.phone('+14155552671'), (r) => (r.phone === '+14155552671' ? null : 'wrong phone'));
 // Metered core siblings: junk numbers answer 200 valid false, free, no vendor dip.
 await expectOk('carrier junk free', parse.carrier('555-0100'), (r) => (r.valid === false ? null : 'expected invalid'));
@@ -133,8 +122,6 @@ await expectOk('timezone', parse.timezone('America/New_York'), (r) =>
 await expectOk('timezone.at', parse.timezone.at(39.77, -104.9), (r) => r.timezone === 'America/Denver' ? null : 'wrong timezone');
 await expectOk('date', parse.date('03/04/2026', { format: 'mdy' }), (r) => r.date === '2026-03-04' ? null : 'wrong date');
 await expectOk('date.today', parse.date.today(), (r) => r.valid === true ? null : 'invalid today');
-await expectOk('tariff', parse.tariff('8471.30.01.00'), (r) => r.hts ? null : 'missing hts');
-await expectOk('tariff.search', parse.tariff.search('sunglasses'), (r) => Array.isArray(r.lines) ? null : 'missing lines');
 await expectOk('holiday', parse.holiday('US'), (r) => (r.holidays.length > 5 ? null : 'too few holidays'));
 await expectOk('holiday.date', parse.holiday.date('US', '2026-12-25'), (r) =>
 	r.holiday?.name === 'Christmas Day' ? null : 'not christmas'

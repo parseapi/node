@@ -82,25 +82,6 @@ export interface ContinentCountries {
 	countries: ContinentCountryItem[];
 }
 
-export interface Bloc {
-	bloc: string;
-	name: string;
-	/** Current member count. An entity fact, not a list-length field. */
-	members: number;
-}
-
-export interface BlocCountryItem {
-	country: string;
-	name: string;
-	emoji?: string | null;
-	calling_code?: string | null;
-}
-
-export interface BlocCountries {
-	bloc: string;
-	countries: BlocCountryItem[];
-}
-
 export interface Country {
 	country: string;
 	name: string;
@@ -334,30 +315,6 @@ export interface Email {
 	deep?: Deep<EmailDeep>;
 }
 
-export interface VatAddress {
-	street: string | null;
-	city: string | null;
-	postal: string | null;
-	country: string | null;
-}
-
-export interface VatDeep {
-	registered: boolean | null;
-	name: string | null;
-	address: VatAddress | null;
-	consultation: string | null;
-	/** Registry-provided check time, or null when unavailable. */
-	consulted_at: string | null;
-}
-
-export interface Vat {
-	vat: string | null;
-	valid: boolean;
-	country: string | null;
-	from?: string;
-	deep?: Deep<VatDeep>;
-}
-
 /** Ordered IBAN checks. States are open strings for future API values. */
 export interface BankChecks {
 	input: string;
@@ -443,150 +400,6 @@ export interface BankUsAch {
 	bank_name: string | null;
 	checks: BankUsAchChecks;
 	issues: BankIssue[];
-}
-
-export interface ProviderTaxonomy {
-	taxonomy?: string | null;
-	specialty?: string | null;
-	primary?: boolean | null;
-	license?: string | null;
-	state?: string | null;
-}
-
-export interface ProviderSource {
-	edition?: string | null;
-	published_at?: string | null;
-	through?: string | null;
-	imported_at?: string | null;
-}
-
-export interface ProviderSources {
-	nppes?: ProviderSource | null;
-	leie?: ProviderSource | null;
-	pecos?: ProviderSource | null;
-	optout?: ProviderSource | null;
-}
-
-export interface Provider {
-	sources?: ProviderSources | null;
-	/** Input with accepted separators removed; null when empty. Invalid values remain visible. */
-	npi: string | null;
-	/** Format and NPI checksum only; does not verify a provider or credentials. */
-	valid: boolean;
-	/** Found in the stored NPPES snapshot. Null when input is invalid. */
-	registered: boolean | null;
-	/** Recorded NPI activation status. Null when unknown; not licensure or practice status. */
-	active: boolean | null;
-	/** NPI-only match in the stored OIG LEIE file. False is not complete exclusion clearance. */
-	excluded: boolean | null;
-	/** individual or organization. */
-	type: string | null;
-	name: string | null;
-	first: string | null;
-	last: string | null;
-	credential: string | null;
-	specialty: string | null;
-	/** NUCC taxonomy code. */
-	taxonomy: string | null;
-	address: string | null;
-	city: string | null;
-	state: string | null;
-	state_name: string | null;
-	postal: string | null;
-	country: string | null;
-	phone: string | null;
-	deep?: Deep<ProviderDeep>;
-}
-
-export interface ProviderEnrollment {
-	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
-	type: string | null;
-	specialty: string | null;
-	state: string | null;
-}
-
-export interface ProviderDeep {
-	enumerated_at?: string | null;
-	updated_at?: string | null;
-	reactivated_at?: string | null;
-	taxonomies?: ProviderTaxonomy[] | null;
-	/** Present in the stored Medicare FFS enrollment extract; not payment eligibility. */
-	medicare?: boolean | null;
-	/** NPI-only match in the stored CMS opt-out affidavit list. Null when unavailable. */
-	opt_out?: boolean | null;
-	/** Stored enrollment rows. Null when unavailable; [] when no rows are returned. */
-	enrollments?: ProviderEnrollment[] | null;
-	/** Recorded NPI deactivation date, YYYY-MM-DD. Null when active or unavailable. */
-	deactivated_at: string | null;
-}
-
-export interface TariffMeasure {
-	/** Chapter 99 heading, dotted (9903.01.24). */
-	heading: string;
-	/** The measure text verbatim. */
-	description: string;
-	/** The rate string verbatim ("The duty provided in the applicable subheading + 10%"). */
-	rate: string | null;
-	/** Effective from, ISO YYYY-MM-DD. Null when the schedule states none. */
-	from: string | null;
-	/** Expires, ISO YYYY-MM-DD. Null when open-ended. */
-	until: string | null;
-	/** True when the published measure has additional eligibility conditions. */
-	conditional?: boolean | null;
-}
-
-export interface TariffDeep {
-	/** Open-string explanation when effective_rate is null. */
-	reason?: string | null;
-	/** The origin country the measures were resolved for. */
-	origin?: string | null;
-	/** Composed ad valorem percent for matched stored measures only, not complete duty or landed cost. Null when the components do not compose cleanly. */
-	effective_rate?: number | null;
-	/** Matching stored Chapter 99 schedule measures for this code and goods origin. */
-	measures?: TariffMeasure[] | null;
-	/** Units of quantity (No., kg). */
-	units: string[];
-	/** Column 1 special rate, verbatim. */
-	special: string | null;
-	/** Column 2 rate, verbatim. */
-	other: string | null;
-}
-
-export interface Tariff {
-	/** Exact immutable edition. Older servers may omit it. */
-	edition?: string;
-	/** Answering date, or null for an undated edition query. */
-	date?: string | null;
-	/** Normalized code with dots (8471.30.01.00). */
-	hts: string;
-	/** The schedule line verbatim. */
-	description: string;
-	/** Parent descriptions from the schedule outline, outermost first. */
-	lineage: string[];
-	/** Column 1 general rate, verbatim. */
-	general: string | null;
-	/** @deprecated Omitted from current API responses. */
-	revision?: string;
-	deep?: Deep<TariffDeep>;
-}
-
-export interface TariffSearchHit {
-	hts: string;
-	description: string;
-	general: string | null;
-	/** Parent descriptions, outermost first. Older responses may omit this context. */
-	lineage?: string[] | null;
-}
-
-export interface TariffSearch {
-	/** Exact immutable edition. Older servers may omit it. */
-	edition?: string;
-	/** Answering date, or null for an undated edition query. */
-	date?: string | null;
-	q: string;
-	revision?: string;
-	/** Up to 20 tariff lines, best match first. */
-	lines: TariffSearchHit[];
 }
 
 export interface Phone {
@@ -1862,55 +1675,6 @@ export interface Iban {
 	/** BIC from that same directory. Null when unsourced or missing. */
 	bic: string | null;
 	deep?: Deep<IbanDeep>;
-}
-
-
-export interface Npi {
-	/** Normalized 10-digit NPI. Invalid input still echoes the fold. */
-	npi: string | null;
-	valid: boolean;
-	/** Exists in the CMS NPPES registry. */
-	registered: boolean | null;
-	active: boolean | null;
-	/** On the OIG exclusion list. */
-	excluded: boolean | null;
-	/** individual or organization. */
-	type: string | null;
-	name: string | null;
-	first: string | null;
-	last: string | null;
-	credential: string | null;
-	specialty: string | null;
-	/** NUCC taxonomy code. */
-	taxonomy: string | null;
-	address: string | null;
-	city: string | null;
-	state: string | null;
-	state_name: string | null;
-	postal: string | null;
-	country: string | null;
-	phone: string | null;
-	deep?: Deep<NpiDeep>;
-}
-
-
-export interface NpiEnrollment {
-	/** part_a, part_b, practitioner, dme, order_refer, mdpp. Null when the code is unknown. */
-	type: string | null;
-	specialty: string | null;
-	state: string | null;
-}
-
-
-export interface NpiDeep {
-	/** In the published Medicare FFS enrollment extract. */
-	medicare?: boolean | null;
-	/** On the CMS opt-out affidavit list. Matched by NPI only. */
-	opt_out?: boolean | null;
-	/** Enrollment rows. [] when medicare is false. */
-	enrollments?: NpiEnrollment[] | null;
-	/** Date CMS deactivated the NPI, YYYY-MM-DD. Null when still active. */
-	deactivated_at: string | null;
 }
 
 

@@ -95,7 +95,6 @@ async function main() {
   const name = await parse.name('Robert James Smith', { deep: true, name_locale: 'en-GB' });
   const initials: string | null | undefined = name.deep?.initials;
   if (card.bin !== '00123456' || card.deep?.prefix !== '001234' || card.deep?.prepaid !== false || card.deep?.country !== null) throw new Error('Packed Card must preserve nullable prefix fields');
-  if (typeof parse.bin !== 'function' || typeof parse.iban !== 'function' || typeof parse.npi !== 'function') throw new Error('Published compatibility methods are missing');
   const company = await parse.company(' ');
   const number: string | null = company.company;
   const directory = await parse.company.id('co_222222222222', { deep: true });
@@ -111,13 +110,11 @@ async function main() {
   if (discovered.companies[0]?.match.field !== 'filters' || discovered.companies[0]?.match.value !== null) throw new Error('Packed discovery match changed');
   const coverage = await parse.company.coverage({ retries: 0, timeoutMs: 1000 });
   if (coverage.companies !== 1) throw new Error('Packed directory coverage differs');
-  const tariff: Promise<Tariff> = parse.tariff('8471.30.01.00');
-  await tariff;
 }
 main().catch(error => { throw error; });
 `;
-  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Tariff, type Card, type CompanyProfileEmployees } from '@parseapi/sdk';\n" + body);
-  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Tariff = sdk.Tariff;\ntype Card = sdk.Card;\ntype CompanyProfileEmployees = sdk.CompanyProfileEmployees;\n" + body);
+  writeFileSync(join(consumer, 'esm.mts'), "import { parseAPI, ParseAPIError, type Card, type CompanyProfileEmployees } from '@parseapi/sdk';\n" + body);
+  writeFileSync(join(consumer, 'commonjs.cts'), "import sdk = require('@parseapi/sdk');\nconst { parseAPI, ParseAPIError } = sdk;\ntype Card = sdk.Card;\ntype CompanyProfileEmployees = sdk.CompanyProfileEmployees;\n" + body);
   execFileSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--strict', '--skipLibCheck', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--lib', 'ES2022,DOM', 'esm.mts', 'commonjs.cts'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['esm.mjs'], { cwd: consumer, stdio: 'inherit' });
   execFileSync(process.execPath, ['commonjs.cjs'], { cwd: consumer, stdio: 'inherit' });
