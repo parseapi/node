@@ -589,53 +589,6 @@ export interface TariffSearch {
 	lines: TariffSearchHit[];
 }
 
-export interface VinRecall {
-	/** Government campaign number. */
-	campaign: string;
-	/** Report date, ISO YYYY-MM-DD. */
-	date: string | null;
-	component: string | null;
-	/** The filed summary verbatim. */
-	summary: string | null;
-}
-
-export interface VinDeep {
-	/** Recall campaigns for the decoded year, make and model. [] when none, null when the registry did not answer. */
-	recalls?: VinRecall[] | null;
-	series: string | null;
-	doors: number | null;
-	cylinders: number | null;
-	/** Engine displacement in liters. */
-	displacement: number | null;
-	fuel: string | null;
-	horsepower: number | null;
-	/** fwd, rwd, awd, 4wd. */
-	drive: string | null;
-	/** automatic, manual, cvt. */
-	transmission: string | null;
-	manufacturer: string | null;
-	plant_city: string | null;
-	plant_state: string | null;
-	plant_country: string | null;
-	/** Gross vehicle weight rating class as filed. */
-	gvwr: string | null;
-}
-
-export interface Vin {
-	/** Normalized VIN, uppercase, no spaces. Invalid input still echoes the fold. */
-	vin: string | null;
-	valid: boolean;
-	year: number | null;
-	make: string | null;
-	model: string | null;
-	trim: string | null;
-	/** Body style (sedan, coupe, suv, pickup). */
-	body: string | null;
-	/** Vehicle type (passenger car, truck, motorcycle, bus, trailer). */
-	type: string | null;
-	deep?: Deep<VinDeep>;
-}
-
 export interface Phone {
 	phone: string | null;
 	valid: boolean;
@@ -1894,10 +1847,6 @@ export type IndustryExclusion = NaicsExclusion;
 export type IndustryMatch = NaicsMatch;
 export type IndustrySearch = NaicsSearch;
 export type IndustrySearchItem = NaicsSearchItem;
-
-export type Vehicle = Vin;
-export type VehicleDeep = VinDeep;
-export type VehicleRecall = VinRecall;
 
 // Published compatibility types retain their original response shapes.
 export interface Iban {

@@ -164,26 +164,6 @@ describe('url mapping', () => {
 		['mac', (p) => p.mac('00:1B:63:84:45:E6'), 'https://api.parseapi.com/mac/00%3A1B%3A63%3A84%3A45%3AE6'],
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
-		[
-			'vehicle',
-			(p) => p.vehicle('1HGCM82633A004352'),
-			'https://api.parseapi.com/vehicle/1HGCM82633A004352',
-		],
-		[
-			'vehicle deep',
-			(p) => p.vehicle('1HGCM82633A004352', { deep: true }),
-			'https://api.parseapi.com/vehicle/1HGCM82633A004352?deep=true',
-		],
-		[
-			'vin',
-			(p) => p.vin('1HGCM82633A004352'),
-			'https://api.parseapi.com/vin/1HGCM82633A004352',
-		],
-		[
-			'vin deep',
-			(p) => p.vin('1HGCM82633A004352', { deep: true }),
-			'https://api.parseapi.com/vin/1HGCM82633A004352?deep=true',
-		],
 		['currency', (p) => p.currency('USD'), 'https://api.parseapi.com/currency/USD'],
 		['currency.rate', (p) => p.currency.rate('USD', 'EUR'), 'https://api.parseapi.com/currency/USD/EUR'],
 		[
