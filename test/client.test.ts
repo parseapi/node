@@ -42,15 +42,13 @@ describe('url mapping', () => {
 		await parse.country('DE', options);
 		await parse.country('DE');
 		await parse.date('03/04/2026', { lang: 'de', format: 'mdy', deep: true });
-		await parse.measure.units({ lang: 'ja', type: 'length' });
 		await parse.emoji.search('cœur', { lang: 'fr', limit: 4 });
 		expect(new URL(calls[0]!.url).searchParams.get('lang')).toBe('fr-CA');
 		expect(new URL(calls[0]!.url).searchParams.get('deep')).toBe('true');
 		expect(new URL(calls[1]!.url).search).toBe('');
 		expect(new URL(calls[2]!.url).searchParams.get('format')).toBe('mdy');
-		expect(new URL(calls[3]!.url).searchParams.get('type')).toBe('length');
-		expect(new URL(calls[4]!.url).searchParams.get('q')).toBe('cœur');
-		expect(calls).toHaveLength(5);
+		expect(new URL(calls[3]!.url).searchParams.get('q')).toBe('cœur');
+		expect(calls).toHaveLength(4);
 	});
 	const table: [string, (parse: ReturnType<typeof parseAPI>) => Promise<unknown>, string][] = [
 		['time compatible', (p) => p.time('America/New_York', { at: '2026-11-01T01:30:00', to: 'UTC', disambiguation: 'compatible' }), 'https://api.parseapi.com/time/America%2FNew_York?at=2026-11-01T01%3A30%3A00&to=UTC&disambiguation=compatible'],
@@ -137,16 +135,8 @@ describe('url mapping', () => {
 		['domain', (p) => p.domain('example.com'), 'https://api.parseapi.com/domain/example.com'],
 		['asn', (p) => p.asn('AS13335'), 'https://api.parseapi.com/asn/AS13335'],
 		['asn decimal', (p) => p.asn('13335'), 'https://api.parseapi.com/asn/13335'],
-		['mac', (p) => p.mac('00:1B:63:84:45:E6'), 'https://api.parseapi.com/mac/00%3A1B%3A63%3A84%3A45%3AE6'],
 		['mx', (p) => p.mx('example.com'), 'https://api.parseapi.com/mx/example.com'],
 		['useragent', (p) => p.useragent('TestUA/1.0'), 'https://api.parseapi.com/useragent'],
-		['currency', (p) => p.currency('USD'), 'https://api.parseapi.com/currency/USD'],
-		['currency.rate', (p) => p.currency.rate('USD', 'EUR'), 'https://api.parseapi.com/currency/USD/EUR'],
-		[
-			'currency.rate date amount',
-			(p) => p.currency.rate('USD', 'JPY', { date: '2026-08-28', amount: 100 }),
-			'https://api.parseapi.com/currency/USD/JPY?date=2026-08-28&amount=100',
-		],
 		['language', (p) => p.language('en'), 'https://api.parseapi.com/language/en'],
 		['name encodes spaces', (p) => p.name('Smith, John'), 'https://api.parseapi.com/name/Smith%2C%20John'],
 		[

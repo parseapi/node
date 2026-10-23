@@ -8,35 +8,6 @@
 /** The `deep` key is omitted unless the request asked for it. */
 export type Deep<T> = Partial<{ [K in keyof T]: T[K] | null }>;
 
-export interface MeasureChoice {
-	unit: string;
-	name: string;
-}
-
-/** A parsed measurement. Amount is a decimal string, preserving the API's precision. */
-export interface Measure {
-	measure: string;
-	valid: boolean;
-	type: string | null;
-	amount: string | null;
-	unit: string | null;
-	/** Failure reason. Omitted wire fields remain readable as null. */
-	reason: string | null;
-	/** Unit alternatives. Omitted wire fields remain readable as an empty array. */
-	choices: MeasureChoice[];
-}
-
-export interface MeasureUnit {
-	unit: string;
-	name: string;
-	type: string;
-	aliases: string[];
-}
-
-export interface MeasureUnits {
-	units: MeasureUnit[];
-}
-
 export interface IpDeep {
 	state: string;
 	city: string;
@@ -420,15 +391,6 @@ export interface Asn {
 	country_name: string | null;
 }
 
-/** A normalized 48-bit address. Vendor names the registered assignment holder. */
-export interface Mac {
-	mac: string;
-	valid: boolean;
-	vendor: string | null;
-	local: boolean | null;
-	multicast: boolean | null;
-}
-
 /** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
 export interface Card {
 	bin: string;
@@ -519,15 +481,6 @@ export interface Useragent {
 	deep?: Deep<UseragentDeep>;
 }
 
-export interface Currency {
-	currency: string;
-	name: string;
-	symbol: string | null;
-	symbol_native: string | null;
-	digits: number | null;
-	deep?: Deep<CurrencyDeep>;
-}
-
 /** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
 export interface Language {
 	language: string;
@@ -548,18 +501,6 @@ export interface Name {
 	last: string | null;
 	suffix: string | null;
 	deep?: Deep<NameDeep>;
-}
-
-export interface CurrencyRate {
-	base: string;
-	quote: string;
-	rate: number;
-	date: string;
-	/** With amount= only: echo of the amount asked. */
-	amount?: number;
-	/** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
-	converted?: number;
-	source?: string;
 }
 
 export interface TimezoneNextDst {
@@ -1384,12 +1325,6 @@ export interface HlrDeep {
 	original_network: string | null;
 	mcc: string | null;
 	mnc: string | null;
-}
-
-export interface CurrencyDeep {
-	numeric: number | null;
-	name_plural: string | null;
-	countries: string[];
 }
 
 export interface LanguageDeep {

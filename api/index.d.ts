@@ -8,31 +8,6 @@
 type Deep<T> = Partial<{
     [K in keyof T]: T[K] | null;
 }>;
-interface MeasureChoice {
-    unit: string;
-    name: string;
-}
-/** A parsed measurement. Amount is a decimal string, preserving the API's precision. */
-interface Measure {
-    measure: string;
-    valid: boolean;
-    type: string | null;
-    amount: string | null;
-    unit: string | null;
-    /** Failure reason. Omitted wire fields remain readable as null. */
-    reason: string | null;
-    /** Unit alternatives. Omitted wire fields remain readable as an empty array. */
-    choices: MeasureChoice[];
-}
-interface MeasureUnit {
-    unit: string;
-    name: string;
-    type: string;
-    aliases: string[];
-}
-interface MeasureUnits {
-    units: MeasureUnit[];
-}
 interface IpDeep {
     state: string;
     city: string;
@@ -378,14 +353,6 @@ interface Asn {
     country: string | null;
     country_name: string | null;
 }
-/** A normalized 48-bit address. Vendor names the registered assignment holder. */
-interface Mac {
-    mac: string;
-    valid: boolean;
-    vendor: string | null;
-    local: boolean | null;
-    multicast: boolean | null;
-}
 /** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
 interface Card {
     bin: string;
@@ -464,14 +431,6 @@ interface Useragent {
     mobile: boolean;
     deep?: Deep<UseragentDeep>;
 }
-interface Currency {
-    currency: string;
-    name: string;
-    symbol: string | null;
-    symbol_native: string | null;
-    digits: number | null;
-    deep?: Deep<CurrencyDeep>;
-}
 /** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
 interface Language {
     language: string;
@@ -491,17 +450,6 @@ interface Name {
     last: string | null;
     suffix: string | null;
     deep?: Deep<NameDeep>;
-}
-interface CurrencyRate {
-    base: string;
-    quote: string;
-    rate: number;
-    date: string;
-    /** With amount= only: echo of the amount asked. */
-    amount?: number;
-    /** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
-    converted?: number;
-    source?: string;
 }
 interface TimezoneNextDst {
     at: string;
@@ -1350,11 +1298,6 @@ interface HlrDeep {
     mcc: string | null;
     mnc: string | null;
 }
-interface CurrencyDeep {
-    numeric: number | null;
-    name_plural: string | null;
-    countries: string[];
-}
 interface LanguageDeep {
     iso3: string | null;
     countries: string[];
@@ -1992,20 +1935,8 @@ type StackOptions = {
 } & DeepOption & RequestOptions;
 type DomainOptions = DeepOption & RequestOptions;
 type AsnOptions = LanguageOption & RequestOptions;
-type MacOptions = RequestOptions;
 /** Request controls for a card-prefix reference lookup. */
 type CardOptions = DeepOption & RequestOptions;
-/** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
-type MeasureOptions = {
-    to?: string;
-    locale?: string;
-    system?: 'us' | 'imperial';
-} & RequestOptions;
-type MeasureUnitsOptions = LanguageOption & {
-    query?: string;
-    type?: string;
-    unit?: string;
-} & RequestOptions;
 /** Published DNS records. Omit type to check all ten supported types. Values retain DNS presentation syntax. */
 type DnsOptions = {
     type?: string;
@@ -2018,11 +1949,6 @@ type IndustryOptions = DeepOption & RequestOptions;
 type IndustrySearchOptions = {
     limit?: number;
 } & DeepOption & RequestOptions;
-type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
-type CurrencyRateOptions = {
-    date?: string;
-    amount?: number;
-} & RequestOptions;
 type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 type NameOptions = {
@@ -2204,14 +2130,8 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     /** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
-    mac: (mac: string, opts?: MacOptions) => Promise<Mac>;
     /** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
     card: (bin: string, opts?: CardOptions) => Promise<Card>;
-    /** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
-    measure: ((measure: string, opts?: MeasureOptions) => Promise<Measure>) & {
-        /** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
-        units: (opts?: MeasureUnitsOptions) => Promise<MeasureUnits>;
-    };
     /** Look up DNS records with TTLs. Type selects the question and may include its CNAME chain. Pooled on every plan. */
     dns: (domain: string, opts?: DnsOptions) => Promise<Dns>;
     mx: (domain: string, opts?: MxOptions) => Promise<Mx>;
@@ -2223,9 +2143,6 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     /** Compatibility name for industry. */
     naics: ((code: string, opts?: IndustryOptions) => Promise<Industry>) & {
         search: (query: string, opts?: IndustrySearchOptions) => Promise<IndustrySearch>;
-    };
-    currency: ((code: string, opts?: CurrencyOptions) => Promise<Currency>) & {
-        rate: (base: string, quote: string, opts?: CurrencyRateOptions) => Promise<CurrencyRate>;
     };
     language: (code: string, opts?: LanguageOptions) => Promise<Language>;
     name: (name: string, opts?: NameOptions) => Promise<Name>;
@@ -2358,4 +2275,4 @@ interface CityNearbyCall {
     (name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
 }
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bin, type BinOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mac, type MacOptions, type Measure, type MeasureChoice, type MeasureOptions, type MeasureUnit, type MeasureUnits, type MeasureUnitsOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bin, type BinOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };

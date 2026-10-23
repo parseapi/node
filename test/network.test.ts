@@ -1,21 +1,18 @@
 import { afterEach, expect, expectTypeOf, it, vi } from 'vitest';
-import { parseAPI, ParseAPIError, type Asn, type Mac } from '../src/index.js';
+import { parseAPI, ParseAPIError, type Asn } from '../src/index.js';
 
 afterEach(() => vi.restoreAllMocks());
 
-it('ASN and MAC preserve unknown fields and nulls as plain data', async () => {
+it('ASN preserves unknown fields and nulls as plain data', async () => {
 	const asn: Asn = { asn: 4294967295, name: null, country: null, country_name: null };
-	const mac: Mac = { mac: 'junk', valid: false, vendor: null, local: null, multicast: null };
-	const values = [{ ...asn, future: true }, { ...mac, future: null }];
+	const values = [{ ...asn, future: true }];
 	const fetch = vi.fn(async () => Response.json(values[fetch.mock.calls.length - 1]));
 	const parse = parseAPI('test_key', { fetch });
 	expectTypeOf(parse.asn).returns.toEqualTypeOf<Promise<Asn>>();
-	expectTypeOf(parse.mac).returns.toEqualTypeOf<Promise<Mac>>();
 	expect(await parse.asn('4294967295')).toEqual(values[0]);
-	expect(await parse.mac('junk')).toEqual(values[1]);
 });
 
-it.each(['asn', 'mac'] as const)('%s uses ordinary retries and supports request controls', async method => {
+it.each(['asn'] as const)('%s uses ordinary retries and supports request controls', async method => {
 	const fetch = vi.fn(async () => new Response('{"code":"unavailable","message":"Try later"}', { status: 503, headers: { 'Retry-After': '0' } }));
 	const parse = parseAPI('test_key', { fetch });
 	await expect(parse[method]('input')).rejects.toBeInstanceOf(ParseAPIError);

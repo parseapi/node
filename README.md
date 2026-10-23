@@ -74,7 +74,7 @@ const country = await parse.country('DE', { lang: 'fr' });
 ```
 
 Only supported display fields change. Missing translations keep their source
-names. IDs, native-name fields, numeric facts, Date input `format`, and Measure
+names. IDs, native-name fields, numeric facts, Date input `format`, and
 input `locale` retain their meaning. Omitting `lang` preserves the existing
 behavior and does not inherit a previous request's choice.
 
@@ -167,7 +167,6 @@ await parse.point(36.0726, -79.792);
 await parse.weather(40.7128, -74.006);
 await parse.domain('example.com');
 await parse.asn('AS13335');
-await parse.mac('00:1B:63:84:45:E6');
 await parse.mx('example.com');
 await parse.dns('example.com');
 await parse.dns('_dmarc.example.com', { type: 'TXT' });
@@ -240,19 +239,6 @@ Timezone discovery accepts country, IANA area, exact signed offset, abbreviation
 
 Source deep adds `standard_offset`, `standard_offset_seconds`, signed `dst_offset_seconds` and `season`. Seasonal adjustments can be negative. `season` describes the current DST-flag interval, or the next within 400 days, with actual before/after transition facts and signed `change_seconds`. Unknown boundaries remain null. These fields are optional and nullable, and destination deep stays compact.
 
-## Measurements
-
-```ts
-const result = await parse.measure('5 ft 11 in', { to: 'cm' });
-const units = await parse.measure.units({ unit: 'm' });
-```
-
-`amount` is a decimal string, such as `"180.34"`. Without `to`, the API returns the canonical unit for the measurement type. Pass `locale` for number formatting and `system` (`us` or `imperial`) when a customary unit needs context. Ambiguous input returns `valid: false`, a `reason`, and available `choices`. Invalid or incompatible target units use the normal API error.
-
-Successful HTTP JSON contains `measure`, `valid`, `type`, `amount`, and `unit`. Invalid input adds `reason`. `choices` appears only when unit alternatives are available. The typed client keeps `reason` readable as `null` and `choices` as `[]` when omitted, while JSON serialization retains the API response shape.
-
-Unit discovery accepts optional `query`, `type`, and `unit` filters. `unit` selects compatible targets. Omit the filters for the reviewed catalog. Both operations use pooled requests.
-
 ## Place statistics and optional detail
 
 Australian postal lookups include core `localities` with suburb choices (`city`, `state`, `state_name`) on every plan. Null or an omitted field means unknown, while `[]` means the reviewed reference has no eligible choices. `city` stays null when the source is ambiguous, even if there is only one eligible choice. Let the user select their suburb and keep manual entry available. These are geographic choices, not mailing-address verification. [G-NAF source, adaptations and licence](https://parseapi.com/legal/attribution#postal-au).
@@ -291,7 +277,7 @@ Choose enrichment for the question you need answered.
 | IP | Richer IP fields included with a paid plan. No separate check meter. |
 | Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
-| Phone, Time, Date, Currency, Language, Emoji, Point | Optional detail in the same pooled request on every plan. |
+| Phone, Time, Date, Language, Emoji, Point | Optional detail in the same pooled request on every plan. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
 | Company (national number) | The complete product detail bag on paid plans. |

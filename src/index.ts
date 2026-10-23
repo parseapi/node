@@ -1,4 +1,4 @@
-import type { Bin, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
@@ -7,7 +7,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.11.3';
+const VERSION = '1.11.4';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -137,12 +137,8 @@ export type HlrOptions = { country?: string } & DeepOption & RequestOptions;
 export type StackOptions = { pretty?: boolean } & DeepOption & RequestOptions;
 export type DomainOptions = DeepOption & RequestOptions;
 export type AsnOptions = LanguageOption & RequestOptions;
-export type MacOptions = RequestOptions;
 /** Request controls for a card-prefix reference lookup. */
 export type CardOptions = DeepOption & RequestOptions;
-/** Parse a measurement, optionally converting it. Locale and system resolve explicit ambiguity. */
-export type MeasureOptions = { to?: string; locale?: string; system?: 'us' | 'imperial' } & RequestOptions;
-export type MeasureUnitsOptions = LanguageOption & { query?: string; type?: string; unit?: string } & RequestOptions;
 /** Published DNS records. Omit type to check all ten supported types. Values retain DNS presentation syntax. */
 export type DnsOptions = { type?: string } & RequestOptions;
 export type MxOptions = RequestOptions;
@@ -151,8 +147,6 @@ export type UseragentOptions = DeepOption & RequestOptions;
 export type IndustryOptions = DeepOption & RequestOptions;
 /** Keyword search. Limit defaults to 10 and accepts 1-50. */
 export type IndustrySearchOptions = { limit?: number } & DeepOption & RequestOptions;
-export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
-export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
 export type LanguageOptions = LanguageOption & DeepOption & RequestOptions;
 /** Country scopes paid deep gender evidence. Name locale selects formatting rules without changing parsing. */
 export type NameOptions = {
@@ -582,8 +576,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		asn: (asn: string, opts?: AsnOptions): Promise<Asn> => request(`/asn/${enc(asn)}`, undefined, undefined, opts),
 
-		mac: (mac: string, opts?: MacOptions): Promise<Mac> => request(`/mac/${enc(mac)}`, undefined, undefined, opts),
-
 		/** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
 		card: async (bin: string, opts?: CardOptions): Promise<Card> => {
 			if (typeof bin !== 'string' || bin.length > 64 || !/^[0-9]{2,11}$/.test(bin.replace(/[ \t\r\n-]/g, ''))) {
@@ -591,22 +583,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 			return request(`/card/${enc(bin)}`, deepQuery(opts), undefined, opts);
 		},
-
-		/** Parse a measurement or convert it to `to`. Without `to`, use its type's canonical unit. Invalid input is plain data with `valid: false`. */
-		measure: Object.assign(
-			async (measure: string, opts?: MeasureOptions): Promise<Measure> => {
-				const result = await request<Measure>(`/measure/${enc(measure)}`, { to: opts?.to, locale: opts?.locale, system: opts?.system }, undefined, opts);
-				// Keep published typed access while serializing only fields sent by the API.
-				if (!Object.prototype.hasOwnProperty.call(result, 'reason')) Object.defineProperty(result, 'reason', { value: null, writable: true, configurable: true });
-				if (!Object.prototype.hasOwnProperty.call(result, 'choices')) Object.defineProperty(result, 'choices', { value: [], writable: true, configurable: true });
-				return result;
-			},
-			{
-				/** Discover reviewed units. Pass `unit` to find compatible conversion targets. */
-				units: (opts?: MeasureUnitsOptions): Promise<MeasureUnits> =>
-					request('/measure/units', { q: opts?.query, type: opts?.type, unit: opts?.unit }, undefined, opts),
-			}
-		),
 
 		/** Look up DNS records with TTLs. Type selects the question and may include its CNAME chain. Pooled on every plan. */
 		dns: (domain: string, opts?: DnsOptions): Promise<Dns> =>
@@ -621,21 +597,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		industry,
 		/** Compatibility name for industry. */
 		naics: industry,
-
-		currency: Object.assign(
-			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, deepQuery(opts), undefined, opts),
-			{
-				rate: (
-					base: string,
-					quote: string,
-					opts?: CurrencyRateOptions
-				): Promise<CurrencyRate> =>
-					request(`/currency/${enc(base)}/${enc(quote)}`, {
-						date: opts?.date,
-						amount: opts?.amount,
-					}, undefined, opts),
-			}
-		),
 
 		language: (code: string, opts?: LanguageOptions): Promise<Language> => request(`/language/${enc(code)}`, deepQuery(opts), undefined, opts),
 
