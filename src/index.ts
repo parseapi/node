@@ -1,4 +1,4 @@
-import type { Iban, Bin, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Bank, BankUsAch, BankUsAchInput, BankRequirements, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Bin, Asn, Mac, Card, Measure, MeasureUnits, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, Currency, CurrencyRate, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
@@ -7,7 +7,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.11.2';
+const VERSION = '1.11.3';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -126,8 +126,6 @@ export type CompanySearchOptions = {
 export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
-export type BankOptions = { country?: string } & DeepOption & RequestOptions;
-export type BankRequirementsOptions = { format?: string } & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
@@ -555,23 +553,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		 */
 		email: (email: string, opts?: EmailOptions): Promise<Email> => request(`/email/${enc(email)}`, deepQuery(opts), undefined, opts),
 
-		// Keep existing callers on their established HTTP contracts.
-		iban: (iban: string, opts?: IbanOptions): Promise<Iban> =>
-			request(`/iban/${enc(iban)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
-
 		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
 			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
-
-		bank: (iban: string, opts?: BankOptions): Promise<Bank> =>
-			request('/bank', undefined, undefined, opts, { iban, country: opts?.country, deep: opts?.deep }),
-
-		/** Check US routing/account syntax using POST. Does not verify ownership, existence or ACH eligibility. */
-		bankUsAch: (input: BankUsAchInput, opts?: RequestOptions): Promise<BankUsAch> =>
-			request('/bank', undefined, undefined, opts, { format: 'us_ach', country: 'US', routing: input.routing, account: input.account }),
-
-		/** Describe supported input fields and check scope; this does not establish country directory coverage. */
-		bankRequirements: (country: string, opts?: BankRequirementsOptions): Promise<BankRequirements> =>
-			request('/bank/requirements', { country, format: opts?.format }, undefined, opts),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
@@ -774,9 +757,6 @@ function timeTargets(targets: readonly string[] | undefined, to: string | undefi
 /** Existing NAICS options remain source compatible. */
 export type NaicsOptions = IndustryOptions;
 export type NaicsSearchOptions = IndustrySearchOptions;
-
-// Compatibility options for existing package consumers.
-export type IbanOptions = { country?: string } & DeepOption & RequestOptions;
 export type BinOptions = DeepOption & RequestOptions;
 
 

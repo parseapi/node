@@ -119,16 +119,6 @@ describe('url mapping', () => {
 		],
 		['email', (p) => p.email('a@b.com'), 'https://api.parseapi.com/email/a%40b.com'],
 		[
-			'bank',
-			(p) => p.bank('DE89370400440532013000'),
-			'https://api.parseapi.com/bank',
-		],
-		[
-			'bank country',
-			(p) => p.bank('89370400440532013000', { country: 'DE' }),
-			'https://api.parseapi.com/bank',
-		],
-		[
 			'phone encodes plus',
 			(p) => p.phone('+14155552671', { deep: true }),
 			'https://api.parseapi.com/phone/%2B14155552671?deep=true',

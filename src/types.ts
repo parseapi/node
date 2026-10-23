@@ -315,93 +315,6 @@ export interface Email {
 	deep?: Deep<EmailDeep>;
 }
 
-/** Ordered IBAN checks. States are open strings for future API values. */
-export interface BankChecks {
-	input: string;
-	country: string;
-	length: string;
-	structure: string;
-	checksum: string;
-	national: string;
-}
-
-/** A validation issue. Fields and codes remain open strings. */
-export interface BankIssue {
-	field: string;
-	code: string;
-	message: string;
-}
-
-export interface Bank {
-	iban: string | null;
-	valid: boolean;
-	country: string | null;
-	/** Print form in groups of four, for display. Null when invalid. */
-	formatted: string | null;
-	/** Bank identifier parsed from the number, not a name. */
-	bank: string | null;
-	/** Institution name from the national bank-code directory. Null when unsourced. */
-	bank_name: string | null;
-	/** BIC from that same directory. Null when unsourced or missing. */
-	bic: string | null;
-	/** Core check results. Older responses may omit them. */
-	checks?: BankChecks;
-	/** First blocking validation issue, or an empty list. Older responses may omit it. */
-	issues?: BankIssue[];
-	deep?: Deep<BankDeep>;
-}
-
-/** Directory evidence is optional and present only when a lookup ran. */
-export interface BankDirectory {
-	edition: string;
-	country: string;
-	/** bank, branch, prefix or none; remains open for future API values. */
-	match: string;
-}
-export interface BankRequirementField {
-	key: string;
-	label: string;
-	required: boolean;
-	type: string;
-	length?: number;
-	min_length?: number;
-	max_length?: number;
-	max_input_length?: number;
-	length_unit?: string;
-	pattern?: string;
-	normalization?: string;
-}
-export interface BankRequirements {
-	country: string;
-	format: string;
-	supported: boolean;
-	fields: BankRequirementField[];
-	checks: Record<string, string>;
-	limitations: string[];
-}
-
-/** US ACH syntax/checksum analysis; no account or payment verification. */
-export interface BankUsAchInput {
-	routing: string;
-	account: string;
-}
-export interface BankUsAchChecks {
-	routing_format: string;
-	routing_checksum: string;
-	account_format: string;
-	account_checksum: string;
-}
-export interface BankUsAch {
-	format: string;
-	country: string;
-	routing: string | null;
-	account: string | null;
-	valid: boolean;
-	bank_name: string | null;
-	checks: BankUsAchChecks;
-	issues: BankIssue[];
-}
-
 export interface Phone {
 	phone: string | null;
 	valid: boolean;
@@ -1445,16 +1358,6 @@ export interface PostalDeep {
 	property_tax?: PropertyTax | null;
 }
 
-export interface BankDeep {
-	/** Source edition and exact match grain, not coverage or account verification. */
-	directory?: BankDirectory;
-	/** Two check digits as a string, keeping a leading zero. */
-	checksum?: string | null;
-	/** Branch identifier when that country has one. */
-	branch: string | null;
-	account: string | null;
-}
-
 export interface PhoneDeep {
 	/** NPA-derived state code (US/CA). */
 	state: string | null;
@@ -1661,22 +1564,6 @@ export type IndustryMatch = NaicsMatch;
 export type IndustrySearch = NaicsSearch;
 export type IndustrySearchItem = NaicsSearchItem;
 
-// Published compatibility types retain their original response shapes.
-export interface Iban {
-	iban: string | null;
-	valid: boolean;
-	country: string | null;
-	/** Print form in groups of four, for display. Null when invalid. */
-	formatted: string | null;
-	/** Bank identifier parsed from the number, not a name. */
-	bank: string | null;
-	/** Institution name from the national bank-code directory. Null when unsourced. */
-	bank_name: string | null;
-	/** BIC from that same directory. Null when unsourced or missing. */
-	bic: string | null;
-	deep?: Deep<IbanDeep>;
-}
-
 
 export interface Bin {
 	bin: string;
@@ -1691,16 +1578,6 @@ export interface Bin {
 	type: string | null;
 	prepaid: boolean | null;
 	deep?: Record<string, never>;
-}
-
-
-
-export interface IbanDeep {
-	/** Two check digits as a string, keeping a leading zero. */
-	checksum: string | null;
-	/** Branch identifier when that country has one. */
-	branch: string | null;
-	account: string | null;
 }
 
 export interface EmojiParse { emojis: (Emoji & {positions: EmojiPosition[]})[]; }
