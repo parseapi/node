@@ -1549,6 +1549,96 @@ interface CityNearbyCoordinates extends CityCollection {
     unit: string;
 }
 
+/** Every non-2xx response from the API. Branch on `code`, never on `message`. */
+declare class ParseAPIError extends Error {
+    /** HTTP status */
+    readonly status: number;
+    /** Machine-readable error code, e.g. 'not_found', 'invalid_api_key', 'rate_limited' */
+    readonly code: string;
+    /** Link to the docs section for this error */
+    readonly docs: string | null;
+    /** Send this if you contact support */
+    readonly requestId: string | null;
+    /** Original Retry-After response header, when supplied. */
+    readonly retryAfter: string | null;
+    candidates?: CityAmbiguityCandidate[];
+    constructor(status: number, code: string, message: string, docs?: string | null, requestId?: string | null, retryAfter?: string | null);
+}
+
+/** Account-owned file workflows. File bytes travel directly to the returned upload URL. */
+interface BulkClientOptions {
+    /** ParseAPI website origin. Separate from the lookup client's baseUrl. */
+    webUrl?: string;
+    /** Request timeout in milliseconds. Defaults to 10000. */
+    timeoutMs?: number;
+    /** Custom fetch implementation for this client. */
+    fetch?: typeof fetch;
+}
+interface BulkRequestOptions {
+    signal?: AbortSignal;
+}
+interface BulkUploadInput {
+    filename: string;
+    file_size: number;
+    country?: string;
+    lang?: string;
+}
+interface BulkPreviewInput {
+    checks?: string[];
+}
+interface BulkStartInput {
+    quote_id: string;
+    max_cost_cents: number;
+}
+/** Public checks supported by the current file workflow. */
+declare const BULK_CHECKS: readonly ["email", "phone", "carrier", "caller", "hlr", "ip", "domain", "useragent", "country", "postal", "address", "name", "date"];
+interface BulkUpload {
+    id: string;
+    rail: string;
+    upload_url: string;
+    upload_headers: Record<string, string>;
+    upload_method: 'PUT';
+    upload_expires_at: string;
+    [key: string]: unknown;
+}
+/** Status and previews retain server fields, including unknown and nullable results. */
+interface BulkJob {
+    id: string;
+    status: string;
+    [key: string]: unknown;
+}
+interface BulkStatus {
+    job: BulkJob;
+    poll_after_seconds?: number | null;
+    [key: string]: unknown;
+}
+interface BulkQuote {
+    id: string;
+    currency: 'USD';
+    cost_cents: number;
+    expires_at: string | null;
+    [key: string]: unknown;
+}
+interface BulkPreview extends BulkStatus {
+    quote: BulkQuote | null;
+}
+/** A short-lived download capability. Fetch this URL without an API key header. */
+interface BulkResult {
+    id: string;
+    download_url: string;
+    expires_at: string;
+    [key: string]: unknown;
+}
+interface BulkClient {
+    upload(input: BulkUploadInput, options?: BulkRequestOptions): Promise<BulkUpload>;
+    preview(id: string, input?: BulkPreviewInput, options?: BulkRequestOptions): Promise<BulkPreview>;
+    start(id: string, input: BulkStartInput, options?: BulkRequestOptions): Promise<BulkStatus>;
+    status(id: string, options?: BulkRequestOptions): Promise<BulkStatus>;
+    result(id: string, options?: BulkRequestOptions): Promise<BulkResult>;
+}
+/** Create a Bulk client. Requests are never retried automatically, including upload creation. */
+declare function createBulkClient(apiKey?: string, options?: BulkClientOptions): BulkClient;
+
 /** A proposed task contains operation counts, never lookup inputs. */
 interface PreflightOperation {
     operation: 'email' | 'domain' | 'dns' | 'mx' | 'country' | 'vat' | 'carrier' | 'caller' | 'hlr' | 'ip' | 'phone' | 'postal';
@@ -1774,21 +1864,6 @@ declare class EmojiCatalog {
     private filtered;
 }
 
-/** Every non-2xx response from the API. Branch on `code`, never on `message`. */
-declare class ParseAPIError extends Error {
-    /** HTTP status */
-    readonly status: number;
-    /** Machine-readable error code, e.g. 'not_found', 'invalid_api_key', 'rate_limited' */
-    readonly code: string;
-    /** Link to the docs section for this error */
-    readonly docs: string | null;
-    /** Send this if you contact support */
-    readonly requestId: string | null;
-    /** Original Retry-After response header, when supplied. */
-    readonly retryAfter: string | null;
-    candidates?: CityAmbiguityCandidate[];
-    constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter?: string | null);
-}
 /** Optional output language for supported display fields. Input parsing stays unchanged. */
 interface LanguageOption {
     lang?: string;
@@ -2275,4 +2350,4 @@ interface CityNearbyCall {
     (name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
 }
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, type Bin, type BinOptions, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, BULK_CHECKS, type Bin, type BinOptions, ParseAPIError as BulkAPIError, type BulkClient, type BulkClientOptions, type BulkJob, type BulkPreview, type BulkPreviewInput, type BulkQuote, type BulkRequestOptions, type BulkResult, type BulkStartInput, type BulkStatus, type BulkUpload, type BulkUploadInput, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, createBulkClient, parseAPI };

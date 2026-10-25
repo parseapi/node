@@ -41,6 +41,34 @@ Preflight accepts Email, Domain, DNS, MX and Country, with at most 20 rows and 1
 
 Check `permitted`, `cost.status`, `capacity` and the optional `budget.within_maximum` together. Unknown values remain null. Capacity can change with concurrent work. Preflight reserves no units or money, performs no paid checks and does not enforce the supplied budget. It uses the normal request rate limit. Estimates allow up to three attempts per ordinary lookup and one per Email Deep lookup. Extra retries or calls require a new estimate. Subscription fees, tax and model costs are excluded.
 
+## Bulk files
+
+Use `createBulkClient` for whole files. It uses the website origin separately from the lookup client's API origin.
+
+```ts
+import { createBulkClient } from '@parseapi/sdk';
+
+const bulk = createBulkClient(process.env.PARSEAPI_KEY);
+const upload = await bulk.upload({ filename: 'customers.csv', file_size: csvBytes.byteLength });
+await fetch(upload.upload_url, {
+  method: 'PUT', headers: upload.upload_headers, body: csvBytes,
+});
+await bulk.preview(upload.id); // Confirm the completed upload and request analysis.
+const progress = await bulk.status(upload.id);
+```
+
+`csvBytes` comes from your application. Convert Excel or Numbers to CSV before creating the upload. File contents transfer directly to private storage and are never sent through MCP.
+
+Analysis may take time. Poll `status` until `job.status` is `quoted`. Then call `bulk.preview(id, { checks: ['email', 'phone', 'ip'] })` to select operations present in the file, or omit `checks` to retain the detected selection. A changed selection requests analysis again. Repeat status and preview until the response includes a current `quote`.
+
+After the user approves the work and maximum USD cost, call `bulk.start(id, { quote_id: preview.quote.id, max_cost_cents })`. The server enforces that ceiling and returns any payment or setup action. A positive ceiling does not authorize a saved-card charge. Reuse the same job and quote when recovering a start request.
+
+When processing finishes, `bulk.result(id)` returns a short-lived private `download_url`. Fetch that URL directly without adding an API key header. All methods return bounded JSON metadata and preserve nullable and future server fields. They never retry automatically. If upload creation has an uncertain outcome, check the account before creating another job.
+
+Existing Bulk job URLs remain shareable. Treat job IDs and download URLs as file-access capabilities.
+
+Options are `webUrl`, `timeoutMs` and `fetch`. `PARSEAPI_WEB_URL` can set the website origin. HTTPS origins and HTTP loopback origins are accepted. Lookup `baseUrl` and `PARSEAPI_BASE_URL` stay independent.
+
 ## Weather from a postal code
 
 Start with the postal code, then pass its coordinates to weather. Reuse the client from the example above.

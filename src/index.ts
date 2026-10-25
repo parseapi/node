@@ -1,4 +1,7 @@
+export * from './bulk.js';
 import type { Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import { ParseAPIError } from './errors.js';
+export { ParseAPIError } from './errors.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
@@ -7,39 +10,13 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.11.4';
+const VERSION = '1.12.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
 const RETRY_STATUS = new Set([429, 500, 502, 503, 504]);
 const RETRY_AFTER_CAP_MS = 5_000;
-
-/** Every non-2xx response from the API. Branch on `code`, never on `message`. */
-export class ParseAPIError extends Error {
-	/** HTTP status */
-	readonly status: number;
-	/** Machine-readable error code, e.g. 'not_found', 'invalid_api_key', 'rate_limited' */
-	readonly code: string;
-	/** Link to the docs section for this error */
-	readonly docs: string | null;
-	/** Send this if you contact support */
-	readonly requestId: string | null;
-	/** Original Retry-After response header, when supplied. */
-	readonly retryAfter: string | null;
-
-	declare candidates?: CityAmbiguityCandidate[];
-
-	constructor(status: number, code: string, message: string, docs: string | null, requestId: string | null, retryAfter: string | null = null) {
-		super(message);
-		this.name = 'ParseAPIError';
-		this.status = status;
-		this.code = code;
-		this.docs = docs;
-		this.requestId = requestId;
-		this.retryAfter = retryAfter;
-	}
-}
 
 /** Optional output language for supported display fields. Input parsing stays unchanged. */
 export interface LanguageOption {
