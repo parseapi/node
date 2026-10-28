@@ -21,3 +21,11 @@ it('decodes older, locked and explicit null Country geography', async () => {
 		expect((await parse.country('XX')).deep).toEqual(deep);
 	}
 });
+
+it('keeps the five Country statistics optional and preserves their numeric values', async () => {
+ type Statistics = 'gdp' | 'gdp_per_capita' | 'population_growth' | 'urban_population' | 'internet_users';
+ expectTypeOf<Omit<CountryDeep, Statistics>>().toMatchTypeOf<CountryDeep>();
+ const deep = { gdp: 30769700000000, gdp_per_capita: 90026.5163, population_growth: -0.25, urban_population: 0, internet_users: 95.5 };
+ const parse = parseAPI('test', { fetch: async () => new Response(JSON.stringify({ country: 'US', deep })) });
+ expect((await parse.country('US', { deep: true })).deep).toEqual(deep);
+});

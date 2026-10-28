@@ -1142,6 +1142,16 @@ interface NaicsSearch {
     results: NaicsSearchItem[];
 }
 interface CountryDeep {
+    /** Latest available GDP in current US dollars. */
+    gdp?: number | null;
+    /** Latest available GDP per person in current US dollars. */
+    gdp_per_capita?: number | null;
+    /** Annual percent change; negative values indicate decline. */
+    population_growth?: number | null;
+    /** Share of population, from 0 to 100. */
+    urban_population?: number | null;
+    /** Share of population using the internet, from 0 to 100. */
+    internet_users?: number | null;
     iso3: string;
     numeric: number;
     full_name: string | null;
