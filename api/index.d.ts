@@ -177,6 +177,8 @@ interface PostalMetro {
     residential_share: number | null;
     business_share: number | null;
     other_share: number | null;
+    /** Percentage of ZIP addresses (0-100). Missing or null means unknown. */
+    share_percent?: number | null;
 }
 /** A supported Australian postcode suburb choice, independent of the scalar city. */
 interface PostalLocality {
@@ -202,6 +204,8 @@ interface Postal {
     longitude: number | null;
     timezone: string | null;
     deep?: Deep<PostalDeep>;
+    /** Open ZIP type, including future values. Missing or null means unknown. */
+    type?: string | null;
 }
 interface PostalNearbyItem {
     postal: string;
