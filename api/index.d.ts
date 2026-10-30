@@ -114,7 +114,6 @@ interface State {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    timezone: string | null;
     timezones: string[];
     iso_3166_2: string | null;
     deep?: Deep<StateDeep>;
@@ -147,7 +146,6 @@ interface District {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    timezone: string | null;
     timezones: string[];
     deep?: Deep<DistrictDeep>;
 }
@@ -349,11 +347,6 @@ interface Stack {
     url: string;
     /** Time of the check, or null when no HTML page could be checked. */
     checked_at: string | null;
-    scope: 'homepage' | 'site';
-    /** Number of successfully checked HTML pages. */
-    pages: number;
-    /** True for homepage-only or incomplete bounded checks; null when no HTML page could be checked. False never guarantees every page was visited. */
-    partial: boolean | null;
     /** Collections are null when no HTML page could be checked and empty when no matches were found. */
     cms: StackTechnology[] | null;
     servers: StackTechnology[] | null;
@@ -1871,8 +1864,8 @@ interface DomainResult {
     available: boolean | null;
     deep?: Deep<DomainResultDeep>;
 }
-/** The current eleven-field Stack response, without obsolete coverage members. */
-type StackResult = Omit<Stack, 'scope' | 'pages' | 'partial'>;
+/** Alias for the current Stack response. */
+type StackResult = Stack;
 
 interface EmojiCatalogLookupOptions {
     deep?: boolean;
@@ -2277,7 +2270,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     caller: (number: string, opts?: CallerOptions) => Promise<Caller>;
     /** Look up phone status at the last check. Live means assigned and connected means reachable at that check. Cached results may be returned. Null means unconfirmed. Deep adds network diagnostics within the same metered lookup. No automatic retries by default. */
     hlr: (number: string, opts?: HlrOptions) => Promise<Hlr>;
-    /** Identify website technologies by category, with homepage or bounded site coverage metadata. */
+    /** Identify technologies in static homepage HTML and response headers. */
     stack: (domain: string, opts?: StackOptions) => Promise<Stack>;
     /** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;

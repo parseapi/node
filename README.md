@@ -432,14 +432,14 @@ The existing `domain` method and `Domain` type keep their published interface. T
 ## Stack API
 
 ```typescript
-import type { StackResult } from '@parseapi/sdk';
+import type { Stack } from '@parseapi/sdk';
 
-const result: StackResult = await parse.stack("example.com");
+const result: Stack = await parse.stack("example.com");
 ```
 
-Pass a public hostname without a scheme, path, port or IP address. Stack checks static homepage HTML and response headers. It returns the checked URL, original `checked_at` time and eight technology arrays. `StackResult` describes that current result. The existing `Stack` interface keeps its older required coverage members for source compatibility; the current response omits `scope`, `pages` and `partial`.
+Pass a public hostname without a scheme, path, port or IP address. Stack checks static homepage HTML and response headers. It returns the checked URL, original `checked_at` time and eight technology arrays. The existing `stack()` method returns this `Stack` model.
 
-`cms`, `servers`, `frameworks`, `ecommerce`, `analytics`, `chat`, `payments` and `hosting` are arrays because a site can use several technologies in each category. Each entry contains `technology`, `name` and nullable `version`. Technology codes are open strings. A successful check uses empty arrays for categories with no matches. When no HTML page could be checked, `checked_at` and all categories are null. Unknown or conflicting versions are null. Missing detections do not prove absence.
+`cms`, `servers`, `frameworks`, `ecommerce`, `analytics`, `chat`, `payments` and `hosting` are arrays because a site can use several technologies in each category. Each entry contains `technology`, `name` and nullable `version`. Technology codes are open strings. A successful check uses empty arrays for categories with no matches. When no HTML page could be checked, `checked_at` and all categories are null. Unknown or conflicting versions are null. Detections describe the checked homepage.
 
 Successful checks may be reused for up to 24 hours. `pretty` optionally formats the wire JSON. Stack uses your plan's request allowance and API version 2.0.0 selected by this client.
 

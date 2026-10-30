@@ -242,10 +242,10 @@ it('Stack exposes each technology once and has no optional public details', () =
 	expectTypeOf<keyof StackTechnology>().toEqualTypeOf<'technology' | 'name' | 'version'>();
 	expectTypeOf<StackTechnology['version']>().toEqualTypeOf<string | null>();
 	expectTypeOf<Stack['cms' | 'servers' | 'frameworks' | 'ecommerce' | 'analytics' | 'chat' | 'payments' | 'hosting']>().toEqualTypeOf<StackTechnology[] | null>();
-	expectTypeOf<Stack['scope']>().toEqualTypeOf<'homepage' | 'site'>();
-	expectTypeOf<Stack['pages']>().toEqualTypeOf<number>();
-	expectTypeOf<Stack['partial']>().toEqualTypeOf<boolean | null>();
-	expectTypeOf<keyof Stack>().toEqualTypeOf<'domain' | 'url' | 'checked_at' | 'scope' | 'pages' | 'partial' | 'cms' | 'servers' | 'frameworks' | 'ecommerce' | 'analytics' | 'chat' | 'payments' | 'hosting' | 'deep'>();
+	expectTypeOf<Stack>().not.toHaveProperty('scope');
+	expectTypeOf<Stack>().not.toHaveProperty('pages');
+	expectTypeOf<Stack>().not.toHaveProperty('partial');
+	expectTypeOf<keyof Stack>().toEqualTypeOf<'domain' | 'url' | 'checked_at' | 'cms' | 'servers' | 'frameworks' | 'ecommerce' | 'analytics' | 'chat' | 'payments' | 'hosting' | 'deep'>();
 	expectTypeOf<Stack['deep']>().toEqualTypeOf<Record<string, never> | undefined>();
 	for (const record of records) {
 		if ('deep' in record) expect(record.deep).toEqual({});

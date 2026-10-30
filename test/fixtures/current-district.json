@@ -1,0 +1,14 @@
+{
+  "district": "36061",
+  "name": "New York County",
+  "type": "county",
+  "state": "NY",
+  "state_name": "New York",
+  "country": "US",
+  "country_name": "United States",
+  "latitude": 40.776642,
+  "longitude": -73.970187,
+  "timezones": [
+    "America/New_York"
+  ]
+}

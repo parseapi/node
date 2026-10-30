@@ -23,5 +23,5 @@ export interface DomainResult {
 	deep?: Deep<DomainResultDeep>;
 }
 
-/** The current eleven-field Stack response, without obsolete coverage members. */
-export type StackResult = Omit<Stack, 'scope' | 'pages' | 'partial'>;
+/** Alias for the current Stack response. */
+export type StackResult = Stack;

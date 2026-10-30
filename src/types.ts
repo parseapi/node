@@ -124,7 +124,6 @@ export interface State {
 	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
-	timezone: string | null;
 	timezones: string[];
 	iso_3166_2: string | null;
 	deep?: Deep<StateDeep>;
@@ -162,7 +161,6 @@ export interface District {
 	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
-	timezone: string | null;
 	timezones: string[];
 	deep?: Deep<DistrictDeep>;
 }
@@ -384,11 +382,6 @@ export interface Stack {
 	url: string;
 	/** Time of the check, or null when no HTML page could be checked. */
 	checked_at: string | null;
-	scope: 'homepage' | 'site';
-	/** Number of successfully checked HTML pages. */
-	pages: number;
-	/** True for homepage-only or incomplete bounded checks; null when no HTML page could be checked. False never guarantees every page was visited. */
-	partial: boolean | null;
 	/** Collections are null when no HTML page could be checked and empty when no matches were found. */
 	cms: StackTechnology[] | null;
 	servers: StackTechnology[] | null;

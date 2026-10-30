@@ -545,7 +545,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		hlr: (number: string, opts?: HlrOptions): Promise<Hlr> =>
 			request(`/hlr/${enc(number)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 
-		/** Identify website technologies by category, with homepage or bounded site coverage metadata. */
+		/** Identify technologies in static homepage HTML and response headers. */
 		stack: (domain: string, opts?: StackOptions): Promise<Stack> =>
 			request(`/stack/${enc(domain)}`, { ...deepQuery(opts), pretty: opts?.pretty }, undefined, opts),
 

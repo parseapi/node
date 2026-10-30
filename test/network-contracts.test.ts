@@ -18,3 +18,19 @@ it('exposes optional IP geography without requiring it on frozen or locked resul
         else expect(result.deep?.district).toBeUndefined();
     }
 });
+
+it('preserves the State and District timezones on the existing calls', async () => {
+    for (const [kind, code, options, zones] of [
+        ['state', 'CA', { country: 'US' }, ['America/Los_Angeles']],
+        ['district', '36061', { country: 'US', state: 'NY' }, ['America/New_York']],
+    ] as const) {
+        const calls: string[] = [];
+        const client = parseAPI('fixture', { fetch: async input => { calls.push(String(input)); return Response.json(fixtures[`${kind}_current`]); } });
+        const result = await client[kind](code, options);
+        expectTypeOf(result.timezones).toEqualTypeOf<string[]>();
+        expect(result.timezones).toEqual(zones);
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toContain(`/${kind}/${code}?country=US`);
+        expect(calls[0]).not.toContain('deep=');
+    }
+});

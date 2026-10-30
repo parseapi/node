@@ -37,11 +37,11 @@ it('does not infer false or empty lists from partial registration', async () => 
 	expect(known.deep?.registration?.status).toEqual([]);
 });
 
-it('keeps existing strict Domain and Stack consumers and exposes the truthful views', () => {
+it('keeps the existing Domain interface and uses the current Stack model', () => {
 	expectTypeOf<Domain['available']>().toEqualTypeOf<boolean>();
 	expectTypeOf<DomainResult['available']>().toEqualTypeOf<boolean | null>();
-	expectTypeOf<Stack['pages']>().toEqualTypeOf<number>();
-	expectTypeOf<Stack['scope']>().toEqualTypeOf<'homepage' | 'site'>();
+	expectTypeOf<Stack>().not.toHaveProperty('pages');
+	expectTypeOf<Stack>().not.toHaveProperty('scope');
 	expectTypeOf<StackResult>().not.toHaveProperty('scope');
 	expectTypeOf<StackResult>().not.toHaveProperty('pages');
 	expectTypeOf<StackResult>().not.toHaveProperty('partial');
@@ -63,14 +63,13 @@ it('keeps ordinary error and cancellation handling on the existing transport', a
 	expect(calls).toBe(1);
 });
 
-// Compile-only existing-app fixture. Do not change these released signatures or reads.
+// Compile the existing Domain signature and the corrected canonical Stack call.
 export async function existingStrictApp(client: ReturnType<typeof parseAPI>) {
 	const domainCall: (domain: string, options?: DomainOptions) => Promise<Domain> = client.domain;
 	const oldDomain = await domainCall('example.com');
 	const known: boolean = oldDomain.available;
 	const oldStack = await client.stack('example.com');
-	const pageCount: number = oldStack.pages;
-	const scope: 'homepage' | 'site' = oldStack.scope;
+	const checkedAt: string | null = oldStack.checked_at;
 	const currentView: StackResult = await client.stack('example.com');
-	return { known, pageCount, scope, currentView };
+	return { known, checkedAt, currentView };
 }

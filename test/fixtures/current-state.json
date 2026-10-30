@@ -1,0 +1,14 @@
+{
+  "state": "CA",
+  "name": "California",
+  "name_local": null,
+  "type": "state",
+  "country": "US",
+  "country_name": "United States",
+  "latitude": 36.701463,
+  "longitude": -118.755997,
+  "timezones": [
+    "America/Los_Angeles"
+  ],
+  "iso_3166_2": "US-CA"
+}
