@@ -361,19 +361,21 @@ interface Stack {
 }
 interface DomainRegistration {
     registered: boolean;
-    created: string | null;
-    updated: string | null;
-    expires: string | null;
-    registrar: string | null;
-    status: string[];
-    dnssec: boolean;
+    created?: string | null;
+    updated?: string | null;
+    expires?: string | null;
+    registrar?: string | null;
+    status?: string[] | null;
+    /** Missing or null is unknown; false is a known unsigned observation. */
+    dnssec?: boolean | null;
 }
 interface DomainDeep {
     registration: DomainRegistration;
 }
 interface Domain {
     domain: string;
-    available: boolean;
+    /** true means unregistered, false means registered, null means unknown. */
+    available: boolean | null;
     deep?: Deep<DomainDeep>;
 }
 /** Network identity for an autonomous system number. */
@@ -2272,7 +2274,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     hlr: (number: string, opts?: HlrOptions) => Promise<Hlr>;
     /** Identify technologies in static homepage HTML and response headers. */
     stack: (domain: string, opts?: StackOptions) => Promise<Stack>;
-    /** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
+    /** Check registration: available is true, false or null when unknown. Paid Deep adds available registration details. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
     /** Check domain registration while preserving unknown availability and partial detail. */
     domainResult: (domain: string, opts?: DomainOptions) => Promise<DomainResult>;

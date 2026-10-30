@@ -414,10 +414,10 @@ console.log(basic.at, detail.deep?.next_dst);
 
 ## Domain results with unknown availability
 
-Use `domainResult` when deciding whether a domain is registered. It returns `available: true` for unregistered, `false` for registered, and `null` when the registry answer is unknown.
+Use `domain` when deciding whether a domain is registered. It returns `available: true` for unregistered, `false` for registered, and `null` when the registry answer is unknown.
 
 ```ts
-const result = await parse.domainResult('example.com', { deep: true });
+const result = await parse.domain('example.com', { deep: true });
 if (result.available === null) {
   console.log('Registration could not be determined');
 } else {
@@ -427,7 +427,7 @@ if (result.available === null) {
 
 This makes one ordinary Domain lookup with the same options, authentication and retry policy. Registration detail may be partial. Missing or null `dnssec` is unknown, while `false` is a known negative. Missing or null `status` is unknown, while `[]` is a known empty list.
 
-The existing `domain` method and `Domain` type keep their published interface. That older type declares `available` as a boolean even though the API can return null. Use `domainResult` for its accurate nullable type.
+The ordinary `Domain` type represents unknown availability as `null`. The existing `domainResult` method and its result type remain available.
 
 ## Stack API
 

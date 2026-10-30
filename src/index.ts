@@ -12,7 +12,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.12.4';
+const VERSION = '1.12.5';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -549,7 +549,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		stack: (domain: string, opts?: StackOptions): Promise<Stack> =>
 			request(`/stack/${enc(domain)}`, { ...deepQuery(opts), pretty: opts?.pretty }, undefined, opts),
 
-		/** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
+		/** Check registration: available is true, false or null when unknown. Paid Deep adds available registration details. */
 		domain: (domain: string, opts?: DomainOptions): Promise<Domain> =>
 			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
 

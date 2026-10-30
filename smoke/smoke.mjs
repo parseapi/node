@@ -99,7 +99,6 @@ await expectOk('mx', parse.mx('gmail.com'), (r) => (r.mx.length > 0 ? null : 'no
 await expectOk('useragent', parse.useragent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), (r) =>
 	r.browser === 'Chrome' ? null : `browser ${r.browser}`
 );
-);
 await expectOk('language', parse.language('en'), (r) =>
 	r.language === 'en' && r.name === 'English' ? null : 'wrong language'
 );
