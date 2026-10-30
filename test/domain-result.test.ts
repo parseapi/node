@@ -37,8 +37,8 @@ it('does not infer false or empty lists from partial registration', async () => 
 	expect(known.deep?.registration?.status).toEqual([]);
 });
 
-it('keeps existing strict Domain and Stack consumers and exposes the truthful views', () => {
-	expectTypeOf<Domain['available']>().toEqualTypeOf<boolean>();
+it('uses nullable ordinary Domain availability and preserves released Stack consumers', () => {
+	expectTypeOf<Domain['available']>().toEqualTypeOf<boolean | null>();
 	expectTypeOf<DomainResult['available']>().toEqualTypeOf<boolean | null>();
 	expectTypeOf<Stack['pages']>().toEqualTypeOf<number>();
 	expectTypeOf<Stack['scope']>().toEqualTypeOf<'homepage' | 'site'>();
@@ -67,7 +67,7 @@ it('keeps ordinary error and cancellation handling on the existing transport', a
 export async function existingStrictApp(client: ReturnType<typeof parseAPI>) {
 	const domainCall: (domain: string, options?: DomainOptions) => Promise<Domain> = client.domain;
 	const oldDomain = await domainCall('example.com');
-	const known: boolean = oldDomain.available;
+	const known: boolean | null = oldDomain.available;
 	const oldStack = await client.stack('example.com');
 	const pageCount: number = oldStack.pages;
 	const scope: 'homepage' | 'site' = oldStack.scope;

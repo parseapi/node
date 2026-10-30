@@ -404,12 +404,13 @@ export interface Stack {
 
 export interface DomainRegistration {
 	registered: boolean;
-	created: string | null;
-	updated: string | null;
-	expires: string | null;
-	registrar: string | null;
-	status: string[];
-	dnssec: boolean;
+	created?: string | null;
+	updated?: string | null;
+	expires?: string | null;
+	registrar?: string | null;
+	status?: string[] | null;
+	/** Missing or null is unknown; false is a known unsigned observation. */
+	dnssec?: boolean | null;
 }
 
 export interface DomainDeep {
@@ -418,7 +419,8 @@ export interface DomainDeep {
 
 export interface Domain {
 	domain: string;
-	available: boolean;
+	/** true means unregistered, false means registered, null means unknown. */
+	available: boolean | null;
 	deep?: Deep<DomainDeep>;
 }
 
