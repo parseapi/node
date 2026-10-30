@@ -6,11 +6,13 @@ import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
 export * from './types.js';
+export type { DomainResult, DomainResultDeep, DomainRegistrationResult, StackResult } from './response-results.js';
+import type { DomainResult } from './response-results.js';
 export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.12.2';
+const VERSION = '1.12.3';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -549,6 +551,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** Check whether a domain is registered. Deep adds registration dates, registrar, status and DNSSEC on paid plans. */
 		domain: (domain: string, opts?: DomainOptions): Promise<Domain> =>
+			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
+
+		/** Check domain registration while preserving unknown availability and partial detail. */
+		domainResult: (domain: string, opts?: DomainOptions): Promise<DomainResult> =>
 			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
 
 		asn: (asn: string, opts?: AsnOptions): Promise<Asn> => request(`/asn/${enc(asn)}`, undefined, undefined, opts),

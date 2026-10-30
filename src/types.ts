@@ -17,6 +17,12 @@ export interface IpDeep {
 	tor: boolean;
 	vpn: boolean;
 	provider: string;
+	/** Present only when a district is supported, with the response country. */
+	district?: string | null;
+	district_name?: string | null;
+	/** U.S. Census geography, when independently supported. */
+	census_division?: string | null;
+	census_region?: string | null;
 }
 
 export interface Ip {

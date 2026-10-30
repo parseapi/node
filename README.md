@@ -406,15 +406,34 @@ const detail = await parse.time('America/New_York', { deep: true });
 console.log(basic.at, detail.deep?.next_dst);
 ```
 
+## Domain results with unknown availability
+
+Use `domainResult` when deciding whether a domain is registered. It returns `available: true` for unregistered, `false` for registered, and `null` when the registry answer is unknown.
+
+```ts
+const result = await parse.domainResult('example.com', { deep: true });
+if (result.available === null) {
+  console.log('Registration could not be determined');
+} else {
+  console.log(result.available ? 'Unregistered' : 'Registered');
+}
+```
+
+This makes one ordinary Domain lookup with the same options, authentication and retry policy. Registration detail may be partial. Missing or null `dnssec` is unknown, while `false` is a known negative. Missing or null `status` is unknown, while `[]` is a known empty list.
+
+The existing `domain` method and `Domain` type keep their published interface. That older type declares `available` as a boolean even though the API can return null. Use `domainResult` for its accurate nullable type.
+
 ## Stack API
 
 ```typescript
-const result = await parse.stack("example.com");
+import type { StackResult } from '@parseapi/sdk';
+
+const result: StackResult = await parse.stack("example.com");
 ```
 
-Pass a public hostname without a scheme, path, port or IP address. Stack returns the checked URL and `checked_at` time, followed by `scope`, `pages` and `partial`. `scope` is `homepage` or `site`; `pages` counts successfully checked HTML pages. `partial` is true for homepage-only or incomplete bounded site checks. False means the known in-scope candidates were completed, not that every page on a website was visited. A homepage result has `scope: "homepage"`, `pages: 1` and `partial: true`.
+Pass a public hostname without a scheme, path, port or IP address. Stack checks static homepage HTML and response headers. It returns the checked URL, original `checked_at` time and eight technology arrays. `StackResult` describes that current result. The existing `Stack` interface keeps its older required coverage members for source compatibility; the current response omits `scope`, `pages` and `partial`.
 
-`cms`, `servers`, `frameworks`, `ecommerce`, `analytics`, `chat`, `payments` and `hosting` are arrays because a site can use several technologies in each category. Each entry contains `technology`, `name` and nullable `version`. Technology codes are open strings. A successful check uses empty arrays for categories with no matches. When no HTML page could be checked, `checked_at` and all categories are null, `pages` is 0 and `partial` is null. Unknown or conflicting versions are null. Missing detections do not prove absence.
+`cms`, `servers`, `frameworks`, `ecommerce`, `analytics`, `chat`, `payments` and `hosting` are arrays because a site can use several technologies in each category. Each entry contains `technology`, `name` and nullable `version`. Technology codes are open strings. A successful check uses empty arrays for categories with no matches. When no HTML page could be checked, `checked_at` and all categories are null. Unknown or conflicting versions are null. Missing detections do not prove absence.
 
 Successful checks may be reused for up to 24 hours. `pretty` optionally formats the wire JSON. Stack uses your plan's request allowance and API version 2.0.0 selected by this client.
 
