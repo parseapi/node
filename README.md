@@ -189,8 +189,8 @@ await parse.date.today();
 await parse.holiday('US', { year: 2026 });
 await parse.holiday.date('US', '2026-12-25');
 await parse.elevation(35.2271, -80.8431);
-await parse.elevation.points([[35.2271, -80.8431], [40.7128, -74.006]]);
-await parse.elevation.path([[35.2271, -80.8431], [35.5951, -82.5515]], 100);
+await parse.elevation.points([[39.7392, -104.9903], [39.75, -104.98]]);
+await parse.elevation.path([[39.7392, -104.9903], [39.75, -104.98]], 100);
 await parse.point(36.0726, -79.792);
 await parse.weather(40.7128, -74.006);
 await parse.domain('example.com');
@@ -215,9 +215,11 @@ DNS uses pooled requests on every plan. Omit `type` to check A, AAAA, CNAME, MX,
 
 ## Elevation
 
-`elevation(lat, lon)` returns one sample with meters, feet and grid resolution in meters. `elevation.points(...)` accepts up to 512 `[lat, lon]` pairs, a `lat,lon|lat,lon` string, or `enc:` followed by a Google encoded polyline. Its `points` array preserves input order and duplicate coordinates. Unknown samples stay null, and negative elevations and known zero values are preserved. Each list uses one pooled request. The SDK automatically uses JSON POST for long URLs and numeric coordinates that JavaScript expresses in exponent notation.
+`elevation(lat, lon)` returns one sample with meters, feet and grid resolution in meters. `elevation.points(...)` accepts up to 512 points per local batch as `[lat, lon]` pairs, a `lat,lon|lat,lon` string, or `enc:` followed by a Google encoded polyline. Its `points` array preserves input order and duplicate coordinates. Unknown samples stay null, and negative elevations and known zero values are preserved. Each accepted local list uses one pooled request. The SDK automatically uses JSON POST for long URLs and numeric coordinates that JavaScript expresses in exponent notation.
 
-`elevation.path(path, samples)` accepts the same input formats with 2-512 path vertices and a required integer sample count from 2 to 512. Its `points` array includes both endpoints, with samples spaced uniformly by cumulative great-circle distance along the path. Each segment follows the shortest arc. A segment with antipodal endpoints is rejected because it does not define a unique arc. Path sampling uses one pooled request and automatically selects JSON POST for a long URL.
+`elevation.path(path, samples)` accepts the same input formats with 2-512 path vertices and a required integer sample count from 2 to 512. Its `points` array includes both endpoints, with samples spaced uniformly by cumulative great-circle distance along the path. Each segment follows the shortest arc. A segment with antipodal endpoints is rejected because it does not define a unique arc. Each accepted local path uses one pooled request and automatically selects JSON POST for a long URL.
+
+Each local batch is limited to 25 km between any two coordinates and 12 distinct terrain files in total across the fine grid and all possible global fallback files. For paths, both the supplied vertices and generated samples must fit the 25 km span. The terrain file budget applies to the sampled coordinates. This is a span limit, not a limit on cumulative path length. Send longer or more spread-out routes in shorter sections. An over-limit batch returns HTTP 400. GET, POST and polylines use the same limits. The SDK does not silently split or discard coordinates.
 
 ## Time
 
