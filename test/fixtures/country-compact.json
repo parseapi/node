@@ -1,0 +1,11 @@
+{
+  "continent": "NA",
+  "countries": [
+    {
+      "country": "US",
+      "name": "United States",
+      "flag": "🇺🇸",
+      "calling_code": "+1"
+    }
+  ]
+}

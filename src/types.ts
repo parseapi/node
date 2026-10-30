@@ -50,6 +50,8 @@ export interface Continent {
 export interface ContinentCountryItem {
 	country: string;
 	name: string;
+	flag?: string | null;
+	/** @deprecated Present only in earlier compact response payloads. */
 	emoji?: string | null;
 	calling_code?: string | null;
 }
@@ -68,11 +70,38 @@ export interface Country {
 	currency_name: string | null;
 	currency_symbol: string | null;
 	calling_code: string | null;
-	emoji: string | null;
-	languages: string[];
+	flag: string | null;
+	/** @deprecated Present only in earlier response payloads. */
+	emoji?: string | null;
+	languages: string[] | null;
 	deep?: Deep<CountryDeep>;
 	/** IANA timezones used by the country. */
 	timezones: string[] | null;
+	iso3?: string | null;
+	numeric?: number | null;
+	/** Official long name. */
+	name_full?: string | null;
+	/** @deprecated Legacy wire spelling; retained for earlier responses. */
+	full_name?: string | null;
+	demonym?: string | null;
+	region?: string | null;
+	subregion?: string | null;
+	capital?: CountryCapital | null;
+	capital_lat?: number | null;
+	capital_lon?: number | null;
+	borders?: string[] | null;
+	blocs?: string[] | null;
+}
+
+export interface CountryCapital {
+ name: string | null;
+ lat: number | null;
+ lon: number | null;
+}
+
+export interface CountryTax {
+ name: string | null;
+ rate: number | null;
 }
 
 export interface CountryStateItem {
@@ -1207,12 +1236,12 @@ export interface CountryDeep {
 	highest_point?: CountryElevationPoint | null;
 	tld: string | null;
 	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
-	tax?: string | null;
-	/** Standard country reference rate in percent (19 means 19%). Null is unknown, zero is known zero. */
+	tax?: CountryTax | null;
+	/** @deprecated Historical flat field; current responses use tax.rate. */
 	tax_rate?: number | null;
-	/** Tax registration number mask (9 is a digit, A is a letter). Describes format only. */
+	/** @deprecated Historical flat field; no longer returned. */
 	tax_id_format?: string | null;
-	/** Anchored tax registration number format regex. A match does not establish registration. */
+	/** @deprecated Historical flat field; no longer returned. */
 	tax_id_regex?: string | null;
 	borders: string[];
 	/** Bloc memberships (EU, SCHENGEN, NATO, ...). Empty when none. */
@@ -1229,6 +1258,13 @@ export interface CountryDeep {
 	ioc: string | null;
 	fifa: string | null;
 	plate: string | null;
+	gdp_usd?: number | null;
+	gdp_per_capita_usd?: number | null;
+	population_growth_percent?: number | null;
+	urban_population_percent?: number | null;
+	internet_users_percent?: number | null;
+	/** Average terrain elevation in meters above sea level. */
+	elevation_average?: number | null;
 }
 
 export interface CountryElevationPoint {
