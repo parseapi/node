@@ -77,7 +77,13 @@ export interface Country {
 	deep?: Deep<CountryDeep>;
 	/** IANA timezones used by the country. */
 	timezones: string[] | null;
+	/** ISO 3166-1 alpha-3 country code. */
+	iso_alpha3?: string | null;
+	/** ISO 3166-1 numeric country code. */
+	iso_numeric?: number | null;
+	/** @deprecated Older servers use iso3. Read iso_alpha3 on the current contract. */
 	iso3?: string | null;
+	/** @deprecated Older servers use numeric. Read iso_numeric on the current contract. */
 	numeric?: number | null;
 	/** Official long name. */
 	name_full?: string | null;
@@ -125,7 +131,13 @@ export interface State {
 	latitude: number | null;
 	longitude: number | null;
 	timezones: string[];
-	iso_3166_2: string | null;
+	/** Full ISO 3166-2 subdivision code, including its country prefix. */
+	iso_subdivision?: string | null;
+	/** @deprecated Legacy candidate spelling. Read iso_subdivision on the current contract. */
+	iso?: string | null;
+	fips: string | null;
+	area_codes: string[] | null;
+	capital: StateCapital;
 	deep?: Deep<StateDeep>;
 }
 
@@ -523,6 +535,11 @@ export interface Language {
 	script: string | null;
 	direction: 'ltr' | 'rtl' | string;
 	deep?: Deep<LanguageDeep>;
+	/** ISO 639-3 language code. */
+	iso_alpha3?: string | null;
+	/** @deprecated Older servers use iso3. Read iso_alpha3 on the current contract. */
+	iso3?: string | null;
+	countries?: string[] | null;
 }
 
 /** A parsed person name. Junk input returns valid: false, never an error. Gender comes from dictionary data and is null when the data does not decide. */
@@ -1206,7 +1223,9 @@ export interface CountryDeep {
 	urban_population?: number | null;
 	/** Share of population using the internet, from 0 to 100. */
 	internet_users?: number | null;
+	/** @deprecated Older deep contract. Current ISO identifiers live in Core. */
 	iso3: string;
+	/** @deprecated Older deep contract. Current iso_numeric lives in Core. */
 	numeric: number;
 	full_name: string | null;
 	demonym: string | null;
@@ -1269,18 +1288,19 @@ export interface CountryElevationPoint {
 }
 
 export interface StateDeep {
+	/** @deprecated Older deep contract. Read Core iso_subdivision on the current contract. */
+	iso_3166_2?: string | null;
 	population: number | null;
 	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 	/** Total area in km2. */
 	area: number | null;
-	fips: string | null;
-	capital: string | null;
-	area_codes: string[];
-	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
-	tax: string | null;
-	/** State or province reference rate in percent. Country, state and postal rates are alternative references, not additive. */
-	tax_rate: number | null;
+	tax: StateTax;
+	/** @deprecated Historical Deep read members. */
+	fips?: string | null;
+	capital?: string | null;
+	area_codes?: string[];
+	tax_rate?: number | null;
 }
 
 export interface DistrictDeep {
@@ -1379,8 +1399,10 @@ export interface HlrDeep {
 }
 
 export interface LanguageDeep {
-	iso3: string | null;
-	countries: string[];
+	/** @deprecated Older deep contract. Read Core iso_alpha3 on the current contract. */
+	iso3?: string | null;
+	/** @deprecated Older deep contract. Current country associations live in Core. */
+	countries?: string[] | null;
 }
 
 export interface NameDeep {
@@ -1640,4 +1662,23 @@ export interface CityNearbyCoordinates extends CityCollection {
 	longitude: number;
 	radius: number;
 	unit: string;
+}
+
+/** Minimal related records returned in Company Core. Rich Deep records stay separate. */
+export interface CompanyIndustryReference { type: string; code: string; }
+export interface CompanyPhoneReference { number: string; country?: string | null; e164?: string | null; }
+export interface CompanyEmailReference { address: string; }
+
+
+export interface StateTax {
+	name: string | null;
+	/** Reference rate in percent. Choose the geographic scope for the task. */
+	rate: number | null;
+}
+
+
+export interface StateCapital {
+	name: string | null;
+	lat: number | null;
+	lon: number | null;
 }

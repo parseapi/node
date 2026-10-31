@@ -1,6 +1,6 @@
 {
 	"name": "@parseapi/sdk",
-	"version": "1.12.5",
+	"version": "1.12.6",
 	"description": "Official ParseAPI client for Node and TypeScript. One key, minimal JSON, fast.",
 	"keywords": [
 		"parseapi",

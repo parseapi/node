@@ -46,7 +46,7 @@ await expectOk('continent', parse.continent('NA'), (r) => (r.name === 'North Ame
 await expectOk('continent.countries', parse.continent.countries('NA'), (r) =>
 	Array.isArray(r.countries) && r.countries.length > 0 ? null : 'no countries'
 );
-await expectOk('country', parse.country('US'), (r) => (r.iso3 === 'USA' ? null : 'wrong iso3'));
+await expectOk('country', parse.country('US'), (r) => ((Object.hasOwn(r, 'iso_alpha3') ? r.iso_alpha3 : r.iso3) === 'USA' ? null : 'wrong country alpha-3 code'));
 await expectOk('country.states', parse.country.states('US'), (r) => (r.states.length >= 50 ? null : 'too few states'));
 await expectOk('state', parse.state('NC', { country: 'US' }), (r) => (r.name === 'North Carolina' ? null : 'wrong name'));
 await expectOk('state.districts', parse.state.districts('NC', { country: 'US' }), (r) =>
