@@ -101,8 +101,8 @@ export interface Country {
 
 export interface CountryCapital {
  name: string | null;
- lat: number | null;
- lon: number | null;
+ latitude: number | null;
+ longitude: number | null;
 }
 
 export interface CountryTax {
@@ -119,6 +119,12 @@ export interface CountryStateItem {
 export interface CountryStates {
 	country: string;
 	states: CountryStateItem[];
+}
+
+export interface StateCapital {
+	name: string | null;
+	latitude: number | null;
+	longitude: number | null;
 }
 
 export interface State {
@@ -1677,11 +1683,6 @@ export interface StateTax {
 }
 
 
-export interface StateCapital {
-	name: string | null;
-	lat: number | null;
-	lon: number | null;
-}
 
 export interface Currency {
 	currency: string;

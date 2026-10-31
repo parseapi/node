@@ -95,8 +95,8 @@ interface Country {
 }
 interface CountryCapital {
     name: string | null;
-    lat: number | null;
-    lon: number | null;
+    latitude: number | null;
+    longitude: number | null;
 }
 interface CountryTax {
     name: string | null;
@@ -110,6 +110,11 @@ interface CountryStateItem {
 interface CountryStates {
     country: string;
     states: CountryStateItem[];
+}
+interface StateCapital {
+    name: string | null;
+    latitude: number | null;
+    longitude: number | null;
 }
 interface State {
     state: string;
@@ -1636,11 +1641,6 @@ interface StateTax {
     name: string | null;
     /** Reference rate in percent. Choose the geographic scope for the task. */
     rate: number | null;
-}
-interface StateCapital {
-    name: string | null;
-    lat: number | null;
-    lon: number | null;
 }
 interface Currency {
     currency: string;
