@@ -1682,3 +1682,29 @@ export interface StateCapital {
 	lat: number | null;
 	lon: number | null;
 }
+
+export interface Currency {
+	currency: string;
+	iso_numeric: number | null;
+	name: string;
+	name_plural: string | null;
+	symbol: string | null;
+	symbol_native: string | null;
+	digits: number | null;
+	countries: string[] | null;
+	/** Accepted deep=true returns an empty object; reference fields are Core. */
+	deep?: CurrencyDeep;
+}
+
+export interface CurrencyRate {
+	base: string;
+	quote: string;
+	rate: number;
+	date: string;
+	/** With amount= only: echo of the amount asked. */
+	amount?: number;
+	/** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
+	converted?: number;
+}
+
+export type CurrencyDeep = Record<string, never>;

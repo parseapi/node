@@ -319,6 +319,7 @@ Choose enrichment for the question you need answered.
 | Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
 | Phone, Time, Date, Language, Emoji, Point | Optional detail in the same pooled request on every plan. |
+| Currency | Currency metadata on paid plans; lookup and exchange-rate conversion use pooled requests. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
 | Company (national number) | The complete product detail bag on paid plans. |

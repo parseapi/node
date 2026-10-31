@@ -1,5 +1,5 @@
 export * from './bulk.js';
-import type { Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Currency, CurrencyRate, Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import { ParseAPIError } from './errors.js';
 export { ParseAPIError } from './errors.js';
 import type { Preflight, PreflightTask } from './preflight.js';
@@ -12,7 +12,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.12.6';
+const VERSION = '1.13.0';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -663,7 +663,22 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request('/emoji/parse', deepQuery(opts), undefined, opts, { text }),
 			}
 		),
-	};
+
+		currency: Object.assign(
+			(code: string, opts?: CurrencyOptions): Promise<Currency> => request(`/currency/${enc(code)}`, deepQuery(opts), undefined, opts),
+			{
+				rate: (
+					base: string,
+					quote: string,
+					opts?: CurrencyRateOptions
+				): Promise<CurrencyRate> =>
+					request(`/currency/${enc(base)}/${enc(quote)}`, {
+						date: opts?.date,
+						amount: opts?.amount,
+					}, undefined, opts),
+			}
+		),
+};
 }
 
 export type ParseAPIClient = ReturnType<typeof parseAPI>;
@@ -792,3 +807,7 @@ function cityCollectionQuery(opts?: CityCollectionFilters & { page?: boolean; cu
 		countries: cityCsv(opts?.countries), exclude_countries: cityCsv(opts?.excludeCountries), timezones: cityCsv(opts?.timezones), timezone: opts?.timezone, bbox: opts?.bbox,
 		page: opts?.page ? 'true' : undefined, cursor: opts?.cursor, sort: opts?.sort, order: opts?.order };
 }
+
+export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
+
+export type CurrencyRateOptions = { date?: string; amount?: number } & RequestOptions;
