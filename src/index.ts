@@ -12,7 +12,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.13.2';
+const VERSION = '1.13.3';
 const API_VERSION = '2.0.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -105,7 +105,7 @@ export type CompanySearchOptions = {
 export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
-/** Country resolves national-number ambiguity. Deep adds numbering-plan geography on every plan. */
+/** Country resolves national-number ambiguity. Deep adds numbering-plan geography on paid plans; existing accounts retain their current Deep access. */
 export type PhoneOptions = { country?: string } & DeepOption & RequestOptions;
 /** Deep discloses location detail within the same carrier unit. */
 export type CarrierOptions = { country?: string } & DeepOption & RequestOptions;
@@ -133,7 +133,7 @@ export type NameOptions = {
 	/** CLDR name-formatting locale, such as en or ja. Defaults to en. */
 	name_locale?: string;
 } & DeepOption & RequestOptions;
-/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+/** Local time or same-instant conversion. Optional detail is included on paid plans in the same pooled request; existing accounts retain their current Deep access. */
 export type TimeOptions = LanguageOption & {
 	ip?: string;
 	city?: string;
@@ -153,7 +153,7 @@ export type TimeOptions = LanguageOption & {
 	/** Offsetless conversion clock changes: compatible (default), earlier, later, or reject. Explicit offsets select the instant directly. */
 	disambiguation?: 'compatible' | 'earlier' | 'later' | 'reject';
 } & DeepOption & RequestOptions;
-/** Local time or same-instant conversion. Optional reference detail is pooled on every plan. */
+/** Local time or same-instant conversion. Optional detail is included on paid plans in the same pooled request; existing accounts retain their current Deep access. */
 export type TimeAtOptions = LanguageOption & {
 	/** ISO timestamp. With to or targets, an offsetless value is source wall time. Otherwise it is UTC. */
 	at?: string;
@@ -185,7 +185,7 @@ export type DateTodayOptions = LanguageOption & { to?: string } & DeepOption & R
 export type HolidayOptions = { year?: number } & RequestOptions;
 export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
-/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
+/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 export type PointOptions = LanguageOption & DeepOption & RequestOptions;
 /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
 export type WeatherOptions = DeepOption & {
@@ -635,7 +635,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain and compact nearest-city context on every plan. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
+		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 

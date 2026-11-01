@@ -693,8 +693,17 @@ export interface ElevationLocations {
 	points: Elevation[];
 }
 
+export interface PointElectoral {
+	/** District code string; preserve leading zeros. */
+	code: string;
+	name: string | null;
+	congress: number | null;
+}
+
 export interface PointDeep {
 	city: PointCity | null;
+	/** Missing on older responses; null when no supported district is known. */
+	electoral?: PointElectoral | null;
 	elevation: number | null;
 	elevation_ft: number | null;
 	resolution: number | null;

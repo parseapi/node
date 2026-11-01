@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.3 — 2026-11-01
+
+- Expose existing Point electoral detail with optional reader fields, preserving leading-zero codes and unknown values.
+- Correct non-Card access descriptions. Existing methods and API response JSON stay unchanged.
+
 ## 1.13.2 — 2026-10-31
 
 - Read compact Postal property-tax estimates without requiring District metadata; retain optional earlier currency and period values.

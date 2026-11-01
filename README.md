@@ -133,7 +133,7 @@ and the returned `next` cursor narrow or page the same search. Pass the cursor a
 `cursor` with the same selector, filters and limit. Each result has its own
 `match` and optional `deep`. The SDK returns all candidates without choosing one.
 Directory methods accept `signal`, `timeoutMs` and `retries`, and omit `lang`.
-Directory deep adds detail in the same pooled request on every plan.
+Directory Deep adds detail on paid plans in the same pooled request. Existing accounts retain their current Deep access.
 
 Company directory social profiles contain `platform`, `url` and `handle`; unknown metadata stays null. Phone and email records use `type` for the source-reported purpose. Earlier response fields remain readable by the client.
 Coverage describes the current directory edition. Empty listings do not establish
@@ -295,7 +295,7 @@ const propertyTax = place.deep?.property_tax;
 
 Read `population` as the source’s count for that place boundary. Keep missing or null values unknown and preserve a known zero. State district lists include each district’s population. Postal nearby and distance detail remains metropolitan associations only. Continent population stays in core.
 
-Point returns the timezone ID with the core location. Its optional deep detail adds terrain and compact nearest-city context on every plan. A nearest city is null when none is within 200 km.
+Point returns the timezone ID with the core location. Its optional Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans. Existing accounts retain their current Deep access. A nearest city is null when none is within 200 km.
 
 Weather returns current conditions by default. Paid deep adds specialist current measurements, forecasts and related detail. A past `date` is a UTC day and requires deep: it adds `deep.history` alongside current conditions. Date alone does not request history.
 
@@ -320,12 +320,13 @@ Choose enrichment for the question you need answered.
 | IP | Richer IP fields included with a paid plan. No separate check meter. |
 | Domain | Registration dates, registrar, status and DNSSEC, included with a paid plan. Use `dns` for DNS records and `mx` for mail routing. |
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
-| Phone, Time, Date, Language, Emoji, Point | Optional detail in the same pooled request on every plan. |
+| Phone, Time, Date, Emoji, Point | Optional detail on paid plans in the same pooled request. Existing accounts retain their current Deep access. |
+| Language | All language facts are in Core; requested Deep is empty. |
 | Currency | Currency metadata on paid plans; lookup and exchange-rate conversion use pooled requests. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
 | Company (national number) | The complete product detail bag on paid plans. |
-| Company directory | Profile detail in the same pooled request on every plan. Search detail belongs to each company result. |
+| Company directory | Profile detail on paid plans in the same pooled request. Existing accounts retain their current Deep access. Search detail belongs to each company result. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
 | Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |
 
