@@ -151,6 +151,8 @@ and the returned `next` cursor narrow or page the same search. Pass the cursor a
 Directory methods accept `signal`, `timeoutMs` and `retries`, and omit `lang`.
 Directory Deep adds detail on paid plans in the same pooled request. Existing accounts retain their current Deep access.
 
+The public-directory service retires national-number Company lookups in both API versions. Use the directory methods with API 2.0.0.
+
 Company directory social profiles contain `platform`, `url` and `handle`; unknown metadata stays null. Phone and email records use `type` for the source-reported purpose. Earlier response fields remain readable by the client.
 Coverage describes the current directory edition. Empty listings do not establish
 private ownership. Deep source entries attribute selected enrichment fields, and
@@ -338,10 +340,10 @@ Choose enrichment for the question you need answered.
 | Email | A metered mailbox check with deliverability, catch-all, status, reason and address hints, using included email checks or enabled on-demand usage. |
 | Phone, Time, Date, Emoji, Point | Optional detail on paid plans in the same pooled request. Existing accounts retain their current Deep access. |
 | Language | All language facts are in Core; requested Deep is empty. |
-| Currency | Currency metadata on paid plans; lookup and exchange-rate conversion use pooled requests. |
+| Currency | Currency lookup facts are complete in Core; requested Deep is empty. Lookup and exchange-rate conversion use pooled requests. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
-| Company (national number) | The complete product detail bag on paid plans. |
+| Company (national number) | Retired on the current public service in both API versions. Use the Company directory methods with API 2.0.0. |
 | Company directory | Profile detail on paid plans in the same pooled request. Existing accounts retain their current Deep access. Search detail belongs to each company result. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
 | Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |
@@ -411,9 +413,10 @@ and a CDN SVG `logo`. Brand detection uses reviewed network rules independently
 of issuer records. Unknown or ambiguous prefixes return null brand fields and a
 generic logo; a known network without reviewed artwork also uses the generic logo.
 
-Optional Deep adds `prefix`, `issuer`, `country`, `type` and `prepaid`, included
-in the same pooled request on every plan. Six or more digits enable directory
-matching. Fewer digits return all-null Deep fields. Compare `deep.prefix` with
+Optional Deep adds `prefix`, `issuer`, `country`, `type` and `prepaid` on paid plans
+in the same pooled request. Existing accounts retain their current Deep access.
+Requested but locked Deep is `{}`. Six or more digits enable directory
+matching. With Deep access, fewer digits return all-null Deep fields. Compare `deep.prefix` with
 `bin`: equal is an exact recorded match; shorter is broader; null is no match.
 The longest row wins, including null fields. `prepaid: null` means unknown, not
 false. This is partial reference data, not card validity or payment acceptance.

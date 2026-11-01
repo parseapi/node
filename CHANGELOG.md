@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.5 — 2026-11-01
+
+- Correct documentation to match existing Deep access, complete Core reference data and retired national Company behavior.
+- Preserve all business response fields, models, methods, dependencies and access.
+
 ## 1.13.4 — 2026-11-01
 
 - Correct `Card.deep` to use the existing partial, nullable `Deep<CardDeep>` declaration, matching omitted, empty and unavailable detail already returned by the API.
