@@ -1,5 +1,15 @@
 import { expect, expectTypeOf, it, vi } from 'vitest';
-import { parseAPI, type Card, type CardOptions, type CardDeep } from '../src/index.js';
+import { parseAPI, type Card, type CardOptions, type CardDeep, type Deep } from '../src/index.js';
+
+// An existing but empty Deep object does not guarantee an issuer field.
+function unsafeIssuerAccess(card: Card) {
+	if (card.deep && card.deep.issuer !== null) {
+		// @ts-expect-error Card Deep may omit issuer, even when deep exists.
+		return card.deep.issuer.toUpperCase();
+	}
+	return null;
+}
+void unsafeIssuerAccess;
 
 it('returns core identity and requests typed optional Deep while preserving false and null', async () => {
 	const body = { bin:'00123456', brand:null, brand_name:null, logo:'https://cdn.parseapi.com/card/generic.svg', deep:{prefix:'001234',issuer:null,country:null,type:null,prepaid:false} };
@@ -10,7 +20,24 @@ it('returns core identity and requests typed optional Deep while preserving fals
 	expectTypeOf<CardDeep['prefix']>().toEqualTypeOf<string | null>();
 	expectTypeOf<CardDeep['prepaid']>().toEqualTypeOf<boolean | null>();
 	expectTypeOf<CardOptions['deep']>().toEqualTypeOf<boolean | undefined>();
-	expectTypeOf<Card['deep']>().toEqualTypeOf<CardDeep | undefined>();
+	expectTypeOf<Card['deep']>().toEqualTypeOf<Deep<CardDeep> | undefined>();
+});
+
+it('preserves omitted, empty, unknown and populated Card details without inventing fields', async () => {
+	const core = { bin: '411111', brand: 'visa', brand_name: 'Visa', logo: 'https://example.com/visa.svg' };
+	const bodies = [core, { ...core, deep: {} }, { ...core, deep: { issuer: null, prepaid: false } },
+		{ ...core, deep: { issuer: 'Example bank', prepaid: false, future: true } }];
+	const expected = structuredClone(bodies);
+	const fetch = vi.fn(async () => new Response(JSON.stringify(bodies.shift())));
+	const parse = parseAPI('fixture', { fetch });
+	for (const body of expected) {
+		const card = await parse.card('411111', { deep: true });
+		expect(card).toEqual(body);
+		const issuer = card.deep?.issuer;
+		expect(typeof issuer === 'string' ? issuer.toUpperCase() : null)
+			.toBe('deep' in body && typeof body.deep.issuer === 'string' ? 'EXAMPLE BANK' : null);
+	}
+	expect(fetch).toHaveBeenCalledTimes(4);
 });
 
 it('keeps an unknown prefix distinct from malformed input and omits unrequested deep', async () => {

@@ -409,8 +409,8 @@ interface Card {
     brand_name: string | null;
     /** SVG URL, with a generic-card fallback. */
     logo: string;
-    /** Included only when requested; pooled on every plan. */
-    deep?: CardDeep;
+    /** Requested recorded detail on paid plans; existing accounts retain their Deep access. Locked detail is an empty object. */
+    deep?: Deep<CardDeep>;
 }
 interface CardDeep {
     /** Longest recorded matching prefix; may be shorter than bin. */

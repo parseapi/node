@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.4 — 2026-11-01
+
+- Correct `Card.deep` to use the existing partial, nullable `Deep<CardDeep>` declaration, matching omitted, empty and unavailable detail already returned by the API.
+- **TypeScript source compatibility:** Code that assumes every Deep field exists may need missing-value guards before it compiles. See the Card upgrade note in the README.
+- Card API fields, JSON, runtime response forwarding and access are unchanged. No other product model changes are included.
+
 ## 1.13.3 — 2026-11-01
 
 - Expose existing Point electoral detail with optional reader fields, preserving leading-zero codes and unknown values.

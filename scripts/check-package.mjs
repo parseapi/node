@@ -36,6 +36,7 @@ async function main() {
     if (url.pathname.startsWith('/card/')) {
       cardRequests++;
       if (url.pathname === '/card/51' && url.search === '') return new Response(JSON.stringify({bin:'51',brand:'mastercard',brand_name:'Mastercard',logo:'https://cdn.parseapi.com/card/mastercard.svg'}));
+      if (url.pathname === '/card/000000' && url.search === '?deep=true') return new Response(JSON.stringify({bin:'000000',brand:null,brand_name:null,logo:'https://cdn.parseapi.com/card/generic.svg',deep:{}}));
       if (url.pathname !== '/card/00%201234-56' || url.search !== '?deep=true') throw new Error('Packed Card must preserve and encode the BIN once');
       return new Response(JSON.stringify({ bin:'00123456',brand:null,brand_name:null,logo:'https://cdn.parseapi.com/card/generic.svg',deep:{prefix:'001234',country:null,issuer:null,type:null,prepaid:false} }));
     }
@@ -62,9 +63,25 @@ async function main() {
   const core: Card = await parse.card('51');
   if (core.brand !== 'mastercard' || !core.logo.endsWith('/mastercard.svg') || core.deep !== undefined) throw new Error('Packed Card core differs');
   const card: Card = await parse.card('00 1234-56', {deep:true});
+  const locked: Card = await parse.card('000000', {deep:true});
+  if (Object.keys(locked.deep ?? {}).length !== 0 || locked.deep?.issuer !== undefined) throw new Error('Packed Card must preserve empty detail without inventing issuer');
+  function unsafeIssuerAccess(value: Card) {
+    if (value.deep && value.deep.issuer !== null) {
+      // @ts-expect-error Existing empty Deep does not guarantee issuer.
+      return value.deep.issuer.toUpperCase();
+    }
+    return null;
+  }
+  void unsafeIssuerAccess;
+  function issuerLabel(value: Card) {
+    const issuer = value.deep?.issuer;
+    return typeof issuer === 'string' ? issuer.toUpperCase() : 'Bank unavailable';
+  }
+  const partial: Card = { ...locked, deep: { issuer: 'Example bank', prepaid: false } };
+  if (issuerLabel(locked) !== 'Bank unavailable' || issuerLabel(partial) !== 'EXAMPLE BANK' || partial.deep?.prepaid !== false) throw new Error('Packed Card guarded reads must preserve missing, known and false values');
   try { await parse.card('4242424242424242'); throw new Error('Card accepted a full number'); }
   catch (error) { if (!(error instanceof TypeError)) throw error; }
-  if (cardRequests !== 2) throw new Error('Packed Card dispatched a rejected input');
+  if (cardRequests !== 3) throw new Error('Packed Card dispatched a rejected input');
   try { await parse.country('RETRY'); throw new Error('Expected rate limit'); }
   catch (error) {
     if (!(error instanceof ParseAPIError) || error.retryAfter !== '60' || error.requestId !== 'req_fixture') throw error;

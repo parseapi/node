@@ -15,6 +15,22 @@ const country = await parse.country('US');
 
 Get a key at [parseapi.com](https://parseapi.com). The client also reads `PARSEAPI_KEY` from the environment.
 
+## Card upgrade note for 1.13.4
+
+Card response fields and values are unchanged. This release corrects the TypeScript declaration for `Card.deep` to allow missing or null fields, including the existing empty `deep: {}` response when detail is not unlocked.
+
+**TypeScript compatibility:** This is a source-breaking type correction. After upgrading, code that assumes every Deep field exists may fail type checking. Check the value before using it:
+
+```ts
+const card = await parse.card('411111', { deep: true });
+const issuer = card.deep?.issuer;
+if (typeof issuer === 'string') {
+  console.log(issuer.toUpperCase());
+}
+```
+
+The exported `CardDeep` field names and types are unchanged; `Card.deep` now uses the existing partial, nullable `Deep<CardDeep>` wrapper. JavaScript response forwarding, routes, request defaults and API access are unchanged. Existing installations do not receive this declaration correction until their dependency is upgraded.
+
 ## API versions
 
 This SDK explicitly selects the API contract supported by this SDK. It sends `Parse-Version: 2.0.0` on every lookup so responses match the API contract supported by the package. Your key and the team's saved default stay the same.
