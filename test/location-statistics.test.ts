@@ -1,11 +1,11 @@
 import { expect, expectTypeOf, it } from 'vitest';
-import { parseAPI, type PostalDeep, type DistrictDeep, type PropertyTax, type AddressSearch, type Continent, type CountryDeep, type StateDeep, type CityDeep, type StateDistrictDeep } from '../src/index.js';
+import { parseAPI, type PostalDeep, type DistrictDeep, type PropertyTax, type PostalPropertyTax, type AddressSearch, type Continent, type CountryDeep, type StateDeep, type CityDeep, type StateDistrictDeep } from '../src/index.js';
 
 it('adds optional location context without requiring existing consumers to supply it', () => {
  expectTypeOf<Omit<PostalDeep, 'property_tax' | 'population_period'>>().toMatchTypeOf<PostalDeep>();
  expectTypeOf<Omit<DistrictDeep, 'property_tax' | 'population_period'>>().toMatchTypeOf<DistrictDeep>();
  expectTypeOf<Omit<AddressSearch, 'reason'>>().toMatchTypeOf<AddressSearch>();
- expectTypeOf<PostalDeep['property_tax']>().toEqualTypeOf<PropertyTax | null | undefined>();
+ expectTypeOf<PostalDeep['property_tax']>().toEqualTypeOf<PostalPropertyTax | null | undefined>();
  type Profiles = Continent | CountryDeep | StateDeep | CityDeep | DistrictDeep | PostalDeep | StateDistrictDeep;
  expectTypeOf<Profiles['population_period']>().toEqualTypeOf<string | null | undefined>();
 });

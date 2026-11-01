@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.2 — 2026-10-31
+
+- Read compact Postal property-tax estimates without requiring District metadata; retain optional earlier currency and period values.
+- Use Weather minute precipitation_rate / precipitation_rate_in names for rates, leaving accumulated History precipitation unchanged.
+- The Postal property-tax type and Weather minute member changes can require source changes in existing typed consumers.
+
 ## 1.12.1 — 2026-10-27
 
 - Add optional Country Deep fields: gdp, gdp_per_capita, population_growth, urban_population and internet_users. GDP uses US dollars; growth and population shares use percent. Missing values remain null.

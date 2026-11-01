@@ -759,8 +759,8 @@ export interface WeatherHour {
 
 export interface WeatherMinute {
 	at: string;
-	precipitation: number | null;
-	precipitation_in: number | null;
+	precipitation_rate: number | null;
+	precipitation_rate_in: number | null;
 	type: string | null;
 }
 
@@ -1373,7 +1373,7 @@ export interface PostalDeep {
 	/** Missing/null is unknown; [] is an observed result outside all covered areas. */
 	metros?: PostalMetro[] | null;
 	/** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
-	property_tax?: PropertyTax | null;
+	property_tax?: PostalPropertyTax | null;
 }
 
 export interface PhoneDeep {
@@ -1538,6 +1538,16 @@ export interface WeatherCurrentDeep {
 	pressure_inhg: number | null;
 	visibility: number | null;
 	visibility_mi: number | null;
+}
+
+/** Compact Postal property-tax estimate. Currency is supplied by Postal Deep, not repeated here. */
+export interface PostalPropertyTax {
+	/** Median annual tax payable; not a rate or an individual property bill. */
+	annual_median: number;
+	/** Legacy richer responses only; absent in the current compact record. */
+	currency?: string | null;
+	/** Legacy reporting period; absent values stay unknown. */
+	period?: string | null;
 }
 
 /** Property-tax estimate for an area, not a specific property. */
