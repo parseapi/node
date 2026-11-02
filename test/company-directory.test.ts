@@ -1,5 +1,5 @@
 import { afterEach, expect, expectTypeOf, it, vi } from 'vitest';
-import { parseAPI, ParseAPIError, type Company, type CompanyOptions, type CompanyProfile, type CompanyProfileDeep, type CompanyProfileEmployees, type CompanyProfileRegistration, type CompanySearch, type CompanyCoverage, type CompanySearchOptions, type CompanyIdOptions, type CompanyCoverageOptions } from '../src/index.js';
+import { parseAPI, ParseAPIError, type Company, type CompanyOptions, type CompanyProfile, type CompanyProfileDeep, type CompanyProfileEmployees, type CompanyProfileRegistration, type CompanySearch, type CompanySearchOptions, type CompanyIdOptions } from '../src/index.js';
 
 afterEach(() => vi.useRealTimers());
 const profile: CompanyProfile = { id: 'co_xw3f22es6cjq', name: 'Cloudflare, Inc.', country: 'US', website: 'https://www.cloudflare.com/', listings: [{ exchange: 'NYSE', symbol: 'NET' }], address: null };
@@ -15,7 +15,6 @@ it('adds callable directory methods without changing national company references
 	const national: (number: string, opts?: CompanyOptions) => Promise<Company> = parse.company;
 	expectTypeOf(parse.company.id).returns.toEqualTypeOf<Promise<CompanyProfile>>();
 	expectTypeOf(parse.company.search).returns.toEqualTypeOf<Promise<CompanySearch>>();
-	expectTypeOf(parse.company.coverage).returns.toEqualTypeOf<Promise<CompanyCoverage>>();
 	expectTypeOf<'description'>().not.toMatchTypeOf<keyof NonNullable<Company['deep']>>();
 	await national('552 100/554', { country: 'FR', deep: true, lang: 'fr' });
 	expect(calls[0]!.url.pathname).toBe('/company/552%20100%2F554');
@@ -42,15 +41,12 @@ it.each([
 it('directory options omit language and coverage sends no product query parameters', async () => {
 	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanyIdOptions>();
 	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanySearchOptions>();
-	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanyCoverageOptions>();
 	const { parse, calls } = setup();
 	const extras = { lang: 'fr', country: 'FR', deep: true, timeoutMs: 1000, retries: 0 };
 	await parse.company.id(profile.id, extras);
 	await parse.company.search({ query: 'Cloudflare', ...extras });
-	await parse.company.coverage(extras);
 	expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({ deep: 'true' });
 	expect(Object.fromEntries(calls[1]!.url.searchParams)).toEqual({ q: 'Cloudflare', country: 'FR', deep: 'true' });
-	expect(calls[2]!.url.pathname).toBe('/company/directory/coverage'); expect(calls[2]!.url.search).toBe('');
 });
 
 it('preserves omitted, empty, old, null and populated deep bags and unknown response fields', async () => {
@@ -77,11 +73,10 @@ it('leaves selector validation to the API and distinguishes empty search from er
 });
 
 it('retains per-call retry controls on every directory method', async () => {
-	for (const method of ['id', 'search', 'coverage'] as const) {
+	for (const method of ['id', 'search'] as const) {
 		let calls = 0; const parse = parseAPI('fixture', { retries: 0, fetch: async () => ++calls === 1 ? response({ code: 'unavailable' }, 503) : response({ ok: true }) });
 		if (method === 'id') await parse.company.id(profile.id, { retries: 1 });
 		if (method === 'search') await parse.company.search({ domain: 'example.com', retries: 1 });
-		if (method === 'coverage') await parse.company.coverage({ retries: 1 });
 		expect(calls).toBe(2);
 	}
 });
@@ -97,9 +92,9 @@ it('cancellation aborts a directory request without retrying or leaking controls
 it('per-call timeout overrides the client timeout and never becomes a query field', async () => {
 	vi.useFakeTimers(); const calls: string[] = [];
 	const fetch = vi.fn((input, init) => new Promise<Response>((_resolve, reject) => { calls.push(String(input)); init?.signal?.addEventListener('abort', () => reject(init.signal!.reason), { once: true }); }));
-	const pending = parseAPI('fixture', { fetch, timeoutMs: 10000 }).company.coverage({ timeoutMs: 20, retries: 0 });
+	const pending = parseAPI('fixture', { fetch, timeoutMs: 10000 }).company.id(profile.id, { timeoutMs: 20, retries: 0 });
 	const checked = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' }); await vi.advanceTimersByTimeAsync(20); await checked;
-	expect(calls).toEqual(['https://api.parseapi.com/company/directory/coverage']);
+	expect(calls).toEqual([`https://api.parseapi.com/company/id/${profile.id}`]);
 });
 
 

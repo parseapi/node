@@ -1,5 +1,5 @@
 export * from './bulk.js';
-import type { Currency, CurrencyRate, Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Currency, CurrencyRate, Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import { ParseAPIError } from './errors.js';
 export { ParseAPIError } from './errors.js';
 import type { Preflight, PreflightTask } from './preflight.js';
@@ -102,7 +102,6 @@ export type CompanySearchOptions = {
 	/** Opaque next-page cursor. Keep the same selector and filters. */
 	cursor?: string;
 } & DeepOption & RequestOptions;
-export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on paid plans; existing accounts retain their current Deep access. */
@@ -513,9 +512,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				/** Return candidates without selecting a match. Use one selector, country, exact industry, filters. */
 				search: (opts: CompanySearchOptions): Promise<CompanySearch> =>
 					request('/company', { q: opts.query, domain: opts.domain, ticker: opts.ticker, identifier: opts.identifier, country: opts.country, industry: opts.industry, industry_type: opts.industry_type, exchange: opts.exchange, authority: opts.authority, limit: opts.limit, cursor: opts.cursor, ...deepQuery(opts) }, undefined, requestControls(opts)),
-				/** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
-				coverage: (opts?: CompanyCoverageOptions): Promise<CompanyCoverage> =>
-					request('/company/directory/coverage', undefined, undefined, requestControls(opts)),
 			}
 		),
 

@@ -140,7 +140,6 @@ const candidates = await parse.company.search({ query: 'Cloudflare', country: 'U
 // After the caller chooses a candidate, retain its id for later lookups.
 const chosenId = 'co_xw3f22es6cjq';
 const company = await parse.company.id(chosenId, { deep: true });
-const coverage = await parse.company.coverage();
 ```
 
 Company search accepts at most one of `query`, `domain`, `ticker`, or `identifier`, or discovers candidates using country or exact industry filters.
@@ -151,7 +150,9 @@ and the returned `next` cursor narrow or page the same search. Pass the cursor a
 Directory methods accept `signal`, `timeoutMs` and `retries`, and omit `lang`.
 Directory Deep adds detail on paid plans in the same pooled request. Existing accounts retain their current Deep access.
 
-Company directory social profiles contain `platform`, `url` and `handle`; unknown metadata stays null. Phone and email records use `type` for the source-reported purpose. Earlier response fields remain readable by the client.
+The public-directory service retires national-number Company lookups in both API versions. Use the directory methods with API 2.0.0.
+
+Company directory social profiles include `platform` and `url`. Known handles are included when available; unknown handles may be omitted or returned as null by older servers. Phone and email records use `type` for the source-reported purpose. Earlier response fields remain readable by the client.
 Coverage describes the current directory edition. Empty listings do not establish
 private ownership. Deep source entries attribute selected enrichment fields, and
 logo URLs are returned without fetching images. The existing `company(number)`
@@ -184,7 +185,6 @@ await parse.company.id('co_xw3f22es6cjq', { deep: true });
 await parse.company.search({ domain: 'cloudflare.com' });
 await parse.company.search({ ticker: 'NET', exchange: 'NYSE' });
 await parse.company.search({ identifier: '0001477333', authority: 'SEC' });
-await parse.company.coverage();
 await parse.city('charlotte', { country: 'US' });
 await parse.city.id('city_mb8mbqrkz8zb');
 await parse.city.search('char', { country: 'US', limit: 10 });
@@ -341,7 +341,7 @@ Choose enrichment for the question you need answered.
 | Currency | Currency metadata on paid plans; lookup and exchange-rate conversion use pooled requests. |
 | Country, State, District, City, Postal | The place profile on paid plans, including demographic and tax facts where held. |
 | Name, Industry | Name evidence or the industry definition profile on paid plans. |
-| Company (national number) | The complete product detail bag on paid plans. |
+| Company (national number) | Retired on the current public service in both API versions. Use the Company directory methods with API 2.0.0. |
 | Company directory | Profile detail on paid plans in the same pooled request. Existing accounts retain their current Deep access. Search detail belongs to each company result. |
 | Weather | Specialist current measurements and the existing forecast, alert, air and history bag on paid plans. |
 | Carrier, HLR | Optional diagnostic detail within the same metered core unit, including Free allowance units. No second gate or additional check. |

@@ -1105,8 +1105,11 @@ export interface CompanyProfilePhone { number: string; kind: string | null; }
 export interface CompanyProfileEmail { address: string; kind: string | null; }
 /** An associated domain and its recorded URL, when known. */
 export type CompanyProfileDomain = CompanyProfileWebsite;
-export interface CompanySocialProfile { platform: string | null; url: string; handle: string | null; }
-export interface CompanyPhoneNumber { number: string; type: string | null; }
+export interface CompanySocialProfile { platform: string | null; url: string; handle?: string | null; }
+export interface CompanyPhoneNumber { number: string; type: string | null;
+	country?: string | null;
+	e164?: string | null;
+}
 export interface CompanyEmailAddress { address: string; type: string | null; }
 /** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
 export interface CompanyProfileDeep {
@@ -1161,18 +1164,6 @@ export interface CompanyCandidate extends CompanyProfile {
 export interface CompanySearch {
 	companies: CompanyCandidate[];
 	next: string | null;
-}
-/** Edition counts describe the records available, not all companies in a country. */
-export interface CompanyCoverage {
-	scope: string;
-	label: string;
-	description: string;
-	snapshot_at?: string;
-	companies: number;
-	countries: string[];
-	with_website: number;
-	with_listings: number;
-	with_address: number;
 }
 
 /** A direct child industry code. */
@@ -1688,12 +1679,6 @@ export interface CityNearbyCoordinates extends CityCollection {
 	radius: number;
 	unit: string;
 }
-
-/** Minimal related records returned in Company Core. Rich Deep records stay separate. */
-export interface CompanyIndustryReference { type: string; code: string; }
-export interface CompanyPhoneReference { number: string; country?: string | null; e164?: string | null; }
-export interface CompanyEmailReference { address: string; }
-
 
 export interface StateTax {
 	name: string | null;

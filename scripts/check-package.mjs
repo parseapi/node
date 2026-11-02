@@ -56,7 +56,6 @@ async function main() {
       } else if (url.searchParams.get('q') !== 'Acme' || url.searchParams.get('deep') !== 'true') throw new Error('Directory selector/deep mapping differs');
       return new Response(JSON.stringify({ companies: [{ ...directoryProfile, match: url.searchParams.has('q') ? { field: 'name', value: 'Acme' } : { field: 'filters', value: null } }], next: null }));
     }
-    if (url.pathname === '/company/directory/coverage') return new Response(JSON.stringify({ companies: 1, scope: 'sample' }));
     return new Response('{"country":"US"}');
   } });
   await parse.country('US');
@@ -131,8 +130,6 @@ async function main() {
   await parse.company.search({ country: 'US' });
   const discovered = await parse.company.search({country:'US',industry:'0700',industry_type:'sic',limit:2,cursor:'opaque+/=',deep:true});
   if (discovered.companies[0]?.match.field !== 'filters' || discovered.companies[0]?.match.value !== null) throw new Error('Packed discovery match changed');
-  const coverage = await parse.company.coverage({ retries: 0, timeoutMs: 1000 });
-  if (coverage.companies !== 1) throw new Error('Packed directory coverage differs');
 }
 main().catch(error => { throw error; });
 `;
