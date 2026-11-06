@@ -12,7 +12,7 @@ it('lost task response retries the same POST body and idempotency key with the p
 	const input={operation:'email' as const,value:'private@example.test',deep:true};
 	const result=await client.task.lookup(`task_${'a'.repeat(40)}`,input,'same-request');
 	expect(result.result).toEqual({valid:null});expect(calls).toHaveLength(2);
-	for(const {url,init} of calls){expect(url.pathname).toBe(`/task/task_${'a'.repeat(40)}/lookup`);expect(url.search).toBe('');expect(init.method).toBe('POST');expect(JSON.parse(init.body as string)).toEqual(input);const headers=new Headers(init.headers);expect(headers.get('Idempotency-Key')).toBe('same-request');expect(headers.get('Parse-Version')).toBe('2.0.0');}
+	for(const {url,init} of calls){expect(url.pathname).toBe(`/task/task_${'a'.repeat(40)}/lookup`);expect(url.search).toBe('');expect(init.method).toBe('POST');expect(JSON.parse(init.body as string)).toEqual(input);const headers=new Headers(init.headers);expect(headers.get('Idempotency-Key')).toBe('same-request');expect(headers.get('X-API-Version')).toBe('2.1.0');}
 });
 
 it('creation, status and cancellation use the same transport and secret header',async()=>{

@@ -3,16 +3,16 @@ import { parseAPI, type Card, type CardOptions, type CardDeep, type Deep } from 
 
 // An existing but empty Deep object does not guarantee an issuer field.
 function unsafeIssuerAccess(card: Card) {
-	if (card.deep && card.deep.issuer !== null) {
+	if (card.issuer !== null) {
 		// @ts-expect-error Card Deep may omit issuer, even when deep exists.
-		return card.deep.issuer.toUpperCase();
+		return card.issuer.toUpperCase();
 	}
 	return null;
 }
 void unsafeIssuerAccess;
 
 it('returns core identity and requests typed optional Deep while preserving false and null', async () => {
-	const body = { bin:'00123456', brand:null, brand_name:null, logo:'https://cdn.parseapi.com/card/generic.svg', deep:{prefix:'001234',issuer:null,country:null,type:null,prepaid:false} };
+	const body = { bin: '00123456', brand: null, brand_name: null, logo: 'https://cdn.parseapi.com/card/generic.svg', prefix: '001234', issuer: null, country: null, type: null, prepaid: false };
 	const fetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify(body)));
 	const parse = parseAPI('test_key', { fetch });
 	await expect(parse.card('00 1234-56', { deep:true })).resolves.toEqual(body);
@@ -20,22 +20,22 @@ it('returns core identity and requests typed optional Deep while preserving fals
 	expectTypeOf<CardDeep['prefix']>().toEqualTypeOf<string | null>();
 	expectTypeOf<CardDeep['prepaid']>().toEqualTypeOf<boolean | null>();
 	expectTypeOf<CardOptions['deep']>().toEqualTypeOf<boolean | undefined>();
-	expectTypeOf<Card['deep']>().toEqualTypeOf<Deep<CardDeep> | undefined>();
+	expectTypeOf<Card['issuer']>().toEqualTypeOf<string | null | undefined>();
 });
 
 it('preserves omitted, empty, unknown and populated Card details without inventing fields', async () => {
 	const core = { bin: '411111', brand: 'visa', brand_name: 'Visa', logo: 'https://example.com/visa.svg' };
-	const bodies = [core, { ...core, deep: {} }, { ...core, deep: { issuer: null, prepaid: false } },
-		{ ...core, deep: { issuer: 'Example bank', prepaid: false, future: true } }];
+	const bodies = [core, { ...core }, { ...core, issuer: null, prepaid: false },
+		{ ...core, issuer: 'Example bank', prepaid: false, future: true }];
 	const expected = structuredClone(bodies);
 	const fetch = vi.fn(async () => new Response(JSON.stringify(bodies.shift())));
 	const parse = parseAPI('fixture', { fetch });
 	for (const body of expected) {
 		const card = await parse.card('411111', { deep: true });
 		expect(card).toEqual(body);
-		const issuer = card.deep?.issuer;
+		const issuer = card?.issuer;
 		expect(typeof issuer === 'string' ? issuer.toUpperCase() : null)
-			.toBe('deep' in body && typeof body.deep.issuer === 'string' ? 'EXAMPLE BANK' : null);
+			.toBe('issuer' in body && typeof body.issuer === 'string' ? 'EXAMPLE BANK' : null);
 	}
 	expect(fetch).toHaveBeenCalledTimes(4);
 });

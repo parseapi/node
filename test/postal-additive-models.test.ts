@@ -14,7 +14,7 @@ it('reads already-served Postal fields without changing legacy values or adding 
   } });
   const result = await client.postal('10001', { country: 'US', deep: true });
   expect(result, name).toEqual(fixture); expect(calls, name).toBe(1);
-  expect(result.deep?.metros?.[0]?.share, name).toBe(0.125);
+  expect(result?.metros?.[0]?.share, name).toBe(0.125);
  }
  expectTypeOf<Postal['type']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<PostalMetro['share_percent']>().toEqualTypeOf<number | null | undefined>();

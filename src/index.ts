@@ -1,19 +1,17 @@
 export * from './bulk.js';
-import type { Currency, CurrencyRate, Bin, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, CompanyCoverage, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, EmojiMetadata, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Currency, CurrencyRate, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import { ParseAPIError } from './errors.js';
 export { ParseAPIError } from './errors.js';
 import type { Preflight, PreflightTask } from './preflight.js';
 import type { AgentTask, AgentTaskInput, AgentTaskLookupInput, AgentTaskResult } from './task.js';
 
 export * from './types.js';
-export type { DomainResult, DomainResultDeep, DomainRegistrationResult, StackResult } from './response-results.js';
-import type { DomainResult } from './response-results.js';
 export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.13.5';
-const API_VERSION = '2.0.0';
+const VERSION = '1.14.0';
+const API_VERSION = '2.1.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -55,11 +53,11 @@ export type CountryStatesOptions = LanguageOption & RequestOptions;
 export type StateOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type StateDistrictsOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type DistrictOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
-export type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { format?: 'resource'; aliases?: boolean; ambiguity?: 'error' } & DeepOption & RequestOptions;
-export type CityIdOptions = LanguageOption & CityResponseOptions & { format?: 'resource'; hierarchy?: boolean } & DeepOption & RequestOptions;
-export type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { format?: 'list'; aliases?: boolean; limit?: number; sort?: CitySort; match?: 'exact' | 'prefix' | 'fuzzy'; maxDistance?: 1 | 2 } & DeepOption & RequestOptions;
-export type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { format?: 'resource' } & DeepOption & RequestOptions;
-export type CityNearbyOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { format?: 'list'; aliases?: boolean; ambiguity?: 'error'; radius?: number; unit?: 'km' | 'mi'; limit?: number; sort?: CitySort } & DeepOption & RequestOptions;
+export type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { aliases?: boolean; ambiguity?: 'error' } & DeepOption & RequestOptions;
+export type CityIdOptions = LanguageOption & CityResponseOptions & { hierarchy?: boolean } & DeepOption & RequestOptions;
+export type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { aliases?: boolean; limit?: number; sort?: CitySort; match?: 'exact' | 'prefix' | 'fuzzy'; maxDistance?: 1 | 2 } & DeepOption & RequestOptions;
+export type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & DeepOption & RequestOptions;
+export type CityNearbyOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { aliases?: boolean; ambiguity?: 'error'; radius?: number; unit?: 'km' | 'mi'; limit?: number; sort?: CitySort } & DeepOption & RequestOptions;
 /** Pass country when known. Codes shared by multiple countries need it. */
 export type PostalOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
 export type PostalNearbyOptions = LanguageOption & { country?: string; radius?: number; unit?: 'km' | 'mi' } & DeepOption & RequestOptions;
@@ -102,7 +100,6 @@ export type CompanySearchOptions = {
 	/** Opaque next-page cursor. Keep the same selector and filters. */
 	cursor?: string;
 } & DeepOption & RequestOptions;
-export type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 export type EmailOptions = DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on paid plans; existing accounts retain their current Deep access. */
@@ -187,9 +184,9 @@ export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
 /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 export type PointOptions = LanguageOption & DeepOption & RequestOptions;
-/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
+/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in history alongside current conditions. Date alone does not request history. */
 export type WeatherOptions = DeepOption & {
-	/** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
+	/** Past UTC day, YYYY-MM-DD. Requires paid deep and populates history alongside current. */
 	date?: string;
 } & RequestOptions;
 export type EmojiOptions = LanguageOption & { shortcodeSource?: string } & DeepOption & RequestOptions;
@@ -202,8 +199,8 @@ export type EmojiSearchOptions = LanguageOption & {
 	includeSkinTones?: boolean;
 	offset?: number;
 } & DeepOption & RequestOptions;
-/** Complete catalog download; Deep defaults true. JSON supports offline EmojiCatalog. */
-export type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset'> & { profile?: 'full' | 'compact' };
+/** One compact catalog download for offline lookup, search and parsing. */
+export type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset' | 'deep'>;
 export type EmojiBrowseOptions = EmojiSearchOptions;
 export type EmojiParseOptions = LanguageOption & DeepOption & RequestOptions;
 export type EmojiConvertOptions = RequestOptions & { direction: 'to_shortcodes' | 'to_emoji'; shortcodeSource: 'cldr' | 'github' | 'slack' | 'discord' };
@@ -245,7 +242,7 @@ function validateRetries(value: number | undefined): void {
 function metered(path: string, query?: Query): boolean {
 	const product = path.split('/')[1];
 	return ['carrier', 'caller', 'hlr', 'litigator', 'reassigned'].includes(product ?? '')
-		|| (['email', 'vat', 'address'].includes(product ?? '') && query?.deep === true);
+		|| path === '/email/verify' || (['email', 'vat', 'address'].includes(product ?? '') && query?.deep === true);
 }
 
 // Null means the server's requested wait exceeds our automatic retry budget.
@@ -309,7 +306,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					res = await doFetch(url, {
 						redirect: 'manual',
 						...(body === undefined ? {} : { method: 'POST', body }),
-						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers, 'Parse-Version': API_VERSION },
+						headers: { 'X-API-Key': key!, 'User-Agent': `parseapi-node/${VERSION}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers, 'X-API-Version': API_VERSION },
 						signal: controller.signal,
 					});
 				} catch (error) {
@@ -445,20 +442,20 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				request(`/city/${enc(name)}`, { ...cityScopeQuery(opts), ...cityResponseQuery(opts), aliases: opts?.aliases ? 'true' : undefined, ambiguity: opts?.ambiguity, ...deepQuery(opts) }, undefined, opts)) as CityLookupCall,
 			{
 				id: ((id: string, opts?: CityIdOptions): Promise<City> => request(`/city/id/${enc(id)}`, { hierarchy: opts?.hierarchy ? 'true' : undefined, ...cityResponseQuery(opts), ...deepQuery(opts) }, undefined, opts)) as CityIdCall,
-				search: (async (query: string, opts?: CitySearchOptions): Promise<CitySearch | CityCollection> => {
+				search: (async (query: string, opts?: CitySearchOptions): Promise<CitySearch> => {
 					const spelling = opts?.match !== undefined || opts?.maxDistance !== undefined;
-					const result = await request<CitySearch | CityCollection>(spelling ? '/city/search' : '/city', { q: query, match: opts?.match, max_distance: opts?.maxDistance, ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), aliases: opts?.aliases ? 'true' : undefined, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts);
-					if (spelling && opts?.format !== 'list') {
-						const list = result as CityCollection;
+					const result = await request<CitySearch>(spelling ? '/city/search' : '/city', { q: query, match: opts?.match, max_distance: opts?.maxDistance, ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), aliases: opts?.aliases ? 'true' : undefined, limit: opts?.limit, ...deepQuery(opts) }, undefined, opts);
+					if (spelling) {
+						const list = result as unknown as CityCollection;
 						return { q: query, ...(opts?.country ? { country: opts.country } : {}), ...(opts?.state ? { state: opts.state } : {}), cities: list.data, next_cursor: list.next_cursor };
 					}
 					return result;
 				}) as CitySearchCall,
 				/** Canonical list resource. Reuse next_cursor with exactly the same options. */
-				list: (opts?: CityListOptions): Promise<CityList> => request('/city', { browse: 'true', ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), format: 'list', limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
+				list: (opts?: CityListOptions): Promise<CityList> => request('/city', { browse: 'true', ...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), limit: opts?.limit, ...deepQuery(opts) }, undefined, opts),
 				nearbyCoordinates: (lat: number, lon: number, opts?: CityNearbyCoordinatesOptions): Promise<CityNearbyCoordinates> => request('/city', {
 					lat, lon, nearby: 'true', radius: opts?.radius, unit: opts?.unit,
-					...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), format: 'list', limit: opts?.limit, ...deepQuery(opts),
+					...cityScopeQuery(opts), ...cityCollectionQuery(opts), ...cityResponseQuery(opts), limit: opts?.limit, ...deepQuery(opts),
 				}, undefined, opts),
 				nearest: ((lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest> => request('/city', { lat, lon, ...cityScopeQuery(opts), ...cityResponseQuery(opts), ...deepQuery(opts) }, undefined, opts)) as CityNearestCall,
 				nearby: ((name: string, opts?: CityNearbyOptions): Promise<CityNearby | CityCollection> =>
@@ -513,9 +510,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				/** Return candidates without selecting a match. Use one selector, country, exact industry, filters. */
 				search: (opts: CompanySearchOptions): Promise<CompanySearch> =>
 					request('/company', { q: opts.query, domain: opts.domain, ticker: opts.ticker, identifier: opts.identifier, country: opts.country, industry: opts.industry, industry_type: opts.industry_type, exchange: opts.exchange, authority: opts.authority, limit: opts.limit, cursor: opts.cursor, ...deepQuery(opts) }, undefined, requestControls(opts)),
-				/** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
-				coverage: (opts?: CompanyCoverageOptions): Promise<CompanyCoverage> =>
-					request('/company/directory/coverage', undefined, undefined, requestControls(opts)),
 			}
 		),
 
@@ -524,10 +518,10 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		 * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
 		 * Deep checks default to one attempt. An explicit retry count can repeat paid usage.
 		 */
-		email: (email: string, opts?: EmailOptions): Promise<Email> => request(`/email/${enc(email)}`, deepQuery(opts), undefined, opts),
-
-		bin: (bin: string, opts?: BinOptions): Promise<Bin> =>
-			request(`/bin/${enc(bin)}`, { deep: opts?.deep }, undefined, opts),
+		email: Object.assign(
+			(email: string, opts?: EmailOptions): Promise<Email> => opts?.deep ? request('/email/verify', undefined, undefined, opts, { email }) : request(`/email/${enc(email)}`, undefined, undefined, opts),
+			{ verify: (email: string, opts?: RequestOptions): Promise<Email> => request('/email/verify', undefined, undefined, opts, { email }) }
+		),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
 		phone: (number: string, opts?: PhoneOptions): Promise<Phone> =>
@@ -551,10 +545,6 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 
 		/** Check registration: available is true, false or null when unknown. Paid Deep adds available registration details. */
 		domain: (domain: string, opts?: DomainOptions): Promise<Domain> =>
-			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
-
-		/** Check domain registration while preserving unknown availability and partial detail. */
-		domainResult: (domain: string, opts?: DomainOptions): Promise<DomainResult> =>
 			request(`/domain/${enc(domain)}`, deepQuery(opts), undefined, opts),
 
 		asn: (asn: string, opts?: AsnOptions): Promise<Asn> => request(`/asn/${enc(asn)}`, undefined, undefined, opts),
@@ -639,7 +629,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 
-		/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
+		/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in history alongside current conditions. Date alone does not request history. */
 		weather: (lat: number, lon: number, opts?: WeatherOptions): Promise<Weather> =>
 			request('/weather', { lat, lon, date: opts?.date, ...deepQuery(opts) }, undefined, opts),
 
@@ -656,9 +646,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request('/emoji/convert', { direction: opts.direction, shortcode_source: opts.shortcodeSource }, undefined, opts, { text }),
 				/** Extract complete sequences. Positions use UTF-16 code units; end is exclusive. */
 				catalog: (opts?: EmojiCatalogOptions): Promise<EmojiCatalogData> =>
-					request('/emoji/catalog', { ...emojiFilters(opts), profile: opts?.profile, deep: opts?.deep ?? true }, undefined, opts),
-				metadata: (opts?: RequestOptions): Promise<EmojiMetadata> =>
-					request('/emoji/metadata', undefined, undefined, requestControls(opts)),
+					request('/emoji/catalog', { ...emojiFilters(opts) }, undefined, opts),
 				parse: (text: string, opts?: EmojiParseOptions): Promise<EmojiParse> =>
 					request('/emoji/parse', deepQuery(opts), undefined, opts, { text }),
 			}
@@ -716,7 +704,6 @@ function timeTargets(targets: readonly string[] | undefined, to: string | undefi
 /** Existing NAICS options remain source compatible. */
 export type NaicsOptions = IndustryOptions;
 export type NaicsSearchOptions = IndustrySearchOptions;
-export type BinOptions = DeepOption & RequestOptions;
 
 
 export type CityScopeOptions = { country?: string; state?: string; type?: string; grain?: CityGrain; hierarchy?: boolean };
@@ -726,21 +713,21 @@ export type CityResponseOptions = { romanized?: boolean };
 export type CityCollectionFilters = {
 	minPopulation?: number; maxPopulation?: number; minElevation?: number; maxElevation?: number;
 	countries?: string | readonly string[]; excludeCountries?: string | readonly string[];
-	timezone?: string; timezones?: string | readonly string[];
+	timezones?: string | readonly string[];
 	/** Center-coordinate box: west,south,east,north. West > east crosses the date line. */
 	bbox?: string;
 };
 
-export type CityPagingOptions = { page?: boolean; cursor?: string; order?: 'asc' | 'desc' };
+export type CityPagingOptions = { page?: boolean; cursor?: string };
 
 export type CitySort = string;
 
 export type CityListOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
-	limit?: number; cursor?: string; sort?: CitySort; order?: 'asc' | 'desc';
+	limit?: number; cursor?: string; sort?: CitySort;
 } & DeepOption & RequestOptions;
 
 export type CityNearbyCoordinatesOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
-	radius?: number; unit?: 'km' | 'mi'; limit?: number; cursor?: string; sort?: CitySort; order?: 'asc' | 'desc';
+	radius?: number; unit?: 'km' | 'mi'; limit?: number; cursor?: string; sort?: CitySort;
 } & DeepOption & RequestOptions;
 
 export type CityRelationsOptions = LanguageOption & CityResponseOptions & { limit?: number; cursor?: string; hierarchy?: boolean } & DeepOption & RequestOptions;
@@ -750,37 +737,11 @@ export type CityAncestorsOptions = Omit<CityRelationsOptions, 'limit' | 'cursor'
 export type CityDistanceOptions = RequestOptions;
 
 
-type ClassicCityOptions<T> = T & { format?: never };
-
-export interface CityLookupCall {
-	(name: string, opts?: ClassicCityOptions<CityOptions>): Promise<City>;
-	(name: string, opts: CityOptions & { format: 'resource' }): Promise<CityResource>;
-	(name: string, opts: CityOptions): Promise<City>;
-}
-
-export interface CityIdCall {
-	(id: string, opts?: ClassicCityOptions<CityIdOptions>): Promise<City>;
-	(id: string, opts: CityIdOptions & { format: 'resource' }): Promise<CityResource>;
-	(id: string, opts: CityIdOptions): Promise<City>;
-}
-
-export interface CityNearestCall {
-	(lat: number, lon: number, opts?: ClassicCityOptions<CityNearestOptions>): Promise<CityNearest>;
-	(lat: number, lon: number, opts: CityNearestOptions & { format: 'resource' }): Promise<CityResource & Pick<CityNearest, 'distance' | 'distance_mi'>>;
-	(lat: number, lon: number, opts: CityNearestOptions): Promise<CityNearest>;
-}
-
-export interface CitySearchCall {
-	(query: string, opts?: ClassicCityOptions<CitySearchOptions>): Promise<CitySearch>;
-	(query: string, opts: CitySearchOptions & { format: 'list' }): Promise<CityCollection>;
-	(query: string, opts: CitySearchOptions): Promise<CitySearch | CityCollection>;
-}
-
-export interface CityNearbyCall {
-	(name: string, opts?: ClassicCityOptions<CityNearbyOptions>): Promise<CityNearby>;
-	(name: string, opts: CityNearbyOptions & { format: 'list' }): Promise<CityCollection>;
-	(name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
-}
+export interface CityLookupCall { (name: string, opts?: CityOptions): Promise<City>; }
+export interface CityIdCall { (id: string, opts?: CityIdOptions): Promise<City>; }
+export interface CityNearestCall { (lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest>; }
+export interface CitySearchCall { (query: string, opts?: CitySearchOptions): Promise<CitySearch>; }
+export interface CityNearbyCall { (name: string, opts?: CityNearbyOptions): Promise<CityNearby>; }
 
 
 function cityErrorCandidates(input: unknown): CityAmbiguityCandidate[] | undefined {
@@ -796,16 +757,16 @@ function cityErrorCandidates(input: unknown): CityAmbiguityCandidate[] | undefin
 
 function cityCsv(value?: string | readonly string[]): string | undefined { return typeof value === 'string' ? value : value?.join(','); }
 
-function cityResponseQuery(opts?: CityResponseOptions & { format?: string }): Query { return { format: opts?.format, romanized: opts?.romanized ? 'true' : undefined }; }
+function cityResponseQuery(opts?: CityResponseOptions): Query { return { romanized: opts?.romanized ? 'true' : undefined }; }
 
 function cityScopeQuery(opts?: CityScopeOptions): Query {
 	return { country: opts?.country, state: opts?.state, type: opts?.type, grain: opts?.grain, hierarchy: opts?.hierarchy ? 'true' : undefined };
 }
 
-function cityCollectionQuery(opts?: CityCollectionFilters & { page?: boolean; cursor?: string; sort?: string; order?: string }): Query {
+function cityCollectionQuery(opts?: CityCollectionFilters & { page?: boolean; cursor?: string; sort?: string }): Query {
 	return { min_population: opts?.minPopulation, max_population: opts?.maxPopulation, min_elevation: opts?.minElevation, max_elevation: opts?.maxElevation,
-		countries: cityCsv(opts?.countries), exclude_countries: cityCsv(opts?.excludeCountries), timezones: cityCsv(opts?.timezones), timezone: opts?.timezone, bbox: opts?.bbox,
-		page: opts?.page ? 'true' : undefined, cursor: opts?.cursor, sort: opts?.sort, order: opts?.order };
+		countries: cityCsv(opts?.countries), exclude_countries: cityCsv(opts?.excludeCountries), timezones: cityCsv(opts?.timezones), bbox: opts?.bbox,
+		page: opts?.page ? 'true' : undefined, cursor: opts?.cursor, sort: opts?.sort };
 }
 
 export type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;

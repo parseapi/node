@@ -4,7 +4,7 @@ const rows = [["country", ["US"], {}], ["state", ["NC"], {"country": "US"}], ["s
 it.each(rows)('%s adds optional detail to the same operation', async (method, args, options) => {
  const urls: URL[] = [];
  const bodies: unknown[] = [];
- const data = { deep: { zero: 0, missing: null, empty: [], future: true } };
+ const data = { zero: 0, missing: null, empty: [], future: true };
  const parse = parseAPI('k', { fetch: async (input, init) => { bodies.push(init?.body ? JSON.parse(String(init.body)) : undefined); urls.push(new URL(String(input))); return new Response(JSON.stringify(data)); } });
  const fn = method.split('.').reduce((value, key) => (value as Record<string, unknown>)[key], parse as unknown) as (...args: unknown[]) => Promise<unknown>;
  const input: unknown[] = [...args];
@@ -22,11 +22,11 @@ it('keeps metered-core depth inside the same one-attempt policy', async () => {
  }
 });
 it('core types have the task answer while deep types remain optional and null-aware', () => {
- expectTypeOf<'city'>().not.toMatchTypeOf<keyof Carrier>();
- expectTypeOf<'roaming'>().not.toMatchTypeOf<keyof Hlr>();
+ expectTypeOf<Carrier['city']>().toEqualTypeOf<string | null | undefined>();
+ expectTypeOf<Hlr['roaming']>().toEqualTypeOf<boolean | null | undefined>();
  expectTypeOf<'known'>().not.toMatchTypeOf<keyof Name>();
  expectTypeOf<Time['at']>().toEqualTypeOf<string | null>();
- expectTypeOf<'next_dst'>().not.toMatchTypeOf<keyof NonNullable<TimezoneConversionTarget['deep']>>();
- expectTypeOf<'dewpoint'>().not.toMatchTypeOf<keyof Weather['current']>();
- expectTypeOf<NonNullable<Weather['deep']>['current']>().not.toEqualTypeOf<never>();
+ expectTypeOf<'next_dst'>().not.toMatchTypeOf<keyof TimezoneConversionTarget>();
+ expectTypeOf<Weather['current']['dewpoint']>().toEqualTypeOf<number | null | undefined>();
+ expectTypeOf<Weather['current']>().not.toEqualTypeOf<never>();
 });

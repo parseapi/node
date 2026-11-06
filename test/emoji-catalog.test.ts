@@ -4,7 +4,7 @@ import { EmojiCatalog, EmojiCatalogError, parseAPI, type EmojiCatalogData, type 
 function fixture(): EmojiCatalogData {
   const row = (emoji: string, name: string, version: string, keywords: string[], subcategory = 'animal-mammal'): Emoji => ({
     emoji, name, category: 'Animals & Nature', shortcodes: [`:${name}:`, name],
-    deep: { version, keywords, subcategory },
+    version, keywords, subcategory,
   });
   const cat = row('🐈', 'cat', '0.6', ['pet', 'cat']);
   const face = row('🐱', 'cat face', '0.6', ['pet', 'face']);
@@ -14,7 +14,7 @@ function fixture(): EmojiCatalogData {
   return {
     metadata: { edition: 'fixture', max_version: '18.0', source_version: '18.0', sources: [], artwork_sources: [], notices: [],
       total: 5,
-      completeness: { missing_count: 1, unexpected_count: 0 } },
+      completeness: { complete: false } },
     total: 5, emojis: [cat, face, heart, tone, whale],
     forms: { '🐈': '🐈', '🐱': '🐱', '❤️': '❤️', '❤': '❤️', '👍🏿': '👍🏿', '🫍': '🫍' },
     shortcodes: { cldr: { cat: ['🐈'], shared: ['🐈'], coeur: ['❤️'] }, github: { cat: ['🐱'], shared: ['🐱'] }, slack: {}, discord: {} },
@@ -34,8 +34,8 @@ it('resolves source identities, qualification forms and codepoints without fetch
     expect(() => catalog.lookup('shared')).toThrow('ambiguous');
     expect(() => catalog.lookup('U+D800')).toThrow('scalar');
     expect(() => catalog.lookup('no such emoji')).toThrow(EmojiCatalogError);
-    expect(catalog.lookup('cat').deep).toBeUndefined();
-    expect(catalog.lookup('cat', { deep: true }).deep?.version).toBe('0.6');
+    expect(catalog.lookup('cat').version).toBeUndefined();
+    expect(catalog.lookup('cat', { deep: true }).version).toBe('0.6');
     expect(fetch).not.toHaveBeenCalled();
   } finally { fetch.mockRestore(); }
 });
@@ -69,7 +69,7 @@ it('keeps primary exact matches ahead of added aliases and unordered labels ahea
   data.emojis[1]!.name = 'aardvark label';
   expect(new EmojiCatalog(data).search('cat').emojis.map(row => row.emoji)).toEqual(['🐈', '🐱']);
   const words = fixture();
-  words.emojis[0]!.deep!.keywords!.push('face cat');
+  words.emojis[0]!.keywords!.push('face cat');
   expect(new EmojiCatalog(words).search('face cat').emojis.map(row => row.emoji)).toEqual(['🐱', '🐈']);
 });
 
@@ -86,7 +86,7 @@ it('retains native English search facts in localized downloads', () => {
 
 it('boosts genuine exact translated keywords while leaving fallback English tiers intact', () => {
  const data=fixture();data.localization={requested_locale:'ar',resolved_locale:'ar',translated_names:2,translated_keywords:1,fallback_names:3,fallback_keywords:4};data.search={native:{},localized_keywords:['❤️']};
- data.emojis[0]!.name='صنارة صيد';data.emojis[2]!.name='قلب';data.emojis[2]!.deep!.keywords=['نار'];
+ data.emojis[0]!.name='صنارة صيد';data.emojis[2]!.name='قلب';data.emojis[2]!.keywords=['نار'];
  expect(new EmojiCatalog(data).search('نار').emojis[0]?.emoji).toBe('❤️');
  delete data.search.localized_keywords;
  expect(new EmojiCatalog(data).search('نار').emojis[0]?.emoji).toBe('🐈');
@@ -94,12 +94,11 @@ it('boosts genuine exact translated keywords while leaving fallback English tier
 
 it('indexes compact source maps without inventing omitted artwork details', () => {
   const data = fixture();
-  data.profile = 'compact';
   data.shortcodes.discord = { feline_friend: ['🐱'] };
   const local = new EmojiCatalog(data);
   expect(local.search('feline friend').emojis.map(row => row.emoji)).toEqual(['🐱']);
-  expect(local.lookup('feline_friend', { shortcodeSource: 'discord', deep: true }).deep).not.toHaveProperty('artwork');
-  expect(local.lookup('feline_friend', { shortcodeSource: 'discord', deep: true }).deep).not.toHaveProperty('shortcode_sources');
+  expect(local.lookup('feline_friend', { shortcodeSource: 'discord', deep: true })).not.toHaveProperty('artwork');
+  expect(local.lookup('feline_friend', { shortcodeSource: 'discord', deep: true })).not.toHaveProperty('shortcode_sources');
   expect(local.parse('🐱').emojis).toHaveLength(1);
 });
 
@@ -121,14 +120,14 @@ it('snapshots downloaded data and isolates returned objects from later mutation'
   data.emojis[0]!.name = 'changed';
   const row = catalog.lookup('cat', { deep: true });
   row.name = 'also changed';
-  row.deep!.keywords!.push('changed');
+  row.keywords!.push('changed');
   row.shortcodes.push(':changed:');
   const metadata = catalog.metadata();
-  metadata.completeness.missing_count=0;
+  metadata.completeness.complete=true;
   expect(catalog.lookup('cat', { deep: true }).name).toBe('cat');
-  expect(catalog.lookup('cat', { deep: true }).deep?.keywords).toEqual(['pet', 'cat']);
+  expect(catalog.lookup('cat', { deep: true }).keywords).toEqual(['pet', 'cat']);
   expect(catalog.lookup('cat').shortcodes).not.toContain(':changed:');
-  expect(catalog.metadata().completeness.missing_count).toBe(1);
+  expect(catalog.metadata().completeness.complete).toBe(false);
   expect(catalog.scope()).toEqual({filters:{},total:5,complete_inventory:true});
   const subset = fixture();
   subset.emojis = subset.emojis.slice(0,1); subset.total=1; subset.scope={filters:{version:'0.6'},complete_inventory:false};
@@ -136,24 +135,24 @@ it('snapshots downloaded data and isolates returned objects from later mutation'
   expect(partial.metadata().total).toBe(5);
   expect(partial.scope()).toEqual({filters:{version:'0.6'},total:1,complete_inventory:false});
   const noDeep = fixture();
-  delete noDeep.emojis[0]!.deep;
-  expect(() => new EmojiCatalog(noDeep)).toThrow('deep=true');
+  delete noDeep.emojis[0]!.version;
+  expect(() => new EmojiCatalog(noDeep)).toThrow('no offline detail');
 });
 
 it('downloads JSON snapshots with existing transport controls', async () => {
   const fetch = vi.fn(async (input, init?: RequestInit) => {
     const url = new URL(String(input));
-    expect(new Headers(init?.headers).get('Parse-Version')).toBe('2.0.0');
+    expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
     if (url.pathname === '/emoji/metadata') return Response.json(fixture().metadata);
     expect(url.pathname).toBe('/emoji/catalog');
     return Response.json(fixture());
   });
   const parse = parseAPI('test', { fetch });
-  const data = await parse.emoji.catalog({ includeSkinTones: false, category: 'Animals & Nature', profile: 'compact' });
-  expect(new URL(String(fetch.mock.calls[0]![0])).searchParams.get('profile')).toBe('compact');
-  expect(new URL(String(fetch.mock.calls[0]![0])).searchParams.get('deep')).toBe('true');
+  const data = await parse.emoji.catalog({ includeSkinTones: false, category: 'Animals & Nature' });
+  expect(new URL(String(fetch.mock.calls[0]![0])).searchParams.has('profile')).toBe(false);
+  expect(new URL(String(fetch.mock.calls[0]![0])).searchParams.has('deep')).toBe(false);
   expect(new EmojiCatalog(data).lookup('cat').emoji).toBe('🐈');
-  expect((await parse.emoji.metadata()).total).toBe(5);
+  expect(data.metadata.total).toBe(5);
 });
 
 

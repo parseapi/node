@@ -63,7 +63,7 @@ it.each(['tuples', 'string'])('posts long path %s with the original vertices and
 	expect(init?.method).toBe('POST');
 	expect(JSON.parse(String(init?.body))).toEqual({ path, samples: 512 });
 	expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
-	expect(new Headers(init?.headers).get('Parse-Version')).toBe('2.0.0');
+	expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
 	expect(new Headers(init?.headers).get('X-API-Key')).toBe('fixture');
 });
 
@@ -117,7 +117,7 @@ it.each(['tuples', 'string'])('uses POST when the encoded URL grows too long for
 	expect(init?.method).toBe('POST');
 	expect(JSON.parse(String(init?.body))).toEqual({ points });
 	expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
-	expect(new Headers(init?.headers).get('Parse-Version')).toBe('2.0.0');
+	expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
 	expect(new Headers(init?.headers).get('X-API-Key')).toBe('fixture');
 	expect(init?.redirect).toBe('manual');
 });

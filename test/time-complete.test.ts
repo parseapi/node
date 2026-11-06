@@ -33,13 +33,13 @@ it('rejects reserved source routes before dispatch', () => {
 });
 
 it('keeps rule provenance, exact resolution and null observations without inference', async () => {
- const payload = {"deep":{"timezone_database_version":"2026c","resolution":{"kind":"gap","policy":"earlier","adjustment_seconds":-1800,"alternatives":[{"at":"1970-01-01T00:00:00.123+00:00","unix":0,"offset":"+00:00"},{"at":"1970-01-01T00:30:00.123+00:00","unix":1800,"offset":"+00:00"}],"future":true}}};
+ const payload = { "timezone_database_version": "2026c", "resolution": { "kind": "gap", "policy": "earlier", "adjustment_seconds": -1800, "alternatives": [{ "at": "1970-01-01T00:00:00.123+00:00", "unix": 0, "offset": "+00:00" }, { "at": "1970-01-01T00:30:00.123+00:00", "unix": 1800, "offset": "+00:00" }], "future": true } };
  const parse = parseAPI('fixture', { fetch: async () => new Response(JSON.stringify(payload)) });
  const result = await parse.time('UTC', { to: 'UTC', deep: true });
- expect(result.deep?.timezone_database_version).toBe('2026c');
- expect(result.deep?.resolution?.adjustment_seconds).toBe(-1800);
- expect(result.deep?.resolution?.alternatives?.[0]?.unix).toBe(0);
- expect(result.deep?.resolution?.alternatives?.[0]?.at).toContain('.123');
+ expect(result?.timezone_database_version).toBe('2026c');
+ expect(result?.resolution?.adjustment_seconds).toBe(-1800);
+ expect(result?.resolution?.alternatives?.[0]?.unix).toBe(0);
+ expect(result?.resolution?.alternatives?.[0]?.at).toContain('.123');
  expect(result).toEqual(payload);
 });
 

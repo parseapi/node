@@ -63,14 +63,14 @@ export class EmojiCatalog {
       map.get(key)!.add(glyph);
     };
     for (const row of this.data.emojis) {
-      if (!row?.emoji || !row.deep?.version || !Array.isArray(row.deep.keywords)) {
-        throw new EmojiCatalogError('invalid_catalog', 'Offline catalogs require the default deep=true export.');
+      if (!row?.emoji || !row?.version || !Array.isArray(row.keywords)) {
+        throw new EmojiCatalogError('invalid_catalog', 'This catalog has no offline detail for the selected account.');
       }
       this.byGlyph.set(row.emoji, row);
       add(this.names, normalizeName(row.name), row.emoji);
       for (const alias of row.shortcodes) add(this.aliases, normalizeName(alias), row.emoji);
       this.categoryKeys.add(filterKey(row.category ?? ''));
-      this.subcategoryKeys.add(filterKey(row.deep.subcategory ?? ''));
+      this.subcategoryKeys.add(filterKey(row.subcategory ?? ''));
     }
     for (const source of sources) {
       if (!this.data.shortcodes[source]) throw new EmojiCatalogError('invalid_catalog', `Catalog is missing the ${source} shortcode map.`);
@@ -94,9 +94,9 @@ export class EmojiCatalog {
       const names=[...new Set([row.name,native?.name].filter((name):name is string=>typeof name==='string').map(normal))];
       const primaryShorts=[...new Set(row.shortcodes.map(normal))];
       const shorts=[...new Set([...primaryShorts,...(this.sourceAliases.get(row.emoji)??[])])];
-      const keywords=[...new Set([...(row.deep?.keywords??[]),...(native?.keywords??[])].map(normal))];
+      const keywords=[...new Set([...(row?.keywords??[]),...(native?.keywords??[])].map(normal))];
       const allNames=[...names,...shorts];
-      this.searchFacts.set(row.emoji,{names,primaryShorts,shorts,keywords,translatedKeywords:this.data.localization?.resolved_locale&&localizedKeywords.has(row.emoji)?(row.deep?.keywords??[]).map(normal):[],allNames,blob:[...new Set([...allNames,...keywords])].join(' ')});
+      this.searchFacts.set(row.emoji,{names,primaryShorts,shorts,keywords,translatedKeywords:this.data.localization?.resolved_locale&&localizedKeywords.has(row.emoji)?(row?.keywords??[]).map(normal):[],allNames,blob:[...new Set([...allNames,...keywords])].join(' ')});
     }
     this.sourceAliases.clear();
     this.searchReady=true;
@@ -193,7 +193,7 @@ export class EmojiCatalog {
     for (const row of this.data.emojis) {
       if (!row.category) continue;
       if (!groups.has(row.category)) groups.set(row.category, new Set());
-      if (row.deep?.subcategory) groups.get(row.category)!.add(row.deep.subcategory);
+      if (row?.subcategory) groups.get(row.category)!.add(row.subcategory);
     }
     return { categories: [...groups].map(([category, subcategories]) => ({ category, subcategories: [...subcategories] })) };
   }
@@ -215,7 +215,7 @@ export class EmojiCatalog {
 
   private project(row: Emoji, deep: boolean): Emoji {
     const { emoji, name, shortcodes, category } = row;
-    return { emoji, name, shortcodes:[...shortcodes], category, ...(deep ? { deep: structuredClone(row.deep) } : {}) };
+    return { emoji, name, shortcodes:[...shortcodes], category, ...(deep ? structuredClone(row) : {}) };
   }
 
   private page(query: string, options: EmojiCatalogSearchOptions): EmojiSearch {
@@ -262,9 +262,9 @@ export class EmojiCatalog {
     const rows=this.data.emojis.filter(row =>
       (options.includeSkinTones !== false || !/[\u{1F3FB}-\u{1F3FF}]/u.test(row.emoji))
       && (options.category === undefined || filterKey(row.category ?? '') === filterKey(options.category))
-      && (options.subcategory === undefined || filterKey(row.deep?.subcategory ?? '') === filterKey(options.subcategory))
-      && (options.version === undefined || versionCompare(row.deep!.version!, options.version) === 0)
-      && (options.maxVersion === undefined || versionCompare(row.deep!.version!, options.maxVersion) <= 0));
+      && (options.subcategory === undefined || filterKey(row?.subcategory ?? '') === filterKey(options.subcategory))
+      && (options.version === undefined || versionCompare(row.version!, options.version) === 0)
+      && (options.maxVersion === undefined || versionCompare(row.version!, options.maxVersion) <= 0));
     if(this.filterCache.size>=32)this.filterCache.delete(this.filterCache.keys().next().value!);
     this.filterCache.set(key,rows);return rows;
   }

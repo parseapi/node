@@ -1,14 +1,20 @@
-/**
- * Response types for the ParseAPI public API.
- * Core answers the common task; optional deep reveals the reviewed detail.
- * Every field inside a deep object is optional and nullable: the API ships
- * `deep: {}` when deep was requested but is not unlocked on the plan.
- */
-/** The `deep` key is omitted unless the request asked for it. */
+/** API 2.1 response types. Optional requested detail lives at its natural resource home. */
+/** Optional requested detail fields are nullable and live on the resource. */
 type Deep<T> = Partial<{
     [K in keyof T]: T[K] | null;
 }>;
 interface IpDeep {
+    /** Approximate range geography; postal comes only from supported operator declarations. */
+    state_name?: string | null;
+    postal?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    timezone?: string | null;
+    network?: string | null;
+    asn_type?: string | null;
+    proxy?: boolean | null;
+    /** asn_type classifies the origin AS, not subscriber connection technology.
+     * proxy=false means unlisted; null means the evidence block is incomplete. */
     state: string;
     city: string;
     registry: string;
@@ -24,14 +30,13 @@ interface IpDeep {
     census_division?: string | null;
     census_region?: string | null;
 }
-interface Ip {
+interface Ip extends Omit<Deep<IpDeep>, 'asn' | 'asn_name' | 'continent' | 'country' | 'country_name' | 'ip'> {
     ip: string;
     country: string | null;
     country_name: string | null;
     continent: string | null;
     asn: string | null;
     asn_name: string | null;
-    deep?: Deep<IpDeep>;
 }
 interface Continent {
     continent: string;
@@ -47,8 +52,6 @@ interface Continent {
 interface ContinentCountryItem {
     country: string;
     name: string;
-    flag?: string | null;
-    /** @deprecated Present only in earlier compact response payloads. */
     emoji?: string | null;
     calling_code?: string | null;
 }
@@ -56,7 +59,7 @@ interface ContinentCountries {
     continent: string;
     countries: ContinentCountryItem[];
 }
-interface Country {
+interface Country extends Omit<Deep<CountryDeep>, 'blocs' | 'borders' | 'calling_code' | 'capital' | 'capital_lat' | 'capital_lon' | 'continent' | 'country' | 'currency' | 'currency_name' | 'currency_symbol' | 'demonym' | 'emoji' | 'flag' | 'full_name' | 'iso3' | 'iso_alpha3' | 'iso_numeric' | 'languages' | 'name' | 'name_full' | 'name_local' | 'numeric' | 'postal_format' | 'postal_regex' | 'region' | 'subregion' | 'timezones'> {
     country: string;
     name: string;
     name_local: string | null;
@@ -69,7 +72,6 @@ interface Country {
     /** @deprecated Present only in earlier response payloads. */
     emoji?: string | null;
     languages: string[] | null;
-    deep?: Deep<CountryDeep>;
     /** IANA timezones used by the country. */
     timezones: string[] | null;
     /** ISO 3166-1 alpha-3 country code. */
@@ -92,6 +94,10 @@ interface Country {
     capital_lon?: number | null;
     borders?: string[] | null;
     blocs?: string[] | null;
+    /** Core postal input hint on every plan. Older responses may omit it. */
+    postal_format?: string | null;
+    /** Core postal syntax pattern on every plan, not proof of existence or deliverability. Older responses may omit it. */
+    postal_regex?: string | null;
 }
 interface CountryCapital {
     name: string | null;
@@ -116,7 +122,7 @@ interface StateCapital {
     latitude: number | null;
     longitude: number | null;
 }
-interface State {
+interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 'country' | 'country_name' | 'fips' | 'iso' | 'iso_subdivision' | 'latitude' | 'longitude' | 'name' | 'name_local' | 'state' | 'timezones' | 'type'> {
     state: string;
     name: string;
     name_local: string | null;
@@ -133,13 +139,11 @@ interface State {
     fips: string | null;
     area_codes: string[] | null;
     capital: StateCapital;
-    deep?: Deep<StateDeep>;
 }
-interface StateDistrictItem {
+interface StateDistrictItem extends Omit<Deep<StateDistrictDeep>, 'district' | 'name' | 'type'> {
     district: string | null;
     name: string | null;
     type: string | null;
-    deep?: Deep<StateDistrictDeep>;
 }
 interface StateDistrictDeep {
     population: number | null;
@@ -153,7 +157,7 @@ interface StateDistricts {
     country_name: string | null;
     districts: StateDistrictItem[];
 }
-interface District {
+interface District extends Omit<Deep<DistrictDeep>, 'country' | 'country_name' | 'district' | 'latitude' | 'longitude' | 'name' | 'state' | 'state_name' | 'timezones' | 'type'> {
     district: string;
     name: string;
     type: string | null;
@@ -164,9 +168,8 @@ interface District {
     latitude: number | null;
     longitude: number | null;
     timezones: string[];
-    deep?: Deep<DistrictDeep>;
 }
-interface City {
+interface City extends Omit<Deep<CityDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'grain' | 'id' | 'latitude' | 'longitude' | 'match' | 'name' | 'name_local' | 'name_romanized' | 'parent' | 'romanization_language' | 'state' | 'state_name' | 'timezone' | 'type'> {
     /** Present for explicit search matching when the server returns suggestion evidence. */
     match?: CityMatch;
     name: string;
@@ -189,7 +192,6 @@ interface City {
     grain?: CityGrain | null;
     /** Reviewed immediate parent; null when no reviewed relationship exists. */
     parent?: CityParent | null;
-    deep?: Deep<CityDeep>;
 }
 /** Nearest-city lookups add the distance from the query point. */
 interface CityNearest extends City {
@@ -225,7 +227,7 @@ interface PostalMetro {
     residential_share: number | null;
     business_share: number | null;
     other_share: number | null;
-    /** Percentage of ZIP addresses (0-100). Missing or null means unknown. */
+    /** Percentage of ZIP addresses, from 0 to 100; null or absent is unknown. */
     share_percent?: number | null;
 }
 /** A supported Australian postcode suburb choice, independent of the scalar city. */
@@ -234,7 +236,7 @@ interface PostalLocality {
     state: string;
     state_name: string;
 }
-interface Postal {
+interface Postal extends Omit<Deep<PostalDeep>, 'city' | 'city_local' | 'country' | 'country_name' | 'district' | 'district_name' | 'district_name_local' | 'latitude' | 'localities' | 'longitude' | 'postal' | 'state' | 'state_name' | 'state_name_local' | 'tax' | 'tax_rate' | 'tax_rate_city' | 'tax_rate_county' | 'tax_rate_special' | 'tax_rate_state' | 'timezone' | 'type'> {
     postal: string;
     city: string | null;
     city_local: string | null;
@@ -251,31 +253,28 @@ interface Postal {
     latitude: number | null;
     longitude: number | null;
     timezone: string | null;
-    deep?: Deep<PostalDeep>;
     /** Open ZIP type, including future values. Missing or null means unknown. */
     type?: string | null;
+    tax?: PostalTax | null;
 }
-interface PostalNearbyItem {
+interface PostalNearbyItem extends Omit<Deep<PostalMetrosDeep>, 'city' | 'country' | 'distance' | 'distance_mi' | 'postal' | 'state'> {
     postal: string;
     city: string | null;
     state: string | null;
     country: string;
     distance: number;
     distance_mi: number;
-    deep?: Deep<PostalMetrosDeep>;
 }
-interface PostalNearby {
+interface PostalNearby extends Omit<Deep<PostalMetrosDeep>, 'country' | 'nearby' | 'postal' | 'radius' | 'unit'> {
     postal: string;
     country: string;
     radius: number;
     unit: string;
     nearby: PostalNearbyItem[];
-    deep?: Deep<PostalMetrosDeep>;
 }
-interface PostalDistanceEnd {
+interface PostalDistanceEnd extends Omit<Deep<PostalMetrosDeep>, 'city' | 'postal'> {
     postal: string;
     city: string | null;
-    deep?: Deep<PostalMetrosDeep>;
 }
 interface PostalDistance {
     country: string;
@@ -299,7 +298,7 @@ interface EmailDeep {
     /** Why the address received this result, such as mailbox_full or mailbox_not_found. Null when unavailable. */
     reason?: string | null;
 }
-interface Email {
+interface Email extends Omit<Deep<EmailDeep>, 'didyoumean' | 'disposable' | 'domain' | 'domain_type' | 'domain_valid' | 'email' | 'free' | 'role' | 'valid'> {
     email: string;
     didyoumean: string | null;
     valid: boolean;
@@ -309,9 +308,8 @@ interface Email {
     domain_valid: boolean | null;
     role: boolean;
     disposable: boolean;
-    deep?: Deep<EmailDeep>;
 }
-interface Phone {
+interface Phone extends Omit<Deep<PhoneDeep>, 'country' | 'international' | 'national' | 'phone' | 'type' | 'valid'> {
     phone: string | null;
     valid: boolean;
     country: string | null;
@@ -319,9 +317,8 @@ interface Phone {
     type: 'mobile' | 'landline' | 'toll_free' | 'unknown' | null;
     national: string | null;
     international: string | null;
-    deep?: Deep<PhoneDeep>;
 }
-interface Carrier {
+interface Carrier extends Omit<Deep<CarrierDeep>, 'burner' | 'carrier' | 'country' | 'phone' | 'type' | 'valid'> {
     phone: string | null;
     valid: boolean;
     country: string | null;
@@ -331,7 +328,6 @@ interface Carrier {
     carrier: string | null;
     /** Carrier is a known burner number app. Null when carrier is unknown. */
     burner: boolean | null;
-    deep?: Deep<CarrierDeep>;
 }
 interface Caller {
     phone: string | null;
@@ -340,7 +336,7 @@ interface Caller {
     /** CNAM record verbatim (all-caps telco artifact). Null when no record, outside NANP, or invalid. */
     caller: string | null;
 }
-interface Hlr {
+interface Hlr extends Omit<Deep<HlrDeep>, 'connected' | 'country' | 'live' | 'phone' | 'valid'> {
     phone: string | null;
     valid: boolean;
     country: string | null;
@@ -348,7 +344,6 @@ interface Hlr {
     live: boolean | null;
     /** Handset reachable at the last check. Null means unconfirmed, never no. */
     connected: boolean | null;
-    deep?: Deep<HlrDeep>;
 }
 interface MxRecord {
     priority: number;
@@ -373,11 +368,8 @@ interface Stack {
     chat: StackTechnology[] | null;
     payments: StackTechnology[] | null;
     hosting: StackTechnology[] | null;
-    /** Empty only when the generic deep compatibility flag was requested. */
-    deep?: Record<string, never>;
 }
 interface DomainRegistration {
-    registered: boolean;
     created?: string | null;
     updated?: string | null;
     expires?: string | null;
@@ -389,11 +381,10 @@ interface DomainRegistration {
 interface DomainDeep {
     registration: DomainRegistration;
 }
-interface Domain {
+interface Domain extends Omit<Deep<DomainDeep>, 'available' | 'domain'> {
     domain: string;
     /** true means unregistered, false means registered, null means unknown. */
     available: boolean | null;
-    deep?: Deep<DomainDeep>;
 }
 /** Network identity for an autonomous system number. */
 interface Asn {
@@ -403,14 +394,12 @@ interface Asn {
     country_name: string | null;
 }
 /** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
-interface Card {
+interface Card extends Omit<Deep<CardDeep>, 'bin' | 'brand' | 'brand_name' | 'logo'> {
     bin: string;
     brand: string | null;
     brand_name: string | null;
     /** SVG URL, with a generic-card fallback. */
     logo: string;
-    /** Requested recorded detail on paid plans; existing accounts retain their Deep access. Locked detail is an empty object. */
-    deep?: Deep<CardDeep>;
 }
 interface CardDeep {
     /** Longest recorded matching prefix; may be shorter than bin. */
@@ -471,23 +460,22 @@ interface UseragentDeep {
     bot?: Record<string, unknown>;
     ai?: boolean;
 }
-interface Useragent {
+interface Useragent extends Omit<Deep<UseragentDeep>, 'bot' | 'browser' | 'device' | 'mobile' | 'os' | 'useragent'> {
     useragent: string;
-    device: string | null;
-    os: string | null;
-    browser: string | null;
+    device: Pick<UseragentDeviceDeep, 'type'> & Deep<Omit<UseragentDeviceDeep, 'type'>>;
+    os: Pick<UseragentOsDeep, 'name'> & Deep<Omit<UseragentOsDeep, 'name'>>;
+    browser: Pick<UseragentBrowserDeep, 'name'> & Deep<Omit<UseragentBrowserDeep, 'name'>>;
     bot: boolean;
     mobile: boolean;
-    deep?: Deep<UseragentDeep>;
+    bot_details?: Record<string, unknown> | null;
 }
 /** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
-interface Language {
+interface Language extends Omit<Deep<LanguageDeep>, 'countries' | 'direction' | 'iso3' | 'iso_alpha3' | 'language' | 'name' | 'name_local' | 'script'> {
     language: string;
     name: string;
     name_local: string | null;
     script: string | null;
     direction: 'ltr' | 'rtl' | string;
-    deep?: Deep<LanguageDeep>;
     /** ISO 639-3 language code. */
     iso_alpha3?: string | null;
     /** @deprecated Older servers use iso3. Read iso_alpha3 on the current contract. */
@@ -495,7 +483,7 @@ interface Language {
     countries?: string[] | null;
 }
 /** A parsed person name. Junk input returns valid: false, never an error. Gender comes from dictionary data and is null when the data does not decide. */
-interface Name {
+interface Name extends Omit<Deep<NameDeep>, 'first' | 'last' | 'middle' | 'name' | 'prefix' | 'suffix' | 'valid'> {
     name: string;
     valid: boolean;
     prefix: string | null;
@@ -503,7 +491,6 @@ interface Name {
     middle: string | null;
     last: string | null;
     suffix: string | null;
-    deep?: Deep<NameDeep>;
 }
 interface TimezoneNextDst {
     at: string;
@@ -511,7 +498,7 @@ interface TimezoneNextDst {
     offset: string;
     abbreviation: string;
 }
-interface Timezone {
+interface Timezone extends Omit<Deep<TimezoneDeep>, 'abbreviation' | 'at' | 'dst' | 'latitude' | 'longitude' | 'offset' | 'timezone' | 'to' | 'unix'> {
     latitude?: number;
     longitude?: number;
     timezone: string | null;
@@ -524,7 +511,6 @@ interface Timezone {
     unix: number | null;
     /** With to= only: the other zone at the same instant. to.at is the converted time. */
     to?: TimezoneConversionTarget | null;
-    deep?: Deep<TimezoneDeep>;
 }
 /** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
 interface Time extends Timezone {
@@ -536,7 +522,7 @@ interface Time extends Timezone {
 /** Available timezone identifiers. */
 interface TimeZones {
     timezone_database_version?: string;
-    timezones: string[];
+    timezones?: string[];
     /** Present with details=true. The one instant used for all rows. */
     at?: string;
     zones?: TimeZoneEntry[];
@@ -569,20 +555,19 @@ interface TimeSeason {
     end?: TimeTransition | null;
 }
 /** The other side of a timezone conversion. `at` is the converted wall time. */
-interface TimezoneConversionTarget {
+interface TimezoneConversionTarget extends Omit<Deep<TimezoneConversionTargetDeep>, 'abbreviation' | 'at' | 'dst' | 'offset' | 'timezone' | 'unix'> {
     timezone: string;
     abbreviation: string | null;
     offset: string;
     dst: boolean;
     at: string;
     unix: number;
-    deep?: Deep<TimezoneConversionTargetDeep>;
 }
 /**
  * Calendar facts for one date. Junk or ambiguous input returns valid: false,
  * never an error. `to` and `days` appear only when a to= date was passed.
  */
-interface DateInfo {
+interface DateInfo extends Omit<Deep<DateInfoDeep>, 'date' | 'days' | 'to' | 'unix' | 'valid'> {
     date: string;
     valid: boolean;
     /** Unix time at midnight UTC of that date, seconds. */
@@ -591,7 +576,6 @@ interface DateInfo {
     to?: string;
     /** With to= only: signed days to the other date. Future positive. */
     days?: number | null;
-    deep?: Deep<DateInfoDeep>;
 }
 interface Holiday {
     date: string;
@@ -637,7 +621,7 @@ interface PointDeep {
     elevation_ft: number | null;
     resolution: number | null;
 }
-interface Point {
+interface Point extends Omit<Deep<PointDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'latitude' | 'longitude' | 'state' | 'state_name' | 'timezone'> {
     latitude: number;
     longitude: number;
     country: string | null;
@@ -646,7 +630,6 @@ interface Point {
     state_name: string | null;
     district: string | null;
     district_name: string | null;
-    deep?: Deep<PointDeep>;
     timezone: string | null;
 }
 interface WeatherForecastPeriod {
@@ -746,7 +729,7 @@ interface WeatherDeep {
     /** Specialist measurements for the same observed current conditions. */
     current: WeatherCurrentDeep;
 }
-interface WeatherCurrent {
+interface WeatherCurrent extends Deep<WeatherCurrentDeep> {
     temperature: number | null;
     temperature_f: number | null;
     feels_like: number | null;
@@ -766,12 +749,11 @@ interface WeatherStation {
     distance: number | null;
     distance_mi: number | null;
 }
-interface Weather {
+interface Weather extends Omit<Deep<WeatherDeep>, 'current' | 'latitude' | 'longitude' | 'station'> {
     latitude: number;
     longitude: number;
     current: WeatherCurrent;
     station: WeatherStation | null;
-    deep?: Deep<WeatherDeep>;
 }
 interface EmojiSkin {
     emoji: string;
@@ -779,12 +761,11 @@ interface EmojiSkin {
     unicode: string | null;
     hex: string | null;
 }
-interface Emoji {
+interface Emoji extends Omit<Deep<EmojiDeep>, 'category' | 'emoji' | 'name' | 'shortcodes'> {
     emoji: string;
     name: string;
     shortcodes: string[];
     category: string | null;
-    deep?: Deep<EmojiDeep>;
 }
 interface EmojiSearch {
     q: string;
@@ -849,10 +830,8 @@ interface EmojiMetadata {
     artwork_sources: EmojiArtworkSource[];
     notices: EmojiNotice[];
     completeness: {
-        missing_count: number;
-        unexpected_count: number;
+        complete: boolean | null;
     };
-    shortcode_sources?: Record<string, EmojiShortcodeSourceMetadata>;
     [field: string]: unknown;
 }
 interface EmojiCatalogScope {
@@ -870,7 +849,6 @@ interface EmojiCatalogSearchFacts {
     localized_keywords?: string[];
 }
 interface EmojiCatalogData {
-    profile?: 'full' | 'compact';
     scope?: Omit<EmojiCatalogScope, 'total'>;
     search?: EmojiCatalogSearchFacts;
     localization?: EmojiCatalogLocalization;
@@ -888,11 +866,6 @@ interface EmojiCatalogLocalization {
     translated_keywords: number;
     fallback_names: number;
     fallback_keywords: number;
-}
-interface EmojiShortcodeSourceMetadata {
-    records: number;
-    missing_records: number;
-    ambiguous_aliases: number;
 }
 interface EmojiCategory {
     category: string;
@@ -929,7 +902,6 @@ interface Address {
     country_name: string | null;
     latitude: number | null;
     longitude: number | null;
-    deep?: Record<string, unknown>;
 }
 interface AddressSuggestion {
     address: string;
@@ -970,7 +942,7 @@ interface CompanyDeep {
     kind: string | null;
     invoice: string | null;
 }
-interface Company {
+interface Company extends Omit<Deep<CompanyDeep>, 'active' | 'address' | 'city' | 'company' | 'country' | 'name' | 'postal' | 'registered' | 'state' | 'type' | 'valid'> {
     company: string | null;
     valid: boolean;
     registered: boolean | null;
@@ -982,7 +954,6 @@ interface Company {
     city: string | null;
     state: string | null;
     postal: string | null;
-    deep?: Deep<CompanyDeep>;
 }
 /** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
 interface CompanyProfileListing {
@@ -1082,11 +1053,13 @@ type CompanyProfileDomain = CompanyProfileWebsite;
 interface CompanySocialProfile {
     platform: string | null;
     url: string;
-    handle: string | null;
+    handle?: string | null;
 }
 interface CompanyPhoneNumber {
     number: string;
     type: string | null;
+    country?: string | null;
+    e164?: string | null;
 }
 interface CompanyEmailAddress {
     address: string;
@@ -1122,14 +1095,13 @@ interface CompanyProfileDeep {
     registrations?: CompanyProfileRegistration[] | null;
     sources?: CompanyProfileSource[] | null;
 }
-interface CompanyProfile {
+interface CompanyProfile extends Omit<Deep<CompanyProfileDeep>, 'address' | 'country' | 'id' | 'listings' | 'name' | 'website'> {
     id: string;
     name: string;
     country: string | null;
     website: string | null;
     listings: CompanyProfileListing[] | null;
     address: CompanyProfileAddress | null;
-    deep?: Deep<CompanyProfileDeep>;
 }
 /** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
 interface CompanyMatch {
@@ -1145,18 +1117,6 @@ interface CompanyCandidate extends CompanyProfile {
 interface CompanySearch {
     companies: CompanyCandidate[];
     next: string | null;
-}
-/** Edition counts describe the records available, not all companies in a country. */
-interface CompanyCoverage {
-    scope: string;
-    label: string;
-    description: string;
-    snapshot_at?: string;
-    companies: number;
-    countries: string[];
-    with_website: number;
-    with_listings: number;
-    with_address: number;
 }
 /** A direct child industry code. */
 interface NaicsChild {
@@ -1182,7 +1142,7 @@ interface NaicsMatch {
     corrections: NaicsCorrection[];
 }
 /** US NAICS 2022 definition and hierarchy, including two-digit sector ranges. */
-interface Naics {
+interface Naics extends Omit<Deep<NaicsDeep>, 'country' | 'level' | 'match' | 'naics' | 'name' | 'parent' | 'parent_name' | 'year'> {
     naics: string;
     name: string;
     /** Hierarchy depth, from 2 (sector) to 6 (national industry). */
@@ -1193,7 +1153,6 @@ interface Naics {
     match?: NaicsMatch | null;
     year: number;
     country: string;
-    deep?: Deep<NaicsDeep>;
 }
 /** Search records inherit country and revision from their envelope. */
 type NaicsSearchItem = Omit<Naics, 'country' | 'year'>;
@@ -1276,6 +1235,11 @@ interface CountryElevationPoint {
     /** Elevation in metres above sea level. Values below sea level are negative. */
     elevation: number;
 }
+interface StateTax {
+    name: string | null;
+    /** Reference rate in percent. Choose the geographic scope for the task. */
+    rate: number | null;
+}
 interface StateDeep {
     /** @deprecated Older deep contract. Read Core iso_subdivision on the current contract. */
     iso_3166_2?: string | null;
@@ -1285,11 +1249,6 @@ interface StateDeep {
     /** Total area in km2. */
     area: number | null;
     tax: StateTax;
-    /** @deprecated Historical Deep read members. */
-    fips?: string | null;
-    capital?: string | null;
-    area_codes?: string[];
-    tax_rate?: number | null;
 }
 interface DistrictDeep {
     population: number | null;
@@ -1337,19 +1296,9 @@ interface PostalDeep {
     /** Water area in km2. Null where the source has none. */
     water_area: number | null;
     currency: string | null;
-    /** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
-    tax?: string | null;
-    /** Combined US ZIP reference rate in percent (7.9 means 7.9%). An exact address can differ. Null is unknown, zero is known zero. */
-    tax_rate?: number | null;
-    /** State component of the ZIP reference rate, in percent. Null when unknown. */
-    tax_rate_state?: number | null;
-    /** County component of the ZIP reference rate, in percent. Null when unknown. */
-    tax_rate_county?: number | null;
-    /** City component of the ZIP reference rate, in percent. Null when unknown. */
-    tax_rate_city?: number | null;
-    /** Special component of the ZIP reference rate, in percent. Null when unknown. */
-    tax_rate_special?: number | null;
+    /** Same-country postal codes, preserving leading zeros and source order. */
     neighbors: string[];
+    tax?: PostalTax;
     /** Missing/null is unknown; [] is an observed result outside all covered areas. */
     metros?: PostalMetro[] | null;
     /** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
@@ -1388,7 +1337,6 @@ interface LanguageDeep {
 }
 interface NameDeep {
     gender: 'male' | 'female' | null;
-    salutation: 'Mr' | 'Ms' | null;
     /** Compact name using CLDR formatting rules. */
     short?: string | null;
     /** Name formatted for a directory listing. */
@@ -1530,11 +1478,12 @@ interface TimeLocationCandidate {
     latitude?: number | null;
     longitude?: number | null;
 }
-interface TimeLocation {
-    input: TimeLocationInput;
-    status: string;
-    candidates: TimeLocationCandidate[];
-    truncated: boolean;
+/** Matched place on success, or resolution choices when no clock is available. */
+interface TimeLocation extends TimeLocationCandidate {
+    input?: TimeLocationInput;
+    status?: string;
+    candidates?: TimeLocationCandidate[];
+    truncated?: boolean;
     source?: string;
 }
 type Industry = Naics;
@@ -1545,20 +1494,6 @@ type IndustryExclusion = NaicsExclusion;
 type IndustryMatch = NaicsMatch;
 type IndustrySearch = NaicsSearch;
 type IndustrySearchItem = NaicsSearchItem;
-interface Bin {
-    bin: string;
-    /** Actual longest matched prefix. May be shorter than the input. */
-    prefix: string | null;
-    country: string | null;
-    issuer: string | null;
-    /** Network key (visa, amex) or co-branded combination. */
-    brand: string | null;
-    /** Display name for brand (American Express). */
-    brand_name: string | null;
-    type: string | null;
-    prepaid: boolean | null;
-    deep?: Record<string, never>;
-}
 interface EmojiParse {
     emojis: (Emoji & {
         positions: EmojiPosition[];
@@ -1580,10 +1515,10 @@ interface CityParent {
 }
 interface CityMatch {
     type: string;
-    source: string;
     value: string;
     language: string | null;
-    edit_distance: number | null;
+    source?: string;
+    edit_distance?: number | null;
 }
 interface CityAmbiguityCandidate {
     id: string;
@@ -1618,7 +1553,11 @@ interface CityCollection {
     radius?: number;
     unit?: string;
 }
-interface CityList extends CityCollection {
+interface CityList {
+    cities: City[];
+    next_cursor: string | null;
+    country?: string;
+    state?: string | null;
 }
 interface CityRelations extends CityCollection {
     city_id: string;
@@ -1635,41 +1574,26 @@ interface CityDistance {
     distance_mi: number | null;
     method: 'great_circle';
 }
-interface CityNearbyCoordinates extends CityCollection {
+interface CityNearbyCoordinates {
+    nearby: CityNearest[];
+    next_cursor: string | null;
     latitude: number;
     longitude: number;
     radius: number;
     unit: string;
 }
-/** Minimal related records returned in Company Core. Rich Deep records stay separate. */
-interface CompanyIndustryReference {
-    type: string;
-    code: string;
-}
-interface CompanyPhoneReference {
-    number: string;
-    country?: string | null;
-    e164?: string | null;
-}
-interface CompanyEmailReference {
-    address: string;
-}
-interface StateTax {
-    name: string | null;
-    /** Reference rate in percent. Choose the geographic scope for the task. */
-    rate: number | null;
-}
 interface Currency {
     currency: string;
-    iso_numeric: number | null;
+    /** ISO 4217 numeric currency code. */
+    iso_numeric?: number | null;
+    /** @deprecated Older servers use numeric. Read iso_numeric on the current contract. */
+    numeric?: number | null;
     name: string;
-    name_plural: string | null;
+    name_plural?: string | null;
     symbol: string | null;
     symbol_native: string | null;
     digits: number | null;
     countries: string[] | null;
-    /** Accepted deep=true returns an empty object; reference fields are Core. */
-    deep?: CurrencyDeep;
 }
 interface CurrencyRate {
     base: string;
@@ -1680,8 +1604,25 @@ interface CurrencyRate {
     amount?: number;
     /** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
     converted?: number;
+    source?: string;
 }
 type CurrencyDeep = Record<string, never>;
+interface PostalTax extends StateTax {
+    /** Components of the combined ZIP reference rate, in percent. */
+    rate_state: number | null;
+    rate_county: number | null;
+    rate_city: number | null;
+    rate_special: number | null;
+}
+/** Alternative geographic tax references in percent, never additive. */
+interface PostalTax {
+    name: string | null;
+    rate: number | null;
+    rate_state: number | null;
+    rate_county: number | null;
+    rate_city: number | null;
+    rate_special: number | null;
+}
 
 /** Every non-2xx response from the API. Branch on `code`, never on `message`. */
 declare class ParseAPIError extends Error {
@@ -1931,29 +1872,6 @@ interface AgentTaskResult<T = unknown> {
     };
 }
 
-/** Registration detail from the same observation. Missing or null means unknown. */
-interface DomainRegistrationResult {
-    registered?: boolean | null;
-    created?: string | null;
-    updated?: string | null;
-    expires?: string | null;
-    registrar?: string | null;
-    status?: string[] | null;
-    dnssec?: boolean | null;
-}
-interface DomainResultDeep {
-    registration: DomainRegistrationResult | null;
-}
-/** Domain availability with an explicit unknown result. */
-interface DomainResult {
-    domain: string;
-    /** true means unregistered, false means registered, null means unknown. */
-    available: boolean | null;
-    deep?: Deep<DomainResultDeep>;
-}
-/** Alias for the current Stack response. */
-type StackResult = Stack;
-
 interface EmojiCatalogLookupOptions {
     deep?: boolean;
     shortcodeSource?: string;
@@ -2061,27 +1979,21 @@ type DistrictOptions = LanguageOption & {
     state?: string;
 } & DeepOption & RequestOptions;
 type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & {
-    format?: 'resource';
     aliases?: boolean;
     ambiguity?: 'error';
 } & DeepOption & RequestOptions;
 type CityIdOptions = LanguageOption & CityResponseOptions & {
-    format?: 'resource';
     hierarchy?: boolean;
 } & DeepOption & RequestOptions;
 type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & {
-    format?: 'list';
     aliases?: boolean;
     limit?: number;
     sort?: CitySort;
     match?: 'exact' | 'prefix' | 'fuzzy';
     maxDistance?: 1 | 2;
 } & DeepOption & RequestOptions;
-type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & {
-    format?: 'resource';
-} & DeepOption & RequestOptions;
+type CityNearestOptions = LanguageOption & CityScopeOptions & CityResponseOptions & DeepOption & RequestOptions;
 type CityNearbyOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & {
-    format?: 'list';
     aliases?: boolean;
     ambiguity?: 'error';
     radius?: number;
@@ -2143,7 +2055,6 @@ type CompanySearchOptions = {
     /** Opaque next-page cursor. Keep the same selector and filters. */
     cursor?: string;
 } & DeepOption & RequestOptions;
-type CompanyCoverageOptions = RequestOptions;
 /** `deep: true` requests a metered deliverability check. No automatic retries by default. */
 type EmailOptions = DeepOption & RequestOptions;
 /** Country resolves national-number ambiguity. Deep adds numbering-plan geography on paid plans; existing accounts retain their current Deep access. */
@@ -2253,9 +2164,9 @@ type HolidayDateOptions = RequestOptions;
 type ElevationOptions = RequestOptions;
 /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 type PointOptions = LanguageOption & DeepOption & RequestOptions;
-/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
+/** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in history alongside current conditions. Date alone does not request history. */
 type WeatherOptions = DeepOption & {
-    /** Past UTC day, YYYY-MM-DD. Requires paid deep and populates deep.history alongside current. */
+    /** Past UTC day, YYYY-MM-DD. Requires paid deep and populates history alongside current. */
     date?: string;
 } & RequestOptions;
 type EmojiOptions = LanguageOption & {
@@ -2270,10 +2181,8 @@ type EmojiSearchOptions = LanguageOption & {
     includeSkinTones?: boolean;
     offset?: number;
 } & DeepOption & RequestOptions;
-/** Complete catalog download; Deep defaults true. JSON supports offline EmojiCatalog. */
-type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset'> & {
-    profile?: 'full' | 'compact';
-};
+/** One compact catalog download for offline lookup, search and parsing. */
+type EmojiCatalogOptions = Omit<EmojiSearchOptions, 'limit' | 'offset' | 'deep'>;
 type EmojiBrowseOptions = EmojiSearchOptions;
 type EmojiParseOptions = LanguageOption & DeepOption & RequestOptions;
 type EmojiConvertOptions = RequestOptions & {
@@ -2339,16 +2248,15 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         id: (id: string, opts?: CompanyIdOptions) => Promise<CompanyProfile>;
         /** Return candidates without selecting a match. Use one selector, country, exact industry, filters. */
         search: (opts: CompanySearchOptions) => Promise<CompanySearch>;
-        /** Describe the directory edition and its counts. Counts do not establish complete country coverage. */
-        coverage: (opts?: CompanyCoverageOptions) => Promise<CompanyCoverage>;
     };
     /**
      * Parse an email and check its format and domain.
      * `deep: true` explicitly requests a metered deliverability check using included checks or enabled on-demand usage.
      * Deep checks default to one attempt. An explicit retry count can repeat paid usage.
      */
-    email: (email: string, opts?: EmailOptions) => Promise<Email>;
-    bin: (bin: string, opts?: BinOptions) => Promise<Bin>;
+    email: ((email: string, opts?: EmailOptions) => Promise<Email>) & {
+        verify: (email: string, opts?: RequestOptions) => Promise<Email>;
+    };
     /** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
     phone: (number: string, opts?: PhoneOptions) => Promise<Phone>;
     /** Request a metered carrier lookup. No automatic retries by default. */
@@ -2361,8 +2269,6 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     stack: (domain: string, opts?: StackOptions) => Promise<Stack>;
     /** Check registration: available is true, false or null when unknown. Paid Deep adds available registration details. */
     domain: (domain: string, opts?: DomainOptions) => Promise<Domain>;
-    /** Check domain registration while preserving unknown availability and partial detail. */
-    domainResult: (domain: string, opts?: DomainOptions) => Promise<DomainResult>;
     asn: (asn: string, opts?: AsnOptions) => Promise<Asn>;
     /** Look up a 2-11 digit card prefix. Keep leading zeros in the input string. */
     card: (bin: string, opts?: CardOptions) => Promise<Card>;
@@ -2403,7 +2309,7 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
     };
     /** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
     point: (lat: number, lon: number, opts?: PointOptions) => Promise<Point>;
-    /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in deep.history alongside current conditions. Date alone does not request history. */
+    /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in history alongside current conditions. Date alone does not request history. */
     weather: (lat: number, lon: number, opts?: WeatherOptions) => Promise<Weather>;
     emoji: ((emoji: string, opts?: EmojiOptions) => Promise<Emoji>) & {
         search: (query: string, opts?: EmojiSearchOptions) => Promise<EmojiSearch>;
@@ -2412,7 +2318,6 @@ declare function parseAPI(apiKey?: string, options?: ParseAPIOptions): {
         convert: (text: string, opts: EmojiConvertOptions) => Promise<EmojiConversion>;
         /** Extract complete sequences. Positions use UTF-16 code units; end is exclusive. */
         catalog: (opts?: EmojiCatalogOptions) => Promise<EmojiCatalogData>;
-        metadata: (opts?: RequestOptions) => Promise<EmojiMetadata>;
         parse: (text: string, opts?: EmojiParseOptions) => Promise<EmojiParse>;
     };
     currency: ((code: string, opts?: CurrencyOptions) => Promise<Currency>) & {
@@ -2423,7 +2328,6 @@ type ParseAPIClient = ReturnType<typeof parseAPI>;
 /** Existing NAICS options remain source compatible. */
 type NaicsOptions = IndustryOptions;
 type NaicsSearchOptions = IndustrySearchOptions;
-type BinOptions = DeepOption & RequestOptions;
 type CityScopeOptions = {
     country?: string;
     state?: string;
@@ -2441,7 +2345,6 @@ type CityCollectionFilters = {
     maxElevation?: number;
     countries?: string | readonly string[];
     excludeCountries?: string | readonly string[];
-    timezone?: string;
     timezones?: string | readonly string[];
     /** Center-coordinate box: west,south,east,north. West > east crosses the date line. */
     bbox?: string;
@@ -2449,14 +2352,12 @@ type CityCollectionFilters = {
 type CityPagingOptions = {
     page?: boolean;
     cursor?: string;
-    order?: 'asc' | 'desc';
 };
 type CitySort = string;
 type CityListOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
     limit?: number;
     cursor?: string;
     sort?: CitySort;
-    order?: 'asc' | 'desc';
 } & DeepOption & RequestOptions;
 type CityNearbyCoordinatesOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityResponseOptions & {
     radius?: number;
@@ -2464,7 +2365,6 @@ type CityNearbyCoordinatesOptions = LanguageOption & CityScopeOptions & CityColl
     limit?: number;
     cursor?: string;
     sort?: CitySort;
-    order?: 'asc' | 'desc';
 } & DeepOption & RequestOptions;
 type CityRelationsOptions = LanguageOption & CityResponseOptions & {
     limit?: number;
@@ -2473,43 +2373,20 @@ type CityRelationsOptions = LanguageOption & CityResponseOptions & {
 } & DeepOption & RequestOptions;
 type CityAncestorsOptions = Omit<CityRelationsOptions, 'limit' | 'cursor'>;
 type CityDistanceOptions = RequestOptions;
-type ClassicCityOptions<T> = T & {
-    format?: never;
-};
 interface CityLookupCall {
-    (name: string, opts?: ClassicCityOptions<CityOptions>): Promise<City>;
-    (name: string, opts: CityOptions & {
-        format: 'resource';
-    }): Promise<CityResource>;
-    (name: string, opts: CityOptions): Promise<City>;
+    (name: string, opts?: CityOptions): Promise<City>;
 }
 interface CityIdCall {
-    (id: string, opts?: ClassicCityOptions<CityIdOptions>): Promise<City>;
-    (id: string, opts: CityIdOptions & {
-        format: 'resource';
-    }): Promise<CityResource>;
-    (id: string, opts: CityIdOptions): Promise<City>;
+    (id: string, opts?: CityIdOptions): Promise<City>;
 }
 interface CityNearestCall {
-    (lat: number, lon: number, opts?: ClassicCityOptions<CityNearestOptions>): Promise<CityNearest>;
-    (lat: number, lon: number, opts: CityNearestOptions & {
-        format: 'resource';
-    }): Promise<CityResource & Pick<CityNearest, 'distance' | 'distance_mi'>>;
-    (lat: number, lon: number, opts: CityNearestOptions): Promise<CityNearest>;
+    (lat: number, lon: number, opts?: CityNearestOptions): Promise<CityNearest>;
 }
 interface CitySearchCall {
-    (query: string, opts?: ClassicCityOptions<CitySearchOptions>): Promise<CitySearch>;
-    (query: string, opts: CitySearchOptions & {
-        format: 'list';
-    }): Promise<CityCollection>;
-    (query: string, opts: CitySearchOptions): Promise<CitySearch | CityCollection>;
+    (query: string, opts?: CitySearchOptions): Promise<CitySearch>;
 }
 interface CityNearbyCall {
-    (name: string, opts?: ClassicCityOptions<CityNearbyOptions>): Promise<CityNearby>;
-    (name: string, opts: CityNearbyOptions & {
-        format: 'list';
-    }): Promise<CityCollection>;
-    (name: string, opts: CityNearbyOptions): Promise<CityNearby | CityCollection>;
+    (name: string, opts?: CityNearbyOptions): Promise<CityNearby>;
 }
 type CurrencyOptions = LanguageOption & DeepOption & RequestOptions;
 type CurrencyRateOptions = {
@@ -2517,4 +2394,4 @@ type CurrencyRateOptions = {
     amount?: number;
 } & RequestOptions;
 
-export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, BULK_CHECKS, type Bin, type BinOptions, ParseAPIError as BulkAPIError, type BulkClient, type BulkClientOptions, type BulkJob, type BulkPreview, type BulkPreviewInput, type BulkQuote, type BulkRequestOptions, type BulkResult, type BulkStartInput, type BulkStatus, type BulkUpload, type BulkUploadInput, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyCoverage, type CompanyCoverageOptions, type CompanyDeep, type CompanyEmailAddress, type CompanyEmailReference, type CompanyIdOptions, type CompanyIndustryReference, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyPhoneReference, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryCapital, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type CountryTax, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type DomainRegistrationResult, type DomainResult, type DomainResultDeep, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiShortcodeSourceMetadata, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointElectoral, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PostalPropertyTax, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackResult, type StackTechnology, type State, type StateCapital, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type StateTax, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, createBulkClient, parseAPI };
+export { type Address, type AddressOptions, type AddressSearch, type AddressSearchOptions, type AddressSuggestion, type AgentTask, type AgentTaskInput, type AgentTaskLookupInput, type AgentTaskResult, type Asn, type AsnOptions, BULK_CHECKS, ParseAPIError as BulkAPIError, type BulkClient, type BulkClientOptions, type BulkJob, type BulkPreview, type BulkPreviewInput, type BulkQuote, type BulkRequestOptions, type BulkResult, type BulkStartInput, type BulkStatus, type BulkUpload, type BulkUploadInput, type Caller, type CallerOptions, type Card, type CardDeep, type CardOptions, type Carrier, type CarrierDeep, type CarrierOptions, type City, type CityAmbiguityCandidate, type CityAncestorsOptions, type CityCollection, type CityCollectionFilters, type CityDeep, type CityDistance, type CityDistanceOptions, type CityGrain, type CityIdCall, type CityIdOptions, type CityList, type CityListOptions, type CityLookupCall, type CityMatch, type CityNearby, type CityNearbyCall, type CityNearbyCoordinates, type CityNearbyCoordinatesOptions, type CityNearbyOptions, type CityNearest, type CityNearestCall, type CityNearestOptions, type CityOptions, type CityPagingOptions, type CityParent, type CityRelations, type CityRelationsOptions, type CityResource, type CityResponseOptions, type CityScopeOptions, type CitySearch, type CitySearchCall, type CitySearchOptions, type CitySort, type Company, type CompanyCandidate, type CompanyCountry, type CompanyDeep, type CompanyEmailAddress, type CompanyIdOptions, type CompanyMatch, type CompanyOptions, type CompanyPhoneNumber, type CompanyProfile, type CompanyProfileAddress, type CompanyProfileDeep, type CompanyProfileDomain, type CompanyProfileEmail, type CompanyProfileEmployees, type CompanyProfileFounding, type CompanyProfileIdentifier, type CompanyProfileIndustry, type CompanyProfileJurisdiction, type CompanyProfileListing, type CompanyProfilePhone, type CompanyProfileRegistration, type CompanyProfileRegistrationAddress, type CompanyProfileRegistrationLegalForm, type CompanyProfileSource, type CompanyProfileWebsite, type CompanySearch, type CompanySearchOptions, type CompanySocialProfile, type Continent, type ContinentCountries, type ContinentCountriesOptions, type ContinentCountryItem, type ContinentOptions, type Country, type CountryCapital, type CountryDeep, type CountryElevationPoint, type CountryEmergency, type CountryOptions, type CountryStateItem, type CountryStates, type CountryStatesOptions, type CountryTax, type Currency, type CurrencyDeep, type CurrencyOptions, type CurrencyRate, type CurrencyRateOptions, type DateInfo, type DateInfoDeep, type DateOptions, type DateTodayOptions, type Deep, type District, type DistrictDeep, type DistrictOptions, type Dns, type DnsOptions, type DnsRecord, type Domain, type DomainDeep, type DomainOptions, type DomainRegistration, type Elevation, type ElevationLocations, type ElevationOptions, type Email, type EmailDeep, type EmailOptions, type Emoji, type EmojiArtwork, type EmojiArtworkSource, type EmojiBrowse, type EmojiBrowseOptions, EmojiCatalog, type EmojiCatalogConvertOptions, type EmojiCatalogData, EmojiCatalogError, type EmojiCatalogLocalization, type EmojiCatalogLookupOptions, type EmojiCatalogOptions, type EmojiCatalogParseOptions, type EmojiCatalogRegexOptions, type EmojiCatalogScope, type EmojiCatalogSearchFacts, type EmojiCatalogSearchOptions, type EmojiCategories, type EmojiCategory, type EmojiConversion, type EmojiConvertOptions, type EmojiDeep, type EmojiMetadata, type EmojiNativeSearchFacts, type EmojiNotice, type EmojiOptions, type EmojiParse, type EmojiParseOptions, type EmojiPosition, type EmojiSearch, type EmojiSearchOptions, type EmojiSkin, type EmojiSource, type EmojiUnresolved, type EmojiVariant, type Hlr, type HlrDeep, type HlrOptions, type Holiday, type HolidayDate, type HolidayDateOptions, type HolidayOptions, type HolidayYear, type Industry, type IndustryChild, type IndustryCorrection, type IndustryDeep, type IndustryExclusion, type IndustryMatch, type IndustryOptions, type IndustrySearch, type IndustrySearchItem, type IndustrySearchOptions, type Ip, type IpDeep, type IpOptions, type IpSelfOptions, type Language, type LanguageDeep, type LanguageOption, type LanguageOptions, type Mx, type MxOptions, type MxRecord, type Naics, type NaicsChild, type NaicsCorrection, type NaicsDeep, type NaicsExclusion, type NaicsMatch, type NaicsOptions, type NaicsSearch, type NaicsSearchItem, type NaicsSearchOptions, type Name, type NameDeep, type NameOptions, type ParseAPIClient, ParseAPIError, type ParseAPIOptions, type Phone, type PhoneDeep, type PhoneOptions, type Point, type PointCity, type PointDeep, type PointElectoral, type PointOptions, type Postal, type PostalDeep, type PostalDistance, type PostalDistanceEnd, type PostalDistanceOptions, type PostalLocality, type PostalMetro, type PostalMetrosDeep, type PostalNearby, type PostalNearbyItem, type PostalNearbyOptions, type PostalOptions, type PostalPropertyTax, type PostalTax, type Preflight, type PreflightCost, type PreflightEmailCapacity, type PreflightOperation, type PreflightOperationEstimate, type PreflightPooledCapacity, type PreflightSpendCapacity, type PreflightTask, type PropertyTax, type RequestOptions, type Stack, type StackOptions, type StackTechnology, type State, type StateCapital, type StateDeep, type StateDistrictDeep, type StateDistrictItem, type StateDistricts, type StateDistrictsOptions, type StateOptions, type StateTax, type Time, type TimeAtOptions, type TimeLocation, type TimeLocationCandidate, type TimeLocationInput, type TimeOptions, type TimeResolution, type TimeResolutionAlternative, type TimeSeason, type TimeTransition, type TimeTransitionState, type TimeZoneEntry, type TimeZones, type TimeZonesOptions, type Timezone, type TimezoneAtOptions, type TimezoneConversionTarget, type TimezoneConversionTargetDeep, type TimezoneDeep, type TimezoneNextDst, type TimezoneOptions, type Useragent, type UseragentBrowserBrand, type UseragentBrowserDeep, type UseragentDeep, type UseragentDeviceDeep, type UseragentEngineDeep, type UseragentOptions, type UseragentOsDeep, type Weather, type WeatherAir, type WeatherAlert, type WeatherCurrent, type WeatherCurrentDeep, type WeatherDay, type WeatherDeep, type WeatherForecastPeriod, type WeatherHistory, type WeatherHour, type WeatherMinute, type WeatherOptions, type WeatherStation, createBulkClient, parseAPI };

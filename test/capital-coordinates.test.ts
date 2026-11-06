@@ -9,7 +9,7 @@ it('exposes one public spelling on both capital models', () => {
 it('reads Country and State coordinates in Core and Deep without changing zero or null', async () => {
  for (const deep of [false, true]) {
   const capital = { name: 'Example', latitude: 0, longitude: null };
-  const parse = parseAPI('fixture', { fetch: async () => Response.json({ capital, ...(deep ? { deep: {} } : {}) }) });
+  const parse = parseAPI('fixture', { fetch: async () => Response.json({ capital, ...(deep ? {} : {}) }) });
   const country = await parse.country('DE', { deep });
   const state = await parse.state('BY', { country: 'DE', deep });
   expect(country.capital).toEqual(capital);

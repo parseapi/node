@@ -1,5 +1,5 @@
 import { afterEach, expect, expectTypeOf, it, vi } from 'vitest';
-import { parseAPI, ParseAPIError, type Company, type CompanyOptions, type CompanyProfile, type CompanyProfileDeep, type CompanyProfileEmployees, type CompanyProfileRegistration, type CompanySearch, type CompanyCoverage, type CompanySearchOptions, type CompanyIdOptions, type CompanyCoverageOptions } from '../src/index.js';
+import { parseAPI, ParseAPIError, type Company, type CompanyOptions, type CompanyProfile, type CompanyProfileDeep, type CompanyProfileEmployees, type CompanyProfileRegistration, type CompanySearch, type CompanySearchOptions, type CompanyIdOptions } from '../src/index.js';
 
 afterEach(() => vi.useRealTimers());
 const profile: CompanyProfile = { id: 'co_xw3f22es6cjq', name: 'Cloudflare, Inc.', country: 'US', website: 'https://www.cloudflare.com/', listings: [{ exchange: 'NYSE', symbol: 'NET' }], address: null };
@@ -11,12 +11,11 @@ function setup(value: unknown = profile) {
 }
 
 it('adds callable directory methods without changing national company references or types', async () => {
-	const { parse, calls } = setup({ company: '552100554', valid: true, deep: { activity: null, gst: false } });
+	const { parse, calls } = setup({ company: '552100554', valid: true, activity: null, gst: false });
 	const national: (number: string, opts?: CompanyOptions) => Promise<Company> = parse.company;
 	expectTypeOf(parse.company.id).returns.toEqualTypeOf<Promise<CompanyProfile>>();
 	expectTypeOf(parse.company.search).returns.toEqualTypeOf<Promise<CompanySearch>>();
-	expectTypeOf(parse.company.coverage).returns.toEqualTypeOf<Promise<CompanyCoverage>>();
-	expectTypeOf<'description'>().not.toMatchTypeOf<keyof NonNullable<Company['deep']>>();
+	expectTypeOf<'description'>().not.toMatchTypeOf<keyof Company>();
 	await national('552 100/554', { country: 'FR', deep: true, lang: 'fr' });
 	expect(calls[0]!.url.pathname).toBe('/company/552%20100%2F554');
 	expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({ country: 'FR', deep: 'true', lang: 'fr' });
@@ -35,29 +34,26 @@ it.each([
 	expect(await parse.company.search(options)).toEqual({ companies: [], next: null });
 	expect(calls).toHaveLength(1); expect(calls[0]!.url.pathname).toBe('/company');
 	expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual(query);
-	expect(new Headers(calls[0]!.init?.headers).get('Parse-Version')).toBe('2.0.0');
+	expect(new Headers(calls[0]!.init?.headers).get('X-API-Version')).toBe('2.1.0');
 	expect(calls[0]!.init?.redirect).toBe('manual');
 });
 
 it('directory options omit language and coverage sends no product query parameters', async () => {
 	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanyIdOptions>();
 	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanySearchOptions>();
-	expectTypeOf<'lang'>().not.toMatchTypeOf<keyof CompanyCoverageOptions>();
 	const { parse, calls } = setup();
 	const extras = { lang: 'fr', country: 'FR', deep: true, timeoutMs: 1000, retries: 0 };
 	await parse.company.id(profile.id, extras);
 	await parse.company.search({ query: 'Cloudflare', ...extras });
-	await parse.company.coverage(extras);
 	expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({ deep: 'true' });
 	expect(Object.fromEntries(calls[1]!.url.searchParams)).toEqual({ q: 'Cloudflare', country: 'FR', deep: 'true' });
-	expect(calls[2]!.url.pathname).toBe('/company/directory/coverage'); expect(calls[2]!.url.search).toBe('');
 });
 
 it('preserves omitted, empty, old, null and populated deep bags and unknown response fields', async () => {
 	const populated: CompanyProfileDeep = { legal_name: null, aliases: [], jurisdiction: { country: 'US', state: null }, status: 'future-status', websites: null, identifiers: [{ type: 'future-code', authority: 'future-authority', value: '00001' }], incorporated: null, addresses: [], industries: [], parent: null, description: 'Source words', logo: 'https://assets.example.com/logo.svg', socials: [], founded: { value: '1998', precision: 'future-precision' }, sources: [{ type: 'future-source', url: 'https://example.com/', fields: ['description', 'future-field'], observed_at: '2026-09-23T00:00:00Z', updated_at: null }] };
 	expectTypeOf<CompanyProfileDeep['description']>().toEqualTypeOf<string | null | undefined>();
 	expectTypeOf<CompanyProfileDeep['socials']>().toEqualTypeOf<string[] | null | undefined>();
-	for (const extra of [{}, { deep: {} }, { deep: { legal_name: 'Prior name' } }, { deep: { description: null, logo: null, socials: null, founded: null, sources: null } }, { deep: populated, future: { unknown: true } }]) {
+	for (const extra of [{}, {}, { legal_name: 'Prior name' }, { description: null, logo: null, socials: null, founded: null, sources: null }, { deep: populated, future: { unknown: true } }]) {
 		const payload = { ...profile, ...extra }, { parse, calls } = setup(payload);
 		expect(await parse.company.id(profile.id, { deep: true })).toEqual(payload); expect(calls).toHaveLength(1);
 		const search = { companies: [{ ...payload, match: { field: 'future-field', value: null, future: true } }], next: 'opaque', future: 0 };
@@ -77,11 +73,10 @@ it('leaves selector validation to the API and distinguishes empty search from er
 });
 
 it('retains per-call retry controls on every directory method', async () => {
-	for (const method of ['id', 'search', 'coverage'] as const) {
+	for (const method of ['id', 'search'] as const) {
 		let calls = 0; const parse = parseAPI('fixture', { retries: 0, fetch: async () => ++calls === 1 ? response({ code: 'unavailable' }, 503) : response({ ok: true }) });
 		if (method === 'id') await parse.company.id(profile.id, { retries: 1 });
 		if (method === 'search') await parse.company.search({ domain: 'example.com', retries: 1 });
-		if (method === 'coverage') await parse.company.coverage({ retries: 1 });
 		expect(calls).toBe(2);
 	}
 });
@@ -97,9 +92,9 @@ it('cancellation aborts a directory request without retrying or leaking controls
 it('per-call timeout overrides the client timeout and never becomes a query field', async () => {
 	vi.useFakeTimers(); const calls: string[] = [];
 	const fetch = vi.fn((input, init) => new Promise<Response>((_resolve, reject) => { calls.push(String(input)); init?.signal?.addEventListener('abort', () => reject(init.signal!.reason), { once: true }); }));
-	const pending = parseAPI('fixture', { fetch, timeoutMs: 10000 }).company.coverage({ timeoutMs: 20, retries: 0 });
+	const pending = parseAPI('fixture', { fetch, timeoutMs: 10000 }).company.id(profile.id, { timeoutMs: 20, retries: 0 });
 	const checked = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' }); await vi.advanceTimersByTimeAsync(20); await checked;
-	expect(calls).toEqual(['https://api.parseapi.com/company/directory/coverage']);
+	expect(calls).toEqual([`https://api.parseapi.com/company/id/${profile.id}`]);
 });
 
 
@@ -115,11 +110,11 @@ it('preserves dated employee headcount, zero, false, null and future codes on ID
 		{ count: 7, basis: 'future_basis', as_of: '2026-01-15', scope: 'future_scope', method: 'future_method', approximate: false },
 	];
 	for (const employees of observations) {
-		const payload = { ...profile, deep: employees === undefined ? {} : { employees } };
+		const payload = { ...profile, ...(employees === undefined ? {} : { employees }) };
 		const result = await setup(payload).parse.company.id(profile.id, { deep: true });
 		expect(result).toEqual(payload);
-		expect(result.deep?.employees).toEqual(employees);
-		if (employees === undefined) expect(Object.hasOwn(result.deep!, 'employees')).toBe(false);
+		expect(result?.employees).toEqual(employees);
+		if (employees === undefined) expect(Object.hasOwn(result!, 'employees')).toBe(false);
 		const page = { companies: [{ ...payload, match: { field: 'name', value: profile.name } }], next: null };
 		expect(await setup(page).parse.company.search({ query: profile.name, deep: true })).toEqual(page);
 	}
@@ -147,7 +142,7 @@ it('preserves registry source roles, exact identifiers, dates and empty versus a
  expectTypeOf<CompanyProfileDeep['registrations']>().toEqualTypeOf<CompanyProfileRegistration[] | null | undefined>();
  const registration: CompanyProfileRegistration = {"authority":"RA000599","number":"0001234567","jurisdiction":{"country":"US","state":"CO"},"role":"domestic","legal_form":{"code":"DNC","name":"Domestic Non-profit Corporation"},"status":"Good Standing","formation_date":"2004-02-29","address":{"kind":"principal","line1":"12 Main St.","line2":"Suite 2","city":"Example","state":"CO","postal":"00123-0001","country_raw":"US"}};
  for (const deep of [{}, { registrations: null }, { registrations: [] }, { registrations: [registration], sources: [{"type":"business_register","url":"https://data.colorado.gov/Business/Business-Entities-in-Colorado/4ykn-tg5h","fields":["registrations"],"observed_at":"2026-09-23T15:00:52.763514Z","updated_at":null}] }, { registrations: [{ ...registration, role: 'future_role', status: 'future_status', formation_date: null, address: null }] }]) {
-  const payload = { ...profile, deep };
+  const payload = { ...profile, ...deep };
   expect(await setup(payload).parse.company.id(profile.id, { deep: true })).toEqual(payload);
   const page = { companies: [{ ...payload, match: { field: 'identifier', value: registration.number } }], next: null };
   expect(await setup(page).parse.company.search({ identifier: registration.number, authority: registration.authority, deep: true })).toEqual(page);
@@ -158,9 +153,9 @@ it('preserves registry source roles, exact identifiers, dates and empty versus a
 
 it('preserves the new company collections with nullable account metadata and contact types', async () => {
  const deep: CompanyProfileDeep = {"domains": [{"domain": "other.example", "url": null}], "social_profiles": [{"platform": "future-platform", "url": "https://social.example/acme", "handle": null}], "phone_numbers": [{"number": "617-555-0100", "type": "office"}], "email_addresses": [{"address": "help@example.com", "type": null}]};
- const { parse } = setup({ ...profile, deep });
+ const { parse } = setup({ ...profile, ...deep });
  const result = await parse.company.id(profile.id, { deep: true });
- expect(result.deep).toEqual(deep);
- expect(result.deep?.phone_numbers?.[0]?.type).toBe('office');
- expect(result.deep?.social_profiles?.[0]?.handle).toBeNull();
+ expect(result).toMatchObject(deep);
+ expect(result?.phone_numbers?.[0]?.type).toBe('office');
+ expect(result?.social_profiles?.[0]?.handle).toBeNull();
 });

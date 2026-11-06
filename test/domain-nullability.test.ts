@@ -3,8 +3,8 @@ import { parseAPI, type Domain, type DomainRegistration } from '../src/index.js'
 
 it('decodes unknown and both known availability states through ordinary domain', async () => {
   for (const available of [null, false, true]) for (const dnssec of [undefined, null, false, true]) {
-    const registration = available === true ? { registered: false } : { registered: true, dnssec };
-    const body = { domain: 'example.com', available, deep: available === null ? {} : { registration } };
+    const registration = available === true ? {} : { dnssec };
+    const body = { domain: 'example.com', available, ...(available === null ? {} : { registration }) };
     let calls = 0;
     const client = parseAPI('fixture', { retries: 0, fetch: async (input) => {
       calls++; expect(new URL(String(input)).pathname).toBe('/domain/example.com');
@@ -14,12 +14,12 @@ it('decodes unknown and both known availability states through ordinary domain',
     const result: Domain = await client.domain('example.com', { deep: true });
     expect(result.available).toBe(available);
     expect(result).toEqual(JSON.parse(JSON.stringify(body)));
-    if (available === false) expect(result.deep?.registration?.dnssec).toBe(dnssec);
+    if (available === false) expect(result?.registration?.dnssec).toBe(dnssec);
     expect(calls).toBe(1);
   }
   expectTypeOf<Domain['available']>().toEqualTypeOf<boolean | null>();
   expectTypeOf<DomainRegistration['dnssec']>().toEqualTypeOf<boolean | null | undefined>();
-  const partial: DomainRegistration = { registered: false };
+  const partial: DomainRegistration = { };
   expect(partial.dnssec).toBeUndefined();
 });
 

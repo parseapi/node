@@ -19,7 +19,7 @@ describe('preflight', () => {
 		expect(JSON.parse(init.body as string)).toEqual(task);
 		expect(init.redirect).toBe('manual');
 		expect(new Headers(init.headers).get('X-API-Key')).toBe('test-secret');
-		expect(new Headers(init.headers).get('Parse-Version')).toBe('2.0.0');
+		expect(new Headers(init.headers).get('X-API-Version')).toBe('2.1.0');
 		expect(new Headers(init.headers).get('Content-Type')).toBe('application/json');
 		expect(init.signal).toBeInstanceOf(AbortSignal);
 		await client.country('US');
@@ -41,7 +41,7 @@ describe('preflight', () => {
 		expect(calls).toHaveLength(3);
 		for (const init of calls) {
 			expect(JSON.parse(init.body as string).operations[0].count).toBe(10);
-			expect(new Headers(init.headers).get('Parse-Version')).toBe('2.0.0');
+			expect(new Headers(init.headers).get('X-API-Version')).toBe('2.1.0');
 			expect(new Headers(init.headers).get('X-API-Key')).toBe('test-secret');
 		}
 	});

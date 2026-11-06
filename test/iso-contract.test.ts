@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, expectTypeOf, it } from 'vitest';
-import { parseAPI, type Country, type State, type Language } from '../src/index.js';
+import { parseAPI, type Country, type State, type Language, type Currency } from '../src/index.js';
 const cases = JSON.parse(readFileSync(new URL('./fixtures/iso-contract.json', import.meta.url), 'utf8'));
 
 it('types the explicit ISO representations while retaining old-server declarations', () => {
@@ -8,6 +8,7 @@ it('types the explicit ISO representations while retaining old-server declaratio
  expectTypeOf<Country['iso_numeric']>().toEqualTypeOf<number | null | undefined>();
  expectTypeOf<State['iso_subdivision']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<Language['iso_alpha3']>().toEqualTypeOf<string | null | undefined>();
+ expectTypeOf<Currency['iso_numeric']>().toEqualTypeOf<number | null | undefined>();
  expectTypeOf<Country['iso3']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<Country['numeric']>().toEqualTypeOf<number | null | undefined>();
 });

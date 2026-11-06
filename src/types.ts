@@ -1,14 +1,21 @@
-/**
- * Response types for the ParseAPI public API.
- * Core answers the common task; optional deep reveals the reviewed detail.
- * Every field inside a deep object is optional and nullable: the API ships
- * `deep: {}` when deep was requested but is not unlocked on the plan.
- */
+/** API 2.1 response types. Optional requested detail lives at its natural resource home. */
 
-/** The `deep` key is omitted unless the request asked for it. */
+/** Optional requested detail fields are nullable and live on the resource. */
 export type Deep<T> = Partial<{ [K in keyof T]: T[K] | null }>;
 
 export interface IpDeep {
+	/** Approximate range geography; postal comes only from supported operator declarations. */
+	state_name?: string | null;
+	postal?: string | null;
+	latitude?: number | null;
+	longitude?: number | null;
+	timezone?: string | null;
+	network?: string | null;
+	asn_type?: string | null;
+	proxy?: boolean | null;
+	/** asn_type classifies the origin AS, not subscriber connection technology.
+	 * proxy=false means unlisted; null means the evidence block is incomplete. */
+
 	state: string;
 	city: string;
 	registry: string;
@@ -25,14 +32,14 @@ export interface IpDeep {
 	census_region?: string | null;
 }
 
-export interface Ip {
+export interface Ip extends Omit<Deep<IpDeep>, 'asn' | 'asn_name' | 'continent' | 'country' | 'country_name' | 'ip'> {
 	ip: string;
 	country: string | null;
 	country_name: string | null;
 	continent: string | null;
 	asn: string | null;
 	asn_name: string | null;
-	deep?: Deep<IpDeep>;
+
 }
 
 export interface Continent {
@@ -50,8 +57,6 @@ export interface Continent {
 export interface ContinentCountryItem {
 	country: string;
 	name: string;
-	flag?: string | null;
-	/** @deprecated Present only in earlier compact response payloads. */
 	emoji?: string | null;
 	calling_code?: string | null;
 }
@@ -61,7 +66,7 @@ export interface ContinentCountries {
 	countries: ContinentCountryItem[];
 }
 
-export interface Country {
+export interface Country extends Omit<Deep<CountryDeep>, 'blocs' | 'borders' | 'calling_code' | 'capital' | 'capital_lat' | 'capital_lon' | 'continent' | 'country' | 'currency' | 'currency_name' | 'currency_symbol' | 'demonym' | 'emoji' | 'flag' | 'full_name' | 'iso3' | 'iso_alpha3' | 'iso_numeric' | 'languages' | 'name' | 'name_full' | 'name_local' | 'numeric' | 'postal_format' | 'postal_regex' | 'region' | 'subregion' | 'timezones'> {
 	country: string;
 	name: string;
 	name_local: string | null;
@@ -74,7 +79,7 @@ export interface Country {
 	/** @deprecated Present only in earlier response payloads. */
 	emoji?: string | null;
 	languages: string[] | null;
-	deep?: Deep<CountryDeep>;
+
 	/** IANA timezones used by the country. */
 	timezones: string[] | null;
 	/** ISO 3166-1 alpha-3 country code. */
@@ -97,6 +102,10 @@ export interface Country {
 	capital_lon?: number | null;
 	borders?: string[] | null;
 	blocs?: string[] | null;
+	/** Core postal input hint on every plan. Older responses may omit it. */
+	postal_format?: string | null;
+	/** Core postal syntax pattern on every plan, not proof of existence or deliverability. Older responses may omit it. */
+	postal_regex?: string | null;
 }
 
 export interface CountryCapital {
@@ -127,7 +136,7 @@ export interface StateCapital {
 	longitude: number | null;
 }
 
-export interface State {
+export interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 'country' | 'country_name' | 'fips' | 'iso' | 'iso_subdivision' | 'latitude' | 'longitude' | 'name' | 'name_local' | 'state' | 'timezones' | 'type'> {
 	state: string;
 	name: string;
 	name_local: string | null;
@@ -144,14 +153,14 @@ export interface State {
 	fips: string | null;
 	area_codes: string[] | null;
 	capital: StateCapital;
-	deep?: Deep<StateDeep>;
+
 }
 
-export interface StateDistrictItem {
+export interface StateDistrictItem extends Omit<Deep<StateDistrictDeep>, 'district' | 'name' | 'type'> {
 	district: string | null;
 	name: string | null;
 	type: string | null;
-	deep?: Deep<StateDistrictDeep>;
+
 }
 
 export interface StateDistrictDeep {
@@ -169,7 +178,7 @@ export interface StateDistricts {
 	districts: StateDistrictItem[];
 }
 
-export interface District {
+export interface District extends Omit<Deep<DistrictDeep>, 'country' | 'country_name' | 'district' | 'latitude' | 'longitude' | 'name' | 'state' | 'state_name' | 'timezones' | 'type'> {
 	district: string;
 	name: string;
 	type: string | null;
@@ -180,10 +189,10 @@ export interface District {
 	latitude: number | null;
 	longitude: number | null;
 	timezones: string[];
-	deep?: Deep<DistrictDeep>;
+
 }
 
-export interface City {
+export interface City extends Omit<Deep<CityDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'grain' | 'id' | 'latitude' | 'longitude' | 'match' | 'name' | 'name_local' | 'name_romanized' | 'parent' | 'romanization_language' | 'state' | 'state_name' | 'timezone' | 'type'> {
 	/** Present for explicit search matching when the server returns suggestion evidence. */
 	match?: CityMatch;
 	name: string;
@@ -206,7 +215,7 @@ export interface City {
 	grain?: CityGrain | null;
 	/** Reviewed immediate parent; null when no reviewed relationship exists. */
 	parent?: CityParent | null;
-	deep?: Deep<CityDeep>;
+
 }
 
 /** Nearest-city lookups add the distance from the query point. */
@@ -246,7 +255,7 @@ export interface PostalMetro {
 	residential_share: number | null;
 	business_share: number | null;
 	other_share: number | null;
-	/** Percentage of ZIP addresses (0-100). Missing or null means unknown. */
+	/** Percentage of ZIP addresses, from 0 to 100; null or absent is unknown. */
 	share_percent?: number | null;
 }
 
@@ -257,7 +266,7 @@ export interface PostalLocality {
 	state_name: string;
 }
 
-export interface Postal {
+export interface Postal extends Omit<Deep<PostalDeep>, 'city' | 'city_local' | 'country' | 'country_name' | 'district' | 'district_name' | 'district_name_local' | 'latitude' | 'localities' | 'longitude' | 'postal' | 'state' | 'state_name' | 'state_name_local' | 'tax' | 'tax_rate' | 'tax_rate_city' | 'tax_rate_county' | 'tax_rate_special' | 'tax_rate_state' | 'timezone' | 'type'> {
 	postal: string;
 	city: string | null;
 	city_local: string | null;
@@ -274,34 +283,35 @@ export interface Postal {
 	latitude: number | null;
 	longitude: number | null;
 	timezone: string | null;
-	deep?: Deep<PostalDeep>;
+
 	/** Open ZIP type, including future values. Missing or null means unknown. */
 	type?: string | null;
+	tax?: PostalTax | null;
 }
 
-export interface PostalNearbyItem {
+export interface PostalNearbyItem extends Omit<Deep<PostalMetrosDeep>, 'city' | 'country' | 'distance' | 'distance_mi' | 'postal' | 'state'> {
 	postal: string;
 	city: string | null;
 	state: string | null;
 	country: string;
 	distance: number;
 	distance_mi: number;
-	deep?: Deep<PostalMetrosDeep>;
+
 }
 
-export interface PostalNearby {
+export interface PostalNearby extends Omit<Deep<PostalMetrosDeep>, 'country' | 'nearby' | 'postal' | 'radius' | 'unit'> {
 	postal: string;
 	country: string;
 	radius: number;
 	unit: string;
 	nearby: PostalNearbyItem[];
-	deep?: Deep<PostalMetrosDeep>;
+
 }
 
-export interface PostalDistanceEnd {
+export interface PostalDistanceEnd extends Omit<Deep<PostalMetrosDeep>, 'city' | 'postal'> {
 	postal: string;
 	city: string | null;
-	deep?: Deep<PostalMetrosDeep>;
+
 }
 
 export interface PostalDistance {
@@ -328,7 +338,7 @@ export interface EmailDeep {
 	reason?: string | null;
 }
 
-export interface Email {
+export interface Email extends Omit<Deep<EmailDeep>, 'didyoumean' | 'disposable' | 'domain' | 'domain_type' | 'domain_valid' | 'email' | 'free' | 'role' | 'valid'> {
 	email: string;
 	didyoumean: string | null;
 	valid: boolean;
@@ -338,10 +348,10 @@ export interface Email {
 	domain_valid: boolean | null;
 	role: boolean;
 	disposable: boolean;
-	deep?: Deep<EmailDeep>;
+
 }
 
-export interface Phone {
+export interface Phone extends Omit<Deep<PhoneDeep>, 'country' | 'international' | 'national' | 'phone' | 'type' | 'valid'> {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
@@ -349,10 +359,10 @@ export interface Phone {
 	type: 'mobile' | 'landline' | 'toll_free' | 'unknown' | null;
 	national: string | null;
 	international: string | null;
-	deep?: Deep<PhoneDeep>;
+
 }
 
-export interface Carrier {
+export interface Carrier extends Omit<Deep<CarrierDeep>, 'burner' | 'carrier' | 'country' | 'phone' | 'type' | 'valid'> {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
@@ -362,7 +372,7 @@ export interface Carrier {
 	carrier: string | null;
 	/** Carrier is a known burner number app. Null when carrier is unknown. */
 	burner: boolean | null;
-	deep?: Deep<CarrierDeep>;
+
 }
 
 export interface Caller {
@@ -373,7 +383,7 @@ export interface Caller {
 	caller: string | null;
 }
 
-export interface Hlr {
+export interface Hlr extends Omit<Deep<HlrDeep>, 'connected' | 'country' | 'live' | 'phone' | 'valid'> {
 	phone: string | null;
 	valid: boolean;
 	country: string | null;
@@ -381,7 +391,7 @@ export interface Hlr {
 	live: boolean | null;
 	/** Handset reachable at the last check. Null means unconfirmed, never no. */
 	connected: boolean | null;
-	deep?: Deep<HlrDeep>;
+
 }
 
 export interface MxRecord {
@@ -410,11 +420,11 @@ export interface Stack {
 	payments: StackTechnology[] | null;
 	hosting: StackTechnology[] | null;
 	/** Empty only when the generic deep compatibility flag was requested. */
-	deep?: Record<string, never>;
+
 }
 
 export interface DomainRegistration {
-	registered: boolean;
+
 	created?: string | null;
 	updated?: string | null;
 	expires?: string | null;
@@ -428,11 +438,11 @@ export interface DomainDeep {
 	registration: DomainRegistration;
 }
 
-export interface Domain {
+export interface Domain extends Omit<Deep<DomainDeep>, 'available' | 'domain'> {
 	domain: string;
 	/** true means unregistered, false means registered, null means unknown. */
 	available: boolean | null;
-	deep?: Deep<DomainDeep>;
+
 }
 
 /** Network identity for an autonomous system number. */
@@ -444,14 +454,14 @@ export interface Asn {
 }
 
 /** Network identity from reviewed prefix rules; null means unknown or ambiguous. */
-export interface Card {
+export interface Card extends Omit<Deep<CardDeep>, 'bin' | 'brand' | 'brand_name' | 'logo'> {
 	bin: string;
 	brand: string | null;
 	brand_name: string | null;
 	/** SVG URL, with a generic-card fallback. */
 	logo: string;
 	/** Requested recorded detail on paid plans; existing accounts retain their Deep access. Locked detail is an empty object. */
-	deep?: Deep<CardDeep>;
+
 }
 
 export interface CardDeep {
@@ -523,24 +533,25 @@ export interface UseragentDeep {
 	ai?: boolean;
 }
 
-export interface Useragent {
+export interface Useragent extends Omit<Deep<UseragentDeep>, 'bot' | 'browser' | 'device' | 'mobile' | 'os' | 'useragent'> {
 	useragent: string;
-	device: string | null;
-	os: string | null;
-	browser: string | null;
+	device: Pick<UseragentDeviceDeep, 'type'> & Deep<Omit<UseragentDeviceDeep, 'type'>>;
+	os: Pick<UseragentOsDeep, 'name'> & Deep<Omit<UseragentOsDeep, 'name'>>;
+	browser: Pick<UseragentBrowserDeep, 'name'> & Deep<Omit<UseragentBrowserDeep, 'name'>>;
 	bot: boolean;
 	mobile: boolean;
-	deep?: Deep<UseragentDeep>;
+
+	bot_details?: Record<string, unknown> | null;
 }
 
 /** One language by BCP 47 shortest code (en) or ISO 639-3 (eng). Codes are lowercase. */
-export interface Language {
+export interface Language extends Omit<Deep<LanguageDeep>, 'countries' | 'direction' | 'iso3' | 'iso_alpha3' | 'language' | 'name' | 'name_local' | 'script'> {
 	language: string;
 	name: string;
 	name_local: string | null;
 	script: string | null;
 	direction: 'ltr' | 'rtl' | string;
-	deep?: Deep<LanguageDeep>;
+
 	/** ISO 639-3 language code. */
 	iso_alpha3?: string | null;
 	/** @deprecated Older servers use iso3. Read iso_alpha3 on the current contract. */
@@ -549,7 +560,7 @@ export interface Language {
 }
 
 /** A parsed person name. Junk input returns valid: false, never an error. Gender comes from dictionary data and is null when the data does not decide. */
-export interface Name {
+export interface Name extends Omit<Deep<NameDeep>, 'first' | 'last' | 'middle' | 'name' | 'prefix' | 'suffix' | 'valid'> {
 	name: string;
 	valid: boolean;
 	prefix: string | null;
@@ -557,7 +568,7 @@ export interface Name {
 	middle: string | null;
 	last: string | null;
 	suffix: string | null;
-	deep?: Deep<NameDeep>;
+
 }
 
 export interface TimezoneNextDst {
@@ -567,7 +578,7 @@ export interface TimezoneNextDst {
 	abbreviation: string;
 }
 
-export interface Timezone {
+export interface Timezone extends Omit<Deep<TimezoneDeep>, 'abbreviation' | 'at' | 'dst' | 'latitude' | 'longitude' | 'offset' | 'timezone' | 'to' | 'unix'> {
 	latitude?: number;
 	longitude?: number;
 	timezone: string | null;
@@ -580,7 +591,7 @@ export interface Timezone {
 	unix: number | null;
 	/** With to= only: the other zone at the same instant. to.at is the converted time. */
 	to?: TimezoneConversionTarget | null;
-	deep?: Deep<TimezoneDeep>;
+
 }
 
 /** Current time and timezone facts. Unresolved or ambiguous sources keep clock fields null. */
@@ -594,7 +605,7 @@ export interface Time extends Timezone {
 /** Available timezone identifiers. */
 export interface TimeZones {
 	timezone_database_version?: string;
-	timezones: string[];
+	timezones?: string[];
 	/** Present with details=true. The one instant used for all rows. */
 	at?: string;
 	zones?: TimeZoneEntry[];
@@ -632,21 +643,21 @@ export interface TimeSeason {
 }
 
 /** The other side of a timezone conversion. `at` is the converted wall time. */
-export interface TimezoneConversionTarget {
+export interface TimezoneConversionTarget extends Omit<Deep<TimezoneConversionTargetDeep>, 'abbreviation' | 'at' | 'dst' | 'offset' | 'timezone' | 'unix'> {
 	timezone: string;
 	abbreviation: string | null;
 	offset: string;
 	dst: boolean;
 	at: string;
 	unix: number;
-	deep?: Deep<TimezoneConversionTargetDeep>;
+
 }
 
 /**
  * Calendar facts for one date. Junk or ambiguous input returns valid: false,
  * never an error. `to` and `days` appear only when a to= date was passed.
  */
-export interface DateInfo {
+export interface DateInfo extends Omit<Deep<DateInfoDeep>, 'date' | 'days' | 'to' | 'unix' | 'valid'> {
 	date: string;
 	valid: boolean;
 	/** Unix time at midnight UTC of that date, seconds. */
@@ -655,7 +666,7 @@ export interface DateInfo {
 	to?: string;
 	/** With to= only: signed days to the other date. Future positive. */
 	days?: number | null;
-	deep?: Deep<DateInfoDeep>;
+
 }
 
 export interface Holiday {
@@ -709,7 +720,7 @@ export interface PointDeep {
 	resolution: number | null;
 }
 
-export interface Point {
+export interface Point extends Omit<Deep<PointDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'latitude' | 'longitude' | 'state' | 'state_name' | 'timezone'> {
 	latitude: number;
 	longitude: number;
 	country: string | null;
@@ -718,7 +729,7 @@ export interface Point {
 	state_name: string | null;
 	district: string | null;
 	district_name: string | null;
-	deep?: Deep<PointDeep>;
+
 	timezone: string | null;
 }
 
@@ -827,7 +838,7 @@ export interface WeatherDeep {
 	current: WeatherCurrentDeep;
 }
 
-export interface WeatherCurrent {
+export interface WeatherCurrent extends Deep<WeatherCurrentDeep> {
 	temperature: number | null;
 	temperature_f: number | null;
 	feels_like: number | null;
@@ -849,12 +860,12 @@ export interface WeatherStation {
 	distance_mi: number | null;
 }
 
-export interface Weather {
+export interface Weather extends Omit<Deep<WeatherDeep>, 'current' | 'latitude' | 'longitude' | 'station'> {
 	latitude: number;
 	longitude: number;
 	current: WeatherCurrent;
 	station: WeatherStation | null;
-	deep?: Deep<WeatherDeep>;
+
 }
 
 export interface EmojiSkin {
@@ -864,12 +875,12 @@ export interface EmojiSkin {
 	hex: string | null;
 }
 
-export interface Emoji {
+export interface Emoji extends Omit<Deep<EmojiDeep>, 'category' | 'emoji' | 'name' | 'shortcodes'> {
 	emoji: string;
 	name: string;
 	shortcodes: string[];
 	category: string | null;
-	deep?: Deep<EmojiDeep>;
+
 }
 
 export interface EmojiSearch {
@@ -905,15 +916,16 @@ export interface EmojiMetadata {
   edition: string; max_version: string | null; source_version?: string;
   total: number;
   sources: EmojiSource[]; artwork_sources: EmojiArtworkSource[]; notices: EmojiNotice[];
-  completeness: { missing_count: number; unexpected_count: number };
-  shortcode_sources?: Record<string, EmojiShortcodeSourceMetadata>;
+  completeness: { complete: boolean | null };
+
+
   [field: string]: unknown;
 }
 export interface EmojiCatalogScope { filters: Record<string, string>; total: number; complete_inventory: boolean; }
 export interface EmojiNativeSearchFacts { name: string | null; keywords: string[]; order?: number | null; }
 export interface EmojiCatalogSearchFacts { native: Record<string, EmojiNativeSearchFacts>; localized_keywords?: string[]; }
 export interface EmojiCatalogData {
-  profile?: 'full' | 'compact';
+
   scope?: Omit<EmojiCatalogScope,'total'>;
   search?: EmojiCatalogSearchFacts;
   localization?: EmojiCatalogLocalization;
@@ -925,9 +937,6 @@ export interface EmojiCatalogData {
 export interface EmojiCatalogLocalization {
   requested_locale: string | null; resolved_locale: string | null;
   translated_names: number; translated_keywords: number; fallback_names: number; fallback_keywords: number;
-}
-export interface EmojiShortcodeSourceMetadata {
-  records: number; missing_records: number; ambiguous_aliases: number;
 }
 
 export interface EmojiCategory { category: string; subcategories: string[]; }
@@ -955,7 +964,7 @@ export interface Address {
 	country_name: string | null;
 	latitude: number | null;
 	longitude: number | null;
-	deep?: Record<string, unknown>;
+
 }
 
 export interface AddressSuggestion {
@@ -1001,7 +1010,7 @@ export interface CompanyDeep {
 	invoice: string | null;
 }
 
-export interface Company {
+export interface Company extends Omit<Deep<CompanyDeep>, 'active' | 'address' | 'city' | 'company' | 'country' | 'name' | 'postal' | 'registered' | 'state' | 'type' | 'valid'> {
 	company: string | null;
 	valid: boolean;
 	registered: boolean | null;
@@ -1013,7 +1022,7 @@ export interface Company {
 	city: string | null;
 	state: string | null;
 	postal: string | null;
-	deep?: Deep<CompanyDeep>;
+
 }
 
 /** Directory listing claims. Exchange and symbol remain separate from legal identifiers. */
@@ -1105,8 +1114,11 @@ export interface CompanyProfilePhone { number: string; kind: string | null; }
 export interface CompanyProfileEmail { address: string; kind: string | null; }
 /** An associated domain and its recorded URL, when known. */
 export type CompanyProfileDomain = CompanyProfileWebsite;
-export interface CompanySocialProfile { platform: string | null; url: string; handle: string | null; }
-export interface CompanyPhoneNumber { number: string; type: string | null; }
+export interface CompanySocialProfile { platform: string | null; url: string; handle?: string | null; }
+export interface CompanyPhoneNumber { number: string; type: string | null; 
+	country?: string | null;
+	e164?: string | null;
+}
 export interface CompanyEmailAddress { address: string; type: string | null; }
 /** Directory detail, distinct from national-number CompanyDeep. Missing or null facts remain unknown. */
 export interface CompanyProfileDeep {
@@ -1138,14 +1150,14 @@ export interface CompanyProfileDeep {
 	registrations?: CompanyProfileRegistration[] | null;
 	sources?: CompanyProfileSource[] | null;
 }
-export interface CompanyProfile {
+export interface CompanyProfile extends Omit<Deep<CompanyProfileDeep>, 'address' | 'country' | 'id' | 'listings' | 'name' | 'website'> {
 	id: string;
 	name: string;
 	country: string | null;
 	website: string | null;
 	listings: CompanyProfileListing[] | null;
 	address: CompanyProfileAddress | null;
-	deep?: Deep<CompanyProfileDeep>;
+
 }
 /** Why a candidate matched. Field/type/authority/exchange values remain extensible strings. */
 export interface CompanyMatch {
@@ -1161,18 +1173,6 @@ export interface CompanyCandidate extends CompanyProfile {
 export interface CompanySearch {
 	companies: CompanyCandidate[];
 	next: string | null;
-}
-/** Edition counts describe the records available, not all companies in a country. */
-export interface CompanyCoverage {
-	scope: string;
-	label: string;
-	description: string;
-	snapshot_at?: string;
-	companies: number;
-	countries: string[];
-	with_website: number;
-	with_listings: number;
-	with_address: number;
 }
 
 /** A direct child industry code. */
@@ -1203,7 +1203,7 @@ export interface NaicsMatch {
 }
 
 /** US NAICS 2022 definition and hierarchy, including two-digit sector ranges. */
-export interface Naics {
+export interface Naics extends Omit<Deep<NaicsDeep>, 'country' | 'level' | 'match' | 'naics' | 'name' | 'parent' | 'parent_name' | 'year'> {
 	naics: string;
 	name: string;
 	/** Hierarchy depth, from 2 (sector) to 6 (national industry). */
@@ -1214,7 +1214,7 @@ export interface Naics {
 	match?: NaicsMatch | null;
 	year: number;
 	country: string;
-	deep?: Deep<NaicsDeep>;
+
 }
 
 /** Search records inherit country and revision from their envelope. */
@@ -1302,6 +1302,20 @@ export interface CountryElevationPoint {
 	elevation: number;
 }
 
+export interface StateTax {
+	name: string | null;
+	/** Reference rate in percent. Choose the geographic scope for the task. */
+	rate: number | null;
+}
+
+export interface PostalTax extends StateTax {
+	/** Components of the combined ZIP reference rate, in percent. */
+	rate_state: number | null;
+	rate_county: number | null;
+	rate_city: number | null;
+	rate_special: number | null;
+}
+
 export interface StateDeep {
 	/** @deprecated Older deep contract. Read Core iso_subdivision on the current contract. */
 	iso_3166_2?: string | null;
@@ -1311,11 +1325,6 @@ export interface StateDeep {
 	/** Total area in km2. */
 	area: number | null;
 	tax: StateTax;
-	/** @deprecated Historical Deep read members. */
-	fips?: string | null;
-	capital?: string | null;
-	area_codes?: string[];
-	tax_rate?: number | null;
 }
 
 export interface DistrictDeep {
@@ -1366,19 +1375,9 @@ export interface PostalDeep {
 	/** Water area in km2. Null where the source has none. */
 	water_area: number | null;
 	currency: string | null;
-	/** Levy name, such as VAT, GST or sales tax. Null when unknown or not applicable. */
-	tax?: string | null;
-	/** Combined US ZIP reference rate in percent (7.9 means 7.9%). An exact address can differ. Null is unknown, zero is known zero. */
-	tax_rate?: number | null;
-	/** State component of the ZIP reference rate, in percent. Null when unknown. */
-	tax_rate_state?: number | null;
-	/** County component of the ZIP reference rate, in percent. Null when unknown. */
-	tax_rate_county?: number | null;
-	/** City component of the ZIP reference rate, in percent. Null when unknown. */
-	tax_rate_city?: number | null;
-	/** Special component of the ZIP reference rate, in percent. Null when unknown. */
-	tax_rate_special?: number | null;
+	/** Same-country postal codes, preserving leading zeros and source order. */
 	neighbors: string[];
+	tax?: PostalTax;
 	/** Missing/null is unknown; [] is an observed result outside all covered areas. */
 	metros?: PostalMetro[] | null;
 	/** Median annual property tax payable on owner-occupied homes in this statistical area. Null when unsupported, missing or censored. */
@@ -1422,7 +1421,7 @@ export interface LanguageDeep {
 
 export interface NameDeep {
 	gender: 'male' | 'female' | null;
-	salutation: 'Mr' | 'Ms' | null;
+
 	/** Compact name using CLDR formatting rules. */
 	short?: string | null;
 	/** Name formatted for a directory listing. */
@@ -1579,11 +1578,12 @@ export interface TimeLocationCandidate {
 	latitude?: number | null;
 	longitude?: number | null;
 }
-export interface TimeLocation {
-	input: TimeLocationInput;
-	status: string;
-	candidates: TimeLocationCandidate[];
-	truncated: boolean;
+/** Matched place on success, or resolution choices when no clock is available. */
+export interface TimeLocation extends TimeLocationCandidate {
+	input?: TimeLocationInput;
+	status?: string;
+	candidates?: TimeLocationCandidate[];
+	truncated?: boolean;
 	source?: string;
 }
 
@@ -1598,20 +1598,6 @@ export type IndustrySearch = NaicsSearch;
 export type IndustrySearchItem = NaicsSearchItem;
 
 
-export interface Bin {
-	bin: string;
-	/** Actual longest matched prefix. May be shorter than the input. */
-	prefix: string | null;
-	country: string | null;
-	issuer: string | null;
-	/** Network key (visa, amex) or co-branded combination. */
-	brand: string | null;
-	/** Display name for brand (American Express). */
-	brand_name: string | null;
-	type: string | null;
-	prepaid: boolean | null;
-	deep?: Record<string, never>;
-}
 
 export interface EmojiParse { emojis: (Emoji & {positions: EmojiPosition[]})[]; }
 export interface EmojiConversion { text: string; unresolved: EmojiUnresolved[]; }
@@ -1629,7 +1615,7 @@ export interface CityParent {
 	grain: CityGrain | null;
 }
 
-export interface CityMatch { type: string; source: string; value: string; language: string | null; edit_distance: number | null }
+export interface CityMatch { type: string; value: string; language: string | null; source?: string; edit_distance?: number | null }
 
 export interface CityAmbiguityCandidate {
 	id: string;
@@ -1663,7 +1649,7 @@ export interface CityCollection {
 	unit?: string;
 }
 
-export interface CityList extends CityCollection {}
+export interface CityList { cities: City[]; next_cursor: string | null; country?: string; state?: string | null; }
 
 export interface CityRelations extends CityCollection {
 	city_id: string;
@@ -1682,38 +1668,28 @@ export interface CityDistance {
 	method: 'great_circle';
 }
 
-export interface CityNearbyCoordinates extends CityCollection {
+export interface CityNearbyCoordinates {
+	nearby: CityNearest[];
+	next_cursor: string | null;
 	latitude: number;
 	longitude: number;
 	radius: number;
 	unit: string;
 }
 
-/** Minimal related records returned in Company Core. Rich Deep records stay separate. */
-export interface CompanyIndustryReference { type: string; code: string; }
-export interface CompanyPhoneReference { number: string; country?: string | null; e164?: string | null; }
-export interface CompanyEmailReference { address: string; }
-
-
-export interface StateTax {
-	name: string | null;
-	/** Reference rate in percent. Choose the geographic scope for the task. */
-	rate: number | null;
-}
-
-
-
 export interface Currency {
 	currency: string;
-	iso_numeric: number | null;
+	/** ISO 4217 numeric currency code. */
+	iso_numeric?: number | null;
+	/** @deprecated Older servers use numeric. Read iso_numeric on the current contract. */
+	numeric?: number | null;
 	name: string;
-	name_plural: string | null;
+	name_plural?: string | null;
 	symbol: string | null;
 	symbol_native: string | null;
 	digits: number | null;
 	countries: string[] | null;
-	/** Accepted deep=true returns an empty object; reference fields are Core. */
-	deep?: CurrencyDeep;
+
 }
 
 export interface CurrencyRate {
@@ -1725,6 +1701,17 @@ export interface CurrencyRate {
 	amount?: number;
 	/** With amount= only: amount times rate, rounded to the quote currency minor-unit digits. */
 	converted?: number;
+	source?: string;
 }
 
 export type CurrencyDeep = Record<string, never>;
+
+/** Alternative geographic tax references in percent, never additive. */
+export interface PostalTax {
+ name: string | null;
+ rate: number | null;
+ rate_state: number | null;
+ rate_county: number | null;
+ rate_city: number | null;
+ rate_special: number | null;
+}

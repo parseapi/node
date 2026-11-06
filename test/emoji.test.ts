@@ -4,9 +4,9 @@ import { parseAPI, type Emoji, type EmojiDeep, type EmojiOptions, type EmojiSear
 
 it('accepts the published EmojiDeep construction with no new facts supplied', () => {
 	const old: EmojiDeep = { codepoints: ['1F680'], hex: '1F680', status: 'fully-qualified', version: '1.0', keywords: ['rocket'], skins: [] };
-	const record: Emoji = { emoji: '🚀', name: 'rocket', shortcodes: [':rocket:'], category: 'Travel & Places', deep: old };
-	expect(record.deep?.variants).toBeUndefined();
-	expect(record.deep?.artwork).toBeUndefined();
+	const record: Emoji = { emoji: '🚀', name: 'rocket', shortcodes: [':rocket:'], category: 'Travel & Places', ...old };
+	expect(record?.variants).toBeUndefined();
+	expect(record?.artwork).toBeUndefined();
 });
 
 it('keeps existing method references and forwards filters, explicit false and named shortcodes', async () => {
@@ -29,14 +29,14 @@ it('keeps existing method references and forwards filters, explicit false and na
 
 it('posts raw text privately and preserves complete sequence metadata, counts and UTF-16 positions', async () => {
 	const text = 'x 👍🏿 👍🏿';
-	const payload = { emojis: [{ emoji: '👍🏿', name: 'thumbs up: dark skin tone', shortcodes: [], category: 'People & Body', positions: [{ start: 2, end: 6 }, { start: 7, end: 11 }], deep: { base: '👍', subcategory: 'hand-fingers-closed', variants: [{ emoji: '👍🏿', tones: ['dark'] }], shortcode_sources: { cldr: [], github: [], slack: [], discord: [] } } }], future: true };
+	const payload = { emojis: [{ emoji: '👍🏿', name: 'thumbs up: dark skin tone', shortcodes: [], category: 'People & Body', positions: [{ start: 2, end: 6 }, { start: 7, end: 11 }], base: '👍', subcategory: 'hand-fingers-closed', variants: [{ emoji: '👍🏿', tones: ['dark'] }], shortcode_sources: { cldr: [], github: [], slack: [], discord: [] } }], future: true };
 	const fetch = vi.fn(async (input, init?: RequestInit) => {
 		const url = new URL(String(input));
 		expect(url.pathname).toBe('/emoji/parse');
 		expect(Object.fromEntries(url.searchParams)).toEqual({ lang: 'fr', deep: 'true' });
 		expect(init?.method).toBe('POST');
 		expect(JSON.parse(init?.body as string)).toEqual({ text });
-		expect(new Headers(init?.headers).get('Parse-Version')).toBe('2.0.0');
+		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
 		expect(init?.redirect).toBe('manual');
 		return new Response(JSON.stringify(payload));
 	});
@@ -53,9 +53,9 @@ it('converts private text with one request and explicit shortcode identity',asyn
 });
 it('decodes the actual three-style rendering and provider credit response',async()=>{
  const fixture=JSON.parse(readFileSync(new URL('./fixtures/emoji-artwork.json',import.meta.url),'utf8'));
- const client=parseAPI('test',{fetch:vi.fn(async input=>Response.json(String(input).includes('/metadata')?fixture.metadata:fixture.emoji))});
- expect((await client.emoji.metadata()).artwork_sources.map(a=>a.style)).toEqual(['noto','twemoji','openmoji']);
- const artwork=(await client.emoji('rocket',{deep:true})).deep!.artwork!;
+ const client=parseAPI('test',{fetch:vi.fn(async input=>Response.json(String(input).includes('/catalog')?{metadata:fixture.metadata}:fixture.emoji))});
+ expect((await client.emoji.catalog()).metadata.artwork_sources.map(a=>a.style)).toEqual(['noto','twemoji','openmoji']);
+ const artwork=(await client.emoji('rocket',{deep:true}))!.artwork!;
  expect(Object.keys(artwork)).toEqual(['noto','twemoji','openmoji']);
  expect(artwork.openmoji?.svg).toBe('https://cdn.parseapi.com/emoji/openmoji/17.0.0/1f680.svg');
  expect(artwork.openmoji?.png?.['72']).toBe('https://cdn.parseapi.com/emoji/openmoji/17.0.0/72/1f680.png');

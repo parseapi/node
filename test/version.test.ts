@@ -21,7 +21,8 @@ describe('SDK API contract', () => {
 		expect(calls.map(({ url }) => new URL(url).pathname)).toEqual(['/country/US', '/country/US', '/ip', '/useragent']);
 		for (const { url, init } of calls) {
 			const headers = new Headers(init.headers);
-			expect(headers.get('Parse-Version')).toBe('2.0.0');
+			expect(headers.get('X-API-Version')).toBe('2.1.0');
+			expect(headers.has('Parse-Version')).toBe(false);
 			expect(headers.get('X-API-Key')).toBe('same-production-key');
 			expect(new URL(url).search).toBe('');
 			expect(init.redirect).toBe('manual');

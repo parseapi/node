@@ -34,9 +34,8 @@ const records = [
     "chat": [],
     "payments": [],
     "hosting": [],
-    "deep": {},
     "future": true
-  },
+},
   {
     "domain": "xn--bcher-kva.example",
     "url": "https://xn--bcher-kva.example/",
@@ -163,21 +162,20 @@ const records = [
     "cms": [],
     "servers": [],
     "frameworks": [
-      {
-        "technology": "nextjs",
-        "name": "Next.js",
-        "version": null,
-        "future": true
-      }
+        {
+            "technology": "nextjs",
+            "name": "Next.js",
+            "version": null,
+            "future": true
+        }
     ],
     "ecommerce": [],
     "analytics": [],
     "chat": [],
     "payments": [],
     "hosting": [],
-    "deep": {},
     "future": true
-  },
+},
   {
     "domain": "xn--bcher-kva.example",
     "url": "https://xn--bcher-kva.example/",
@@ -193,9 +191,8 @@ const records = [
     "chat": null,
     "payments": null,
     "hosting": null,
-    "deep": {},
     "future": true
-  }
+}
 ] as const;
 it('Stack preserves homepage and site inventories, multiple CMS and servers, and future fields', async () => {
 	for (const record of records) {
@@ -208,7 +205,7 @@ it('Stack preserves homepage and site inventories, multiple CMS and servers, and
 		const url = new URL(input);
 		expect(url.pathname).toBe('/stack/b%C3%BCcher.example');
 		expect(Object.fromEntries(url.searchParams)).toEqual({ deep: 'true', pretty: 'true' });
-		expect(new Headers(init.headers).get('parse-version')).toBe('2.0.0');
+		expect(new Headers(init.headers).get('x-api-version')).toBe('2.1.0');
 	}
 });
 it('Stack default call omits optional query parameters and preserves omitted deep', async () => {
@@ -227,9 +224,9 @@ it('Stack gets its own deadline while explicit client and request settings win',
 			[undefined, undefined, 35000], [10000, undefined, 10000],
 			[45000, undefined, 45000], [45000, 1200, 1200], [undefined, 1200, 1200],
 		] as const) {
-			const parse = parseAPI('test_key', { timeoutMs: clientTimeout, fetch: async () => Response.json({ ...records[0], deep: {} }) });
+			const parse = parseAPI('test_key', { timeoutMs: clientTimeout, fetch: async () => Response.json({ ...records[0] }) });
 			timer.mockClear();
-			expect((await parse.stack('example.com', { timeoutMs: requestTimeout })).deep).toEqual({});
+			expect(Object.hasOwn((await parse.stack('example.com', { timeoutMs: requestTimeout })), 'deep')).toBe(false);
 			expect(timer.mock.calls.map(call => call[1])).toEqual([expected]);
 			timer.mockClear();
 			await parse.domain('example.com');
@@ -245,10 +242,10 @@ it('Stack exposes each technology once and has no optional public details', () =
 	expectTypeOf<Stack>().not.toHaveProperty('scope');
 	expectTypeOf<Stack>().not.toHaveProperty('pages');
 	expectTypeOf<Stack>().not.toHaveProperty('partial');
-	expectTypeOf<keyof Stack>().toEqualTypeOf<'domain' | 'url' | 'checked_at' | 'cms' | 'servers' | 'frameworks' | 'ecommerce' | 'analytics' | 'chat' | 'payments' | 'hosting' | 'deep'>();
-	expectTypeOf<Stack['deep']>().toEqualTypeOf<Record<string, never> | undefined>();
+	expectTypeOf<keyof Stack>().toEqualTypeOf<'domain' | 'url' | 'checked_at' | 'cms' | 'servers' | 'frameworks' | 'ecommerce' | 'analytics' | 'chat' | 'payments' | 'hosting'>();
+	expectTypeOf<Stack>().not.toHaveProperty('deep');
 	for (const record of records) {
-		if ('deep' in record) expect(record.deep).toEqual({});
+		if ('deep' in record) expect(Object.hasOwn(record, 'deep')).toBe(false);
 		expect(JSON.stringify(record)).not.toMatch(/"(?:status|evidence|detector_version|id|category|technologies|observed_at|cms_name|cms_version|server|server_name|server_version)":/);
 	}
 });

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, expectTypeOf, it } from 'vitest';
-import { parseAPI, type Domain, type DomainOptions, type DomainResult, type Stack, type StackResult } from '../src/index.js';
+import { parseAPI, type Domain, type DomainOptions, type Stack } from '../src/index.js';
 
-const fixtures = JSON.parse(readFileSync(new URL('./fixtures/domain-result.json', import.meta.url), 'utf8')) as Record<string, DomainResult>;
+const fixtures = JSON.parse(readFileSync(new URL('./fixtures/domain-result.json', import.meta.url), 'utf8')) as Record<string, Domain>;
 
 it('preserves unknown availability and partial registration in one ordinary request', async () => {
 	for (const [name, body] of Object.entries(fixtures)) {
@@ -11,12 +11,12 @@ it('preserves unknown availability and partial registration in one ordinary requ
 			calls.push({ url: new URL(String(url)), options });
 			return Response.json(body);
 		} });
-		const result = await client.domainResult('bücher.example', { deep: true });
+		const result = await client.domain('bücher.example', { deep: true });
 		expect(result, name).toEqual(body);
 		expect(calls).toHaveLength(1);
 		expect(calls[0]!.url.pathname).toBe('/domain/b%C3%BCcher.example');
 		expect(calls[0]!.url.search).toBe('?deep=true');
-		expect(new Headers(calls[0]!.options?.headers).get('Parse-Version')).toBe('2.0.0');
+		expect(new Headers(calls[0]!.options?.headers).get('X-API-Version')).toBe('2.1.0');
 		expect(new Headers(calls[0]!.options?.headers).get('X-API-Key')).toBe('fixture');
 	}
 });
@@ -24,28 +24,27 @@ it('preserves unknown availability and partial registration in one ordinary requ
 it('does not infer false or empty lists from partial registration', async () => {
 	let body = fixtures.unregistered_partial!;
 	const client = parseAPI('fixture', { fetch: async () => Response.json(body) });
-	const partial = await client.domainResult('example.com', { deep: true });
-	expect(partial.deep?.registration?.dnssec).toBeUndefined();
-	expect(partial.deep?.registration?.status).toBeUndefined();
+	const partial = await client.domain('example.com', { deep: true });
+	expect(partial?.registration?.dnssec).toBeUndefined();
+	expect(partial?.registration?.status).toBeUndefined();
 	body = fixtures.registered_unknown_detail!;
-	const unknown = await client.domainResult('example.com', { deep: true });
-	expect(unknown.deep?.registration?.dnssec).toBeNull();
-	expect(unknown.deep?.registration?.status).toBeNull();
+	const unknown = await client.domain('example.com', { deep: true });
+	expect(unknown?.registration?.dnssec).toBeNull();
+	expect(unknown?.registration?.status).toBeNull();
 	body = fixtures.registered_false_empty!;
-	const known = await client.domainResult('example.com', { deep: true });
-	expect(known.deep?.registration?.dnssec).toBe(false);
-	expect(known.deep?.registration?.status).toEqual([]);
+	const known = await client.domain('example.com', { deep: true });
+	expect(known?.registration?.dnssec).toBe(false);
+	expect(known?.registration?.status).toEqual([]);
 });
 
 it('uses nullable ordinary Domain availability and the current Stack model', () => {
 	expectTypeOf<Domain['available']>().toEqualTypeOf<boolean | null>();
-	expectTypeOf<DomainResult['available']>().toEqualTypeOf<boolean | null>();
 	expectTypeOf<Stack>().not.toHaveProperty('pages');
 	expectTypeOf<Stack>().not.toHaveProperty('scope');
-	expectTypeOf<StackResult>().not.toHaveProperty('scope');
-	expectTypeOf<StackResult>().not.toHaveProperty('pages');
-	expectTypeOf<StackResult>().not.toHaveProperty('partial');
-	const current: StackResult = { domain: 'example.com', url: 'https://example.com/', checked_at: null,
+	expectTypeOf<Stack>().not.toHaveProperty('scope');
+	expectTypeOf<Stack>().not.toHaveProperty('pages');
+	expectTypeOf<Stack>().not.toHaveProperty('partial');
+	const current: Stack = { domain: 'example.com', url: 'https://example.com/', checked_at: null,
 		cms: null, servers: null, frameworks: null, ecommerce: null, analytics: null, chat: null, payments: null, hosting: null };
 	expect(Object.keys(current)).toHaveLength(11);
 });
@@ -56,10 +55,10 @@ it('keeps ordinary error and cancellation handling on the existing transport', a
 		calls++;
 		return Response.json({ code: 'service_unavailable', message: 'Try again', docs: null, request_id: 'fixture' }, { status: 503 });
 	} });
-	await expect(client.domainResult('example.com', { retries: 0 })).rejects.toMatchObject({ status: 503, code: 'service_unavailable' });
+	await expect(client.domain('example.com', { retries: 0 })).rejects.toMatchObject({ status: 503, code: 'service_unavailable' });
 	expect(calls).toBe(1);
 	const controller = new AbortController(); controller.abort();
-	await expect(client.domainResult('example.com', { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+	await expect(client.domain('example.com', { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
 	expect(calls).toBe(1);
 });
 
@@ -70,6 +69,6 @@ export async function existingStrictApp(client: ReturnType<typeof parseAPI>) {
 	const known: boolean | null = oldDomain.available;
 	const oldStack = await client.stack('example.com');
 	const checkedAt: string | null = oldStack.checked_at;
-	const currentView: StackResult = await client.stack('example.com');
+	const currentView: Stack = await client.stack('example.com');
 	return { known, checkedAt, currentView };
 }

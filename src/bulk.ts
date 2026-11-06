@@ -141,7 +141,7 @@ export function createBulkClient(apiKey?: string, options: BulkClientOptions = {
 			const response = await doFetch(`${webUrl}${path}`, {
 				method: input === undefined ? 'GET' : 'POST',
 				redirect: 'manual', credentials: 'omit',
-				headers: { 'X-API-Key': key!, 'Parse-Version': '2.0.0', 'Accept': 'application/json', ...(input === undefined ? {} : { 'Content-Type': 'application/json' }) },
+				headers: { 'X-API-Key': key!, 'X-API-Version': '2.1.0', 'Accept': 'application/json', ...(input === undefined ? {} : { 'Content-Type': 'application/json' }) },
 				...(input === undefined ? {} : { body: JSON.stringify(input) }), signal: controller.signal,
 			});
 			signal?.throwIfAborted();

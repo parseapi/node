@@ -22,6 +22,6 @@ it.each(['München', null])('preserves the native-name wire value %s in direct a
  expect((await parse.holiday('DE')).holidays[0]!.name_local).toBe(name_local);
  body = { holiday: record };
  expect((await parse.holiday.date('DE', '2026-12-25')).holiday?.name_local).toBe(name_local);
- body = { deep: { city: record } };
- expect((await parse.point(48, 11, { deep: true })).deep?.city?.name_local).toBe(name_local);
+ body = { city: record };
+ expect((await parse.point(48, 11, { deep: true }))?.city?.name_local).toBe(name_local);
 });
