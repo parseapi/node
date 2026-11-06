@@ -3,8 +3,10 @@
 Official ParseAPI client for Node and TypeScript.
 
 ```bash
-npm install @parseapi/sdk
+npm install @parseapi/sdk@1.14.0
 ```
+
+Version 1.14.0 selects API 2.1. Install the exact version above or use `@parseapi/sdk@api21`. npm `latest` stays on 1.13.5 for API 2.0 applications.
 
 ```ts
 import { parseAPI } from '@parseapi/sdk';
