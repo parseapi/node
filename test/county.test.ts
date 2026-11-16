@@ -1,14 +1,14 @@
 import { expect, expectTypeOf, it } from 'vitest';
 import { parseAPI, type County, type CountyOptions, type District, type DistrictOptions, type StateCounties, type StateCountyItem, type StateDistricts } from '../src/index.js';
 
-it('uses County routes and 2.2 for canonical and deprecated source calls without duplicating fields', async () => {
+it('uses canonical and preserved legacy paths with 2.2 County results without duplicating fields', async () => {
   const calls: URL[] = [];
   const county = { county: 'E09000033', iso_code: 'GB-WSM', name: 'City of Westminster', type: 'district', population: 0, property_tax: null };
   const list = { state: 'ENG', country: 'GB', counties: [county] };
   const client = parseAPI('fixture', { fetch: async (input, init) => {
     const url = new URL(String(input)); calls.push(url);
     expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
-    return Response.json(url.pathname.endsWith('/counties') ? list : county);
+    return Response.json(/\/(?:counties|districts)$/.test(url.pathname) ? list : county);
   } });
   for (const call of [client.county, client.district]) {
     const result = await call('Westminster', { country: 'GB', state: 'ENG' });
@@ -18,12 +18,35 @@ it('uses County routes and 2.2 for canonical and deprecated source calls without
   for (const call of [client.state.counties, client.state.districts]) {
     expect(await call('ENG', { country: 'GB' })).toEqual(list);
   }
-  expect(calls.map(url => url.pathname)).toEqual(['/county/Westminster', '/county/Westminster', '/state/ENG/counties', '/state/ENG/counties']);
+  expect(calls.map(url => url.pathname)).toEqual(['/county/Westminster', '/district/Westminster', '/state/ENG/counties', '/state/ENG/districts']);
   expectTypeOf<District>().toEqualTypeOf<County>();
   expectTypeOf<DistrictOptions>().toEqualTypeOf<CountyOptions>();
   expectTypeOf<StateDistricts>().toEqualTypeOf<StateCounties>();
   expectTypeOf<County['iso_code']>().toEqualTypeOf<string | null | undefined>();
   expectTypeOf<StateCountyItem['iso_code']>().toEqualTypeOf<string | null | undefined>();
+});
+
+it('preserves legacy routes and raw responses when an existing adapter explicitly pins 2.1', async () => {
+  const calls: { path: string; version: string | null }[] = [];
+  const district = { district: 'E09000033', name: 'Westminster', type: 'district' };
+  const list = { state: 'ENG', country: 'GB', districts: [district] };
+  const client = parseAPI('fixture', { fetch: async (input, init) => {
+    const url = new URL(String(input));
+    const headers = new Headers(init?.headers);
+    expect(headers.get('X-API-Version')).toBe('2.2.0');
+    // Public MCP api21 uses its own fetch adapter to retain this exact pin.
+    headers.set('X-API-Version', '2.1.0');
+    calls.push({ path: url.pathname, version: headers.get('X-API-Version') });
+    if (url.pathname === '/district/Westminster') return Response.json(district);
+    if (url.pathname === '/state/ENG/districts') return Response.json(list);
+    return Response.json({ code: 'not_found', message: 'Unknown route in 2.1' }, { status: 404 });
+  } });
+  expect(await client.district('Westminster', { country: 'GB' })).toEqual(district);
+  expect(await client.state.districts('ENG', { country: 'GB' })).toEqual(list);
+  expect(calls).toEqual([
+    { path: '/district/Westminster', version: '2.1.0' },
+    { path: '/state/ENG/districts', version: '2.1.0' },
+  ]);
 });
 
 it('preserves the State iso_code value or null without inventing older response keys', async () => {

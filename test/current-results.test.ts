@@ -7,7 +7,8 @@ it('uses the captured current wire models with one request and no fabricated fie
 	const calls: URL[] = [];
 	const client = parseAPI('fixture', { fetch: async input => {
 		const url = new URL(String(input)); calls.push(url);
-		return Response.json(fixtures[url.pathname.split('/')[1]!]);
+		const resource = url.pathname.split('/')[1]!;
+		return Response.json(fixtures[resource === 'district' ? 'county' : resource]);
 	} });
 	const stack = await client.stack('stripe.com', { pretty: true });
 	const state = await client.state('CA', { country: 'US' });
@@ -15,7 +16,7 @@ it('uses the captured current wire models with one request and no fabricated fie
 	expect(stack).toEqual(fixtures.stack);
 	expect(state).toEqual(fixtures.state);
 	expect(district).toEqual(fixtures.county);
-	expect(calls.map(url => url.pathname + url.search)).toEqual(['/stack/stripe.com?pretty=true', '/state/CA?country=US', '/county/36061?country=US&state=NY']);
+	expect(calls.map(url => url.pathname + url.search)).toEqual(['/stack/stripe.com?pretty=true', '/state/CA?country=US', '/district/36061?country=US&state=NY']);
 	expectTypeOf<Stack>().not.toHaveProperty('scope');
 	expectTypeOf<Stack>().not.toHaveProperty('pages');
 	expectTypeOf<Stack>().not.toHaveProperty('partial');

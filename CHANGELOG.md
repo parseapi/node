@@ -2,6 +2,7 @@
 
 ## 1.15.0 - 2026-11-16
 
+- Keep deprecated District callable paths usable by existing version-pinned MCP adapters. API 2.2 lookup aliases return the same canonical County fields.
 - Breaking State field-read migration: update `iso_subdivision` reads to `iso_code`, with the existing value or null. County and State county items add nullable `iso_code` for the exact place. Other ISO representations and package versions are unchanged.
 
 ## 1.14.0 — 2026-11-02

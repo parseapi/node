@@ -78,13 +78,13 @@ describe('url mapping', () => {
 		[
 			'state.districts',
 			(p) => p.state.districts('NC', { country: 'US' }),
-			'https://api.parseapi.com/state/NC/counties?country=US',
+			'https://api.parseapi.com/state/NC/districts?country=US',
 		],
-		['district', (p) => p.district('37081'), 'https://api.parseapi.com/county/37081'],
+		['district', (p) => p.district('37081'), 'https://api.parseapi.com/district/37081'],
 		[
 			'district by name',
 			(p) => p.district('guilford county', { state: 'NC' }),
-			'https://api.parseapi.com/county/guilford%20county?state=NC',
+			'https://api.parseapi.com/district/guilford%20county?state=NC',
 		],
 		['city', (p) => p.city('charlotte', { state: 'NC' }), 'https://api.parseapi.com/city/charlotte?state=NC'],
 		[

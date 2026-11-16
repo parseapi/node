@@ -437,7 +437,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 					request(`/state/${enc(code)}/counties`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 				/** @deprecated Use counties. The result uses counties/county on API 2.2. */
 				districts: (code: string, opts?: StateDistrictsOptions): Promise<StateCounties> =>
-					request(`/state/${enc(code)}/counties`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+					request(`/state/${enc(code)}/districts`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
@@ -445,7 +445,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			request(`/county/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 		/** @deprecated Use county. The result uses county on API 2.2. */
 		district: (code: string, opts?: DistrictOptions): Promise<County> =>
-			request(`/county/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
+			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 
 		city: Object.assign(
 			((name: string, opts?: CityOptions): Promise<City> =>

@@ -569,6 +569,8 @@ This version selects API `2.1.0`. Update existing `.deep` property reads to the 
 
 ## County migration: HTTP API 2.2
 
+Deprecated callable names keep their original HTTP paths so existing version-pinned adapters continue working. Canonical County calls use `/county` and State `/counties`; the SDK's normal 2.2 calls return the canonical County fields on either lookup path.
+
 This source selects HTTP API `2.2.0`. County is the public name for counties and comparable administrative areas internationally. Use `county` and the State counties operation. Read `county`, `county_name`, `county_name_local` and `counties` in affected geography results; City `capital_of` uses `county` for this administrative level. Actual local types such as `department` and `district` retain their meaning.
 
 This is a breaking field-read upgrade from earlier contracts. Deprecated District callable names remain source aliases, but SDK results use the canonical County fields. Update property reads before upgrading. Older installed packages keep their existing API contract, and this client does not change an account's saved default.
