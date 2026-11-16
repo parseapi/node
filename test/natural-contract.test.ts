@@ -27,10 +27,10 @@ it('keeps basic Email and explicit verification as distinct wire operations', as
  expect(calls[0]!.url.pathname).toBe('/email/a%2Bb%40example.com');
  expect(calls[0]!.options?.body).toBeUndefined();
  for (const call of calls.slice(1)) {
-  expect(call.url.pathname).toBe('/email/verify'); expect(call.url.search).toBe('');
-  expect(call.options?.method).toBe('POST'); expect(JSON.parse(String(call.options?.body))).toEqual({ email: body.email });
+  expect(call.url.pathname).toBe('/email/verify'); expect(call.url.searchParams.get('email')).toBe(body.email);
+  expect(call.options?.method ?? 'GET').toBe('GET'); expect(call.options?.body).toBeUndefined();
  }
- expect(result.deliverable).toBe(false); expect(result.catchall).toBeNull(); expect(Object.hasOwn(result, 'deep')).toBe(false);
+ expect(result.status).toBe('undeliverable'); expect(result.deliverable).toBe(false); expect(result.catchall).toBeNull(); expect(Object.hasOwn(result, 'deep')).toBe(false);
 });
 
 it('never automatically repeats a mailbox verification after an uncertain failure', async () => {

@@ -10,7 +10,7 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.15.0';
+const VERSION = '1.15.1';
 const API_VERSION = '2.2.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -290,11 +290,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		const retries = controls.retries ?? configuredRetries ?? (metered(path, query) ? 0 : DEFAULT_RETRIES);
 		validateTimeout(attemptTimeout);
 		validateRetries(retries);
-		const body = json === undefined ? undefined : JSON.stringify(json);
+		const lookupField = path === '/email/verify' ? 'email' : ['/emoji/parse', '/emoji/convert'].includes(path) ? 'text' : undefined;
+		const lookupValue = lookupField ? query?.[lookupField] : undefined;
+		if (json === undefined && lookupField && typeof lookupValue !== 'string') {
+			json = { [lookupField]: lookupValue }; query = { ...query }; delete query[lookupField];
+		}
+		let body = json === undefined ? undefined : JSON.stringify(json);
 		const url = new URL(baseUrl + path);
 		if (controls.lang !== undefined) url.searchParams.set('lang', controls.lang);
 		for (const [name, value] of Object.entries(query ?? {})) {
 			if (value !== undefined) url.searchParams.set(name, String(value));
+		}
+		if (json === undefined && lookupField && (url.href.length > 8000 || url.searchParams.get(lookupField) !== lookupValue)) {
+			json = { [lookupField]: lookupValue }; body = JSON.stringify(json); url.searchParams.delete(lookupField);
 		}
 
 		for (let attempt = 0; ; attempt++) {
@@ -529,8 +537,8 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 		 * Deep checks default to one attempt. An explicit retry count can repeat paid usage.
 		 */
 		email: Object.assign(
-			(email: string, opts?: EmailOptions): Promise<Email> => opts?.deep ? request('/email/verify', undefined, undefined, opts, { email }) : request(`/email/${enc(email)}`, undefined, undefined, opts),
-			{ verify: (email: string, opts?: RequestOptions): Promise<Email> => request('/email/verify', undefined, undefined, opts, { email }) }
+			(email: string, opts?: EmailOptions): Promise<Email> => opts?.deep ? request('/email/verify', { email }, undefined, opts) : request(`/email/${enc(email)}`, undefined, undefined, opts),
+			{ verify: (email: string, opts?: RequestOptions): Promise<Email> => request('/email/verify', { email }, undefined, opts) }
 		),
 
 		/** Parse a phone number and its formats. Pass country for national numbers when needed. Deep adds numbering-plan geography. */
@@ -653,12 +661,12 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 				categories: (opts?: RequestOptions): Promise<EmojiCategories> =>
 					request('/emoji/categories', undefined, undefined, requestControls(opts)),
 				convert: (text: string, opts: EmojiConvertOptions): Promise<EmojiConversion> =>
-					request('/emoji/convert', { direction: opts.direction, shortcode_source: opts.shortcodeSource }, undefined, opts, { text }),
+					request('/emoji/convert', { text, direction: opts.direction, shortcode_source: opts.shortcodeSource }, undefined, opts),
 				/** Extract complete sequences. Positions use UTF-16 code units; end is exclusive. */
 				catalog: (opts?: EmojiCatalogOptions): Promise<EmojiCatalogData> =>
 					request('/emoji/catalog', { ...emojiFilters(opts) }, undefined, opts),
 				parse: (text: string, opts?: EmojiParseOptions): Promise<EmojiParse> =>
-					request('/emoji/parse', deepQuery(opts), undefined, opts, { text }),
+					request('/emoji/parse', { text, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.15.1 — 2026-11-16
+
+- Existing Email verification and Emoji parse/convert methods now use GET query parameters. Method signatures, response models, API 2.2 selection and no-retry defaults are unchanged.
+- Existing API POST requests remain supported for compatibility. Long or URL-incompatible inputs select POST before dispatch; requests are never retried just to switch methods.
+
 ## 1.15.0 - 2026-11-16
 
 - Keep deprecated District callable paths usable by existing version-pinned MCP adapters. API 2.2 lookup aliases return the same canonical County fields.

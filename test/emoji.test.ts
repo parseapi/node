@@ -33,9 +33,9 @@ it('posts raw text privately and preserves complete sequence metadata, counts an
 	const fetch = vi.fn(async (input, init?: RequestInit) => {
 		const url = new URL(String(input));
 		expect(url.pathname).toBe('/emoji/parse');
-		expect(Object.fromEntries(url.searchParams)).toEqual({ lang: 'fr', deep: 'true' });
-		expect(init?.method).toBe('POST');
-		expect(JSON.parse(init?.body as string)).toEqual({ text });
+		expect(Object.fromEntries(url.searchParams)).toEqual({ text, lang: 'fr', deep: 'true' });
+		expect(init?.method ?? 'GET').toBe('GET');
+		expect(init?.body).toBeUndefined();
 		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
 		expect(init?.redirect).toBe('manual');
 		return new Response(JSON.stringify(payload));
@@ -48,7 +48,7 @@ it('posts raw text privately and preserves complete sequence metadata, counts an
 
 
 it('converts private text with one request and explicit shortcode identity',async()=>{
- const fetch=vi.fn(async(input,init)=>{expect(new URL(String(input)).pathname).toBe('/emoji/convert');expect(init?.method).toBe('POST');expect(JSON.parse(init?.body as string)).toEqual({text:':rocket:'});return Response.json({text:'🚀',unresolved:[]});});
+ const fetch=vi.fn(async(input,init)=>{expect(new URL(String(input)).pathname).toBe('/emoji/convert');expect(init?.method ?? 'GET').toBe('GET');expect(new URL(String(input)).searchParams.get('text')).toBe(':rocket:');expect(init?.body).toBeUndefined();return Response.json({text:'🚀',unresolved:[]});});
  expect((await parseAPI('test',{fetch}).emoji.convert(':rocket:',{direction:'to_emoji',shortcodeSource:'github'})).text).toBe('🚀');expect(fetch).toHaveBeenCalledTimes(1);
 });
 it('decodes the actual three-style rendering and provider credit response',async()=>{
@@ -59,4 +59,16 @@ it('decodes the actual three-style rendering and provider credit response',async
  expect(Object.keys(artwork)).toEqual(['noto','twemoji','openmoji']);
  expect(artwork.openmoji?.svg).toBe('https://cdn.parseapi.com/emoji/openmoji/17.0.0/1f680.svg');
  expect(artwork.openmoji?.png?.['72']).toBe('https://cdn.parseapi.com/emoji/openmoji/17.0.0/72/1f680.png');
+});
+
+
+it('preserves long text and unpaired UTF-16 with one initial POST, while empty text remains a valid GET', async () => {
+ for (const text of ['🚀'.repeat(8000), '\ud800', '']) {
+  const calls: {url:URL; init?:RequestInit}[]=[];
+  const fetch=vi.fn(async(input,init)=>{calls.push({url:new URL(String(input)),init});return Response.json({emojis:[]});});
+  await parseAPI('fixture',{fetch}).emoji.parse(text);
+  expect(calls).toHaveLength(1);
+  if(text==='') {expect(calls[0]!.init?.method??'GET').toBe('GET');expect(calls[0]!.url.searchParams.get('text')).toBe('');}
+  else {expect(calls[0]!.init?.method).toBe('POST');expect(calls[0]!.url.searchParams.has('text')).toBe(false);expect(JSON.parse(String(calls[0]!.init?.body))).toEqual({text});}
+ }
 });
