@@ -16,7 +16,7 @@ it('preserves unknown availability and partial registration in one ordinary requ
 		expect(calls).toHaveLength(1);
 		expect(calls[0]!.url.pathname).toBe('/domain/b%C3%BCcher.example');
 		expect(calls[0]!.url.search).toBe('?deep=true');
-		expect(new Headers(calls[0]!.options?.headers).get('X-API-Version')).toBe('2.1.0');
+		expect(new Headers(calls[0]!.options?.headers).get('X-API-Version')).toBe('2.2.0');
 		expect(new Headers(calls[0]!.options?.headers).get('X-API-Key')).toBe('fixture');
 	}
 });

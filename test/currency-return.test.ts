@@ -17,7 +17,7 @@ describe('restored published Currency client contract', () => {
     expect(calls[1]!.url.searchParams.get('deep')).toBe('true');
     expect(calls[1]!.url.searchParams.get('lang')).toBe('fr');
     expect(calls[3]!.url.searchParams.get('amount')).toBe('0');
-    for (const call of calls) { expect(call.headers.get('X-API-Key')).toBe('fixture'); expect(call.headers.get('X-API-Version')).toBe('2.1.0'); }
+    for (const call of calls) { expect(call.headers.get('X-API-Key')).toBe('fixture'); expect(call.headers.get('X-API-Version')).toBe('2.2.0'); }
     expect('mac' in parse).toBe(false); expect('measure' in parse).toBe(false);
   });
 });

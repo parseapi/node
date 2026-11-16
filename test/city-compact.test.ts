@@ -6,7 +6,7 @@ it('keeps matched City facts and cursor when source and score are absent', async
  const rows = JSON.parse(readFileSync(new URL('./fixtures/noise-approved.json', import.meta.url), 'utf8')).filter((row: { id: string }) => row.id.startsWith('city-'));
  let calls = 0;
  const client = parseAPI('fixture', { retries: 0, fetch: async (_url, init) => {
-  expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
+  expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
   return Response.json(rows[calls++].body);
  } });
  for (const row of rows) {

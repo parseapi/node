@@ -1,5 +1,5 @@
 export * from './bulk.js';
-import type { Currency, CurrencyRate, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, District, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateDistricts, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
+import type { Currency, CurrencyRate, Asn, Card, Address, AddressSearch, Company, CompanyProfile, CompanySearch, Caller, Carrier, City, CityNearby, CityNearest, CitySearch, Continent, ContinentCountries, Country, CountryStates, DateInfo, County, Dns, Stack, Domain, Elevation, ElevationLocations, Email, Emoji, EmojiSearch, EmojiBrowse, EmojiCategories, EmojiParse, EmojiConversion, EmojiCatalogData, Hlr, Industry, IndustrySearch, HolidayDate, HolidayYear, Ip, Language, Mx, Name, Phone, Point, Postal, PostalDistance, PostalNearby, State, StateCounties, Timezone, Time, TimeZones, Useragent, Weather, CityGrain, CityResource, CityCollection, CityRelations, CityDistance, CityAmbiguityCandidate, CityList, CityNearbyCoordinates } from './types.js';
 import { ParseAPIError } from './errors.js';
 export { ParseAPIError } from './errors.js';
 import type { Preflight, PreflightTask } from './preflight.js';
@@ -10,8 +10,8 @@ export * from './emoji-catalog.js';
 export * from './preflight.js';
 export * from './task.js';
 
-const VERSION = '1.14.0';
-const API_VERSION = '2.1.0';
+const VERSION = '1.15.0';
+const API_VERSION = '2.2.0';
 const DEFAULT_BASE_URL = 'https://api.parseapi.com';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -51,8 +51,12 @@ export type ContinentCountriesOptions = LanguageOption & RequestOptions;
 export type CountryOptions = LanguageOption & DeepOption & RequestOptions;
 export type CountryStatesOptions = LanguageOption & RequestOptions;
 export type StateOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
-export type StateDistrictsOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
-export type DistrictOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
+export type StateCountiesOptions = LanguageOption & { country?: string } & DeepOption & RequestOptions;
+export type CountyOptions = LanguageOption & { country?: string; state?: string } & DeepOption & RequestOptions;
+/** @deprecated Use StateCountiesOptions. */
+export type StateDistrictsOptions = StateCountiesOptions;
+/** @deprecated Use CountyOptions. */
+export type DistrictOptions = CountyOptions;
 export type CityOptions = LanguageOption & CityScopeOptions & CityResponseOptions & { aliases?: boolean; ambiguity?: 'error' } & DeepOption & RequestOptions;
 export type CityIdOptions = LanguageOption & CityResponseOptions & { hierarchy?: boolean } & DeepOption & RequestOptions;
 export type CitySearchOptions = LanguageOption & CityScopeOptions & CityCollectionFilters & CityPagingOptions & CityResponseOptions & { aliases?: boolean; limit?: number; sort?: CitySort; match?: 'exact' | 'prefix' | 'fuzzy'; maxDistance?: 1 | 2 } & DeepOption & RequestOptions;
@@ -182,7 +186,7 @@ export type DateTodayOptions = LanguageOption & { to?: string } & DeepOption & R
 export type HolidayOptions = { year?: number } & RequestOptions;
 export type HolidayDateOptions = RequestOptions;
 export type ElevationOptions = RequestOptions;
-/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
+/** Resolve the country, state, county and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 export type PointOptions = LanguageOption & DeepOption & RequestOptions;
 /** Get current conditions in metric and imperial units. Paid deep adds specialist current measurements, forecasts and related detail. With deep, date selects a past UTC day (YYYY-MM-DD) in history alongside current conditions. Date alone does not request history. */
 export type WeatherOptions = DeepOption & {
@@ -429,13 +433,19 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			(code: string, opts?: StateOptions): Promise<State> =>
 				request(`/state/${enc(code)}`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			{
-				districts: (code: string, opts?: StateDistrictsOptions): Promise<StateDistricts> =>
-					request(`/state/${enc(code)}/districts`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+				counties: (code: string, opts?: StateCountiesOptions): Promise<StateCounties> =>
+					request(`/state/${enc(code)}/counties`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
+				/** @deprecated Use counties. The result uses counties/county on API 2.2. */
+				districts: (code: string, opts?: StateDistrictsOptions): Promise<StateCounties> =>
+					request(`/state/${enc(code)}/counties`, { country: opts?.country, ...deepQuery(opts) }, undefined, opts),
 			}
 		),
 
-		district: (code: string, opts?: DistrictOptions): Promise<District> =>
-			request(`/district/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
+		county: (code: string, opts?: CountyOptions): Promise<County> =>
+			request(`/county/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
+		/** @deprecated Use county. The result uses county on API 2.2. */
+		district: (code: string, opts?: DistrictOptions): Promise<County> =>
+			request(`/county/${enc(code)}`, { country: opts?.country, state: opts?.state, ...deepQuery(opts) }, undefined, opts),
 
 		city: Object.assign(
 			((name: string, opts?: CityOptions): Promise<City> =>
@@ -625,7 +635,7 @@ export function parseAPI(apiKey?: string, options: ParseAPIOptions = {}) {
 			}
 		),
 
-		/** Resolve the country, state, district and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
+		/** Resolve the country, state, county and timezone at coordinates. Deep adds terrain, compact nearest-city context and supported electoral detail on paid plans; existing accounts retain their current Deep access. The timezone ID stays in core. The nearest city is null when none is within 200 km. */
 		point: (lat: number, lon: number, opts?: PointOptions): Promise<Point> =>
 			request('/point', { lat, lon, ...deepQuery(opts) }, undefined, opts),
 

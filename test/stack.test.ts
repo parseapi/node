@@ -205,7 +205,7 @@ it('Stack preserves homepage and site inventories, multiple CMS and servers, and
 		const url = new URL(input);
 		expect(url.pathname).toBe('/stack/b%C3%BCcher.example');
 		expect(Object.fromEntries(url.searchParams)).toEqual({ deep: 'true', pretty: 'true' });
-		expect(new Headers(init.headers).get('x-api-version')).toBe('2.1.0');
+		expect(new Headers(init.headers).get('x-api-version')).toBe('2.2.0');
 	}
 });
 it('Stack default call omits optional query parameters and preserves omitted deep', async () => {

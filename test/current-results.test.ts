@@ -3,7 +3,7 @@ import { expect, expectTypeOf, it } from 'vitest';
 import { parseAPI, type Stack, type State, type District } from '../src/index.js';
 
 it('uses the captured current wire models with one request and no fabricated fields', async () => {
-	const fixtures = Object.fromEntries(['stack', 'state', 'district'].map(name => [name, JSON.parse(readFileSync(new URL(`./fixtures/current-${name}.json`, import.meta.url), 'utf8'))]));
+	const fixtures = Object.fromEntries(['stack', 'state', 'district'].map(name => [name === 'district' ? 'county' : name, JSON.parse(readFileSync(new URL(`./fixtures/current-${name}.json`, import.meta.url), 'utf8'))]));
 	const calls: URL[] = [];
 	const client = parseAPI('fixture', { fetch: async input => {
 		const url = new URL(String(input)); calls.push(url);
@@ -14,8 +14,8 @@ it('uses the captured current wire models with one request and no fabricated fie
 	const district = await client.district('36061', { country: 'US', state: 'NY' });
 	expect(stack).toEqual(fixtures.stack);
 	expect(state).toEqual(fixtures.state);
-	expect(district).toEqual(fixtures.district);
-	expect(calls.map(url => url.pathname + url.search)).toEqual(['/stack/stripe.com?pretty=true', '/state/CA?country=US', '/district/36061?country=US&state=NY']);
+	expect(district).toEqual(fixtures.county);
+	expect(calls.map(url => url.pathname + url.search)).toEqual(['/stack/stripe.com?pretty=true', '/state/CA?country=US', '/county/36061?country=US&state=NY']);
 	expectTypeOf<Stack>().not.toHaveProperty('scope');
 	expectTypeOf<Stack>().not.toHaveProperty('pages');
 	expectTypeOf<Stack>().not.toHaveProperty('partial');

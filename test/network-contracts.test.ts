@@ -4,8 +4,8 @@ import { parseAPI, type Ip } from '../src/index.js';
 const fixtures = JSON.parse(readFileSync(new URL('./fixtures/network-contracts.json', import.meta.url), 'utf8'));
 
 it('exposes optional IP geography without requiring it on frozen or locked results', async () => {
-    expectTypeOf<Ip['district']>().toEqualTypeOf<string | null | undefined>();
-    expectTypeOf<Ip['district_name']>().toEqualTypeOf<string | null | undefined>();
+    expectTypeOf<Ip['county']>().toEqualTypeOf<string | null | undefined>();
+    expectTypeOf<Ip['county_name']>().toEqualTypeOf<string | null | undefined>();
     expectTypeOf<Ip['census_division']>().toEqualTypeOf<string | null | undefined>();
     expectTypeOf<Ip['census_region']>().toEqualTypeOf<string | null | undefined>();
     for (const name of ['ip_current', 'ip_frozen', 'ip_locked']) {
@@ -14,15 +14,15 @@ it('exposes optional IP geography without requiring it on frozen or locked resul
         const result = await client.ip('198.51.100.1', { deep: true });
         expect(result).toEqual(fixtures[name]);
         expect(calls).toHaveLength(1);
-        if (name === 'ip_current') expect(result?.district).toBe('27053');
-        else expect(result?.district).toBeUndefined();
+        if (name === 'ip_current') expect(result?.county).toBe('27053');
+        else expect(result?.county).toBeUndefined();
     }
 });
 
-it('preserves the State and District timezones on the existing calls', async () => {
+it('preserves the State and County timezones on the existing calls', async () => {
     for (const [kind, code, options, zones] of [
         ['state', 'CA', { country: 'US' }, ['America/Los_Angeles']],
-        ['district', '36061', { country: 'US', state: 'NY' }, ['America/New_York']],
+        ['county', '36061', { country: 'US', state: 'NY' }, ['America/New_York']],
     ] as const) {
         const calls: string[] = [];
         const client = parseAPI('fixture', { fetch: async input => { calls.push(String(input)); return Response.json(fixtures[`${kind}_current`]); } });

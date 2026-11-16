@@ -53,8 +53,8 @@
     "asn_name": "Example network",
     "state": "MN",
     "city": "Minneapolis",
-    "district": "27053",
-    "district_name": "Hennepin County",
+    "county": "27053",
+    "county_name": "Hennepin County",
     "census_division": "West North Central",
     "census_region": "Midwest",
     "registry": "arin",
@@ -112,8 +112,8 @@
     "domain": "example.com",
     "available": null
   },
-  "district_current": {
-    "district": "36061",
+  "county_current": {
+    "county": "36061",
     "name": "New York County",
     "type": "county",
     "state": "NY",

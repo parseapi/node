@@ -2,11 +2,11 @@ import { expect, expectTypeOf, it } from 'vitest';
 import { parseAPI, type City, type CityResource, type CitySearch, type CityCollection, type CityDistance, type CityRelations, type CityOptions, type CityNearest, type CityNearestOptions } from '../src/index.js';
 
 it('preserves default City facts, nulls, zero values and typed methods', async () => {
- const core:City={id:'city_7aj899nvwyku',name:'Vienna',name_local:'Wien',type:'city',state:'9',state_name:'Vienna',district:null,district_name:null,country:'AT',country_name:'Austria',latitude:48.2082,longitude:16.3738,timezone:'Europe/Vienna',population:0};
+ const core:City={id:'city_7aj899nvwyku',name:'Vienna',name_local:'Wien',type:'city',state:'9',state_name:'Vienna',county:null,county_name:null,country:'AT',country_name:'Austria',latitude:48.2082,longitude:16.3738,timezone:'Europe/Vienna',population:0};
  const calls:URL[]=[];
  const parse=parseAPI('fixture',{fetch:async input=>{const url=new URL(String(input));calls.push(url);return Response.json(url.searchParams.has('lat')?{...core,distance:0,distance_mi:0}:core);}});
  const result=await parse.city.id('city_7aj899nvwyku',{deep:true});
- expectTypeOf(result).toEqualTypeOf<City>();expect(result).toEqual(core);expect(result.district).toBeNull();expect(result?.population).toBe(0);
+ expectTypeOf(result).toEqualTypeOf<City>();expect(result).toEqual(core);expect(result.county).toBeNull();expect(result?.population).toBe(0);
  expect(Object.fromEntries(calls[0]!.searchParams)).toEqual({deep:'true'});
  expectTypeOf(await parse.city('Vienna',{country:'AT'})).toEqualTypeOf<City>();
  const nearest=await parse.city.nearest(48.2082,16.3738);expectTypeOf(nearest).toEqualTypeOf<CityNearest>();expect(nearest.distance).toBe(0);

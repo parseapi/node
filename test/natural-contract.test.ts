@@ -4,7 +4,7 @@ import { parseAPI, type Country, type Email, type Hlr, type Ip, type Useragent, 
 it('requests 2.1 and returns optional detail at its actual root home', async () => {
  const body = { country: 'US', population: 0, tax: { name: null, rate: 0 }, future: { enabled: false } };
  const fetch = vi.fn(async (_url: RequestInfo | URL, options?: RequestInit) => {
-  expect(new Headers(options?.headers).get('X-API-Version')).toBe('2.1.0');
+  expect(new Headers(options?.headers).get('X-API-Version')).toBe('2.2.0');
   return Response.json(body);
  });
  const result = await parseAPI('fixture', { fetch }).country('US', { deep: true });

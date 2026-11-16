@@ -34,7 +34,7 @@ it.each([
 	expect(await parse.company.search(options)).toEqual({ companies: [], next: null });
 	expect(calls).toHaveLength(1); expect(calls[0]!.url.pathname).toBe('/company');
 	expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual(query);
-	expect(new Headers(calls[0]!.init?.headers).get('X-API-Version')).toBe('2.1.0');
+	expect(new Headers(calls[0]!.init?.headers).get('X-API-Version')).toBe('2.2.0');
 	expect(calls[0]!.init?.redirect).toBe('manual');
 });
 

@@ -6,6 +6,7 @@ const cases = JSON.parse(readFileSync(new URL('./fixtures/iso-contract.json', im
 it('types the explicit ISO representations while retaining old-server declarations', () => {
  expectTypeOf<Country['iso_alpha3']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<Country['iso_numeric']>().toEqualTypeOf<number | null | undefined>();
+ expectTypeOf<State['iso_code']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<State['iso_subdivision']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<Language['iso_alpha3']>().toEqualTypeOf<string | null | undefined>();
  expectTypeOf<Currency['iso_numeric']>().toEqualTypeOf<number | null | undefined>();

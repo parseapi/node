@@ -142,7 +142,7 @@ it('snapshots downloaded data and isolates returned objects from later mutation'
 it('downloads JSON snapshots with existing transport controls', async () => {
   const fetch = vi.fn(async (input, init?: RequestInit) => {
     const url = new URL(String(input));
-    expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
+    expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
     if (url.pathname === '/emoji/metadata') return Response.json(fixture().metadata);
     expect(url.pathname).toBe('/emoji/catalog');
     return Response.json(fixture());

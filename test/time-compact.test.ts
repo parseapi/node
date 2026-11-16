@@ -6,7 +6,7 @@ it('reads all approved compact Time bodies without adding resolver fields or req
  const rows = JSON.parse(readFileSync(new URL('./fixtures/time-compact.json', import.meta.url), 'utf8'));
  let calls = 0;
  const client = parseAPI('fixture', { retries: 0, fetch: async (_url, init) => {
-  expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
+  expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
   return new Response(JSON.stringify(rows[calls++].body));
  } });
  for (const row of rows) {

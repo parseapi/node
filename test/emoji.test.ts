@@ -36,7 +36,7 @@ it('posts raw text privately and preserves complete sequence metadata, counts an
 		expect(Object.fromEntries(url.searchParams)).toEqual({ lang: 'fr', deep: 'true' });
 		expect(init?.method).toBe('POST');
 		expect(JSON.parse(init?.body as string)).toEqual({ text });
-		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
+		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
 		expect(init?.redirect).toBe('manual');
 		return new Response(JSON.stringify(payload));
 	});

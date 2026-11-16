@@ -1,4 +1,4 @@
-/** API 2.1 response types. Optional requested detail lives at its natural resource home. */
+/** API 2.2 response types. Optional requested detail lives at its natural resource home. */
 
 /** Optional requested detail fields are nullable and live on the resource. */
 export type Deep<T> = Partial<{ [K in keyof T]: T[K] | null }>;
@@ -24,9 +24,9 @@ export interface IpDeep {
 	tor: boolean;
 	vpn: boolean;
 	provider: string;
-	/** Present only when a district is supported, with the response country. */
-	district?: string | null;
-	district_name?: string | null;
+	/** Present only when a county is supported, with the response country. */
+	county?: string | null;
+	county_name?: string | null;
 	/** U.S. Census geography, when independently supported. */
 	census_division?: string | null;
 	census_region?: string | null;
@@ -136,7 +136,7 @@ export interface StateCapital {
 	longitude: number | null;
 }
 
-export interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 'country' | 'country_name' | 'fips' | 'iso' | 'iso_subdivision' | 'latitude' | 'longitude' | 'name' | 'name_local' | 'state' | 'timezones' | 'type'> {
+export interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 'country' | 'country_name' | 'fips' | 'iso' | 'iso_code' | 'iso_subdivision' | 'latitude' | 'longitude' | 'name' | 'name_local' | 'state' | 'timezones' | 'type'> {
 	state: string;
 	name: string;
 	name_local: string | null;
@@ -147,8 +147,10 @@ export interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 
 	longitude: number | null;
 	timezones: string[];
 	/** Full ISO 3166-2 subdivision code, including its country prefix. */
+	iso_code?: string | null;
+	/** @deprecated Earlier server spelling. Read iso_code on the current contract. */
 	iso_subdivision?: string | null;
-	/** @deprecated Legacy candidate spelling. Read iso_subdivision on the current contract. */
+	/** @deprecated Legacy candidate spelling. Read iso_code on the current contract. */
 	iso?: string | null;
 	fips: string | null;
 	area_codes: string[] | null;
@@ -156,30 +158,34 @@ export interface State extends Omit<Deep<StateDeep>, 'area_codes' | 'capital' | 
 
 }
 
-export interface StateDistrictItem extends Omit<Deep<StateDistrictDeep>, 'district' | 'name' | 'type'> {
-	district: string | null;
+export interface StateCountyItem extends Omit<Deep<StateCountyDeep>, 'county' | 'name' | 'type'> {
+	county: string | null;
+	/** Full ISO 3166-2 code for this exact county, or null when unassigned or unknown. */
+	iso_code?: string | null;
 	name: string | null;
 	type: string | null;
 
 }
 
-export interface StateDistrictDeep {
+export interface StateCountyDeep {
 	population: number | null;
 	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
 
 }
 
-export interface StateDistricts {
+export interface StateCounties {
 	state: string;
 	state_name: string | null;
 	country: string;
 	country_name: string | null;
-	districts: StateDistrictItem[];
+	counties: StateCountyItem[];
 }
 
-export interface District extends Omit<Deep<DistrictDeep>, 'country' | 'country_name' | 'district' | 'latitude' | 'longitude' | 'name' | 'state' | 'state_name' | 'timezones' | 'type'> {
-	district: string;
+export interface County extends Omit<Deep<CountyDeep>, 'country' | 'country_name' | 'county' | 'latitude' | 'longitude' | 'name' | 'state' | 'state_name' | 'timezones' | 'type'> {
+	county: string;
+	/** Full ISO 3166-2 code for this exact county, or null when unassigned or unknown. */
+	iso_code?: string | null;
 	name: string;
 	type: string | null;
 	state: string | null;
@@ -192,7 +198,7 @@ export interface District extends Omit<Deep<DistrictDeep>, 'country' | 'country_
 
 }
 
-export interface City extends Omit<Deep<CityDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'grain' | 'id' | 'latitude' | 'longitude' | 'match' | 'name' | 'name_local' | 'name_romanized' | 'parent' | 'romanization_language' | 'state' | 'state_name' | 'timezone' | 'type'> {
+export interface City extends Omit<Deep<CityDeep>, 'country' | 'country_name' | 'county' | 'county_name' | 'grain' | 'id' | 'latitude' | 'longitude' | 'match' | 'name' | 'name_local' | 'name_romanized' | 'parent' | 'romanization_language' | 'state' | 'state_name' | 'timezone' | 'type'> {
 	/** Present for explicit search matching when the server returns suggestion evidence. */
 	match?: CityMatch;
 	name: string;
@@ -202,8 +208,8 @@ export interface City extends Omit<Deep<CityDeep>, 'country' | 'country_name' | 
 	type: string | null;
 	state: string | null;
 	state_name: string | null;
-	district: string | null;
-	district_name: string | null;
+	county: string | null;
+	county_name: string | null;
 	country: string;
 	country_name: string | null;
 	latitude: number | null;
@@ -266,15 +272,15 @@ export interface PostalLocality {
 	state_name: string;
 }
 
-export interface Postal extends Omit<Deep<PostalDeep>, 'city' | 'city_local' | 'country' | 'country_name' | 'district' | 'district_name' | 'district_name_local' | 'latitude' | 'localities' | 'longitude' | 'postal' | 'state' | 'state_name' | 'state_name_local' | 'tax' | 'tax_rate' | 'tax_rate_city' | 'tax_rate_county' | 'tax_rate_special' | 'tax_rate_state' | 'timezone' | 'type'> {
+export interface Postal extends Omit<Deep<PostalDeep>, 'city' | 'city_local' | 'country' | 'country_name' | 'county' | 'county_name' | 'county_name_local' | 'latitude' | 'localities' | 'longitude' | 'postal' | 'state' | 'state_name' | 'state_name_local' | 'tax' | 'tax_rate' | 'tax_rate_city' | 'tax_rate_county' | 'tax_rate_special' | 'tax_rate_state' | 'timezone' | 'type'> {
 	postal: string;
 	city: string | null;
 	city_local: string | null;
 	/** Null/missing is unknown. An empty list has no eligible choices. One choice does not imply city. */
 	localities?: PostalLocality[] | null;
-	district: string | null;
-	district_name: string | null;
-	district_name_local: string | null;
+	county: string | null;
+	county_name: string | null;
+	county_name_local: string | null;
 	state: string | null;
 	state_name: string | null;
 	state_name_local: string | null;
@@ -705,7 +711,7 @@ export interface ElevationLocations {
 }
 
 export interface PointElectoral {
-	/** District code string; preserve leading zeros. */
+	/** Electoral district code string; preserve leading zeros. */
 	code: string;
 	name: string | null;
 	congress: number | null;
@@ -713,22 +719,22 @@ export interface PointElectoral {
 
 export interface PointDeep {
 	city: PointCity | null;
-	/** Missing on older responses; null when no supported district is known. */
+	/** Missing on older responses; null when no supported electoral district is known. */
 	electoral?: PointElectoral | null;
 	elevation: number | null;
 	elevation_ft: number | null;
 	resolution: number | null;
 }
 
-export interface Point extends Omit<Deep<PointDeep>, 'country' | 'country_name' | 'district' | 'district_name' | 'latitude' | 'longitude' | 'state' | 'state_name' | 'timezone'> {
+export interface Point extends Omit<Deep<PointDeep>, 'country' | 'country_name' | 'county' | 'county_name' | 'latitude' | 'longitude' | 'state' | 'state_name' | 'timezone'> {
 	latitude: number;
 	longitude: number;
 	country: string | null;
 	country_name: string | null;
 	state: string | null;
 	state_name: string | null;
-	district: string | null;
-	district_name: string | null;
+	county: string | null;
+	county_name: string | null;
 
 	timezone: string | null;
 }
@@ -955,8 +961,8 @@ export interface Address {
 	street: string | null;
 	unit: string | null;
 	city: string | null;
-	district: string | null;
-	district_name: string | null;
+	county: string | null;
+	county_name: string | null;
 	state: string | null;
 	state_name: string | null;
 	postal: string | null;
@@ -1317,7 +1323,7 @@ export interface PostalTax extends StateTax {
 }
 
 export interface StateDeep {
-	/** @deprecated Older deep contract. Read Core iso_subdivision on the current contract. */
+	/** @deprecated Older deep contract. Read Core iso_code on the current contract. */
 	iso_3166_2?: string | null;
 	population: number | null;
 	/** @deprecated No longer returned. Retained for source compatibility. */
@@ -1327,7 +1333,7 @@ export interface StateDeep {
 	tax: StateTax;
 }
 
-export interface DistrictDeep {
+export interface CountyDeep {
 	population: number | null;
 	/** @deprecated No longer returned. Retained for source compatibility. */
 	population_period?: string | null;
@@ -1343,8 +1349,8 @@ export interface DistrictDeep {
 }
 
 export interface CityDeep {
-	/** What this city is the capital of: country, state, or null. */
-	capital_of: 'country' | 'state' | null;
+	/** What this city is the capital of: country, state, county, or null. */
+	capital_of: 'country' | 'state' | 'county' | null;
 	elevation: number | null;
 	elevation_ft: number | null;
 	population: number | null;
@@ -1715,3 +1721,14 @@ export interface PostalTax {
  rate_city: number | null;
  rate_special: number | null;
 }
+
+/** @deprecated Use County. Returned JSON uses county on API 2.2. */
+export type District = County;
+/** @deprecated Use CountyDeep. */
+export type DistrictDeep = CountyDeep;
+/** @deprecated Use StateCountyItem. */
+export type StateDistrictItem = StateCountyItem;
+/** @deprecated Use StateCountyDeep. */
+export type StateDistrictDeep = StateCountyDeep;
+/** @deprecated Use StateCounties. Returned JSON uses counties on API 2.2. */
+export type StateDistricts = StateCounties;

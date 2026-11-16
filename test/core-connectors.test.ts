@@ -35,7 +35,7 @@ it('keeps Point city identity and qualified Postal neighbors in Deep', () => {
  const point: Point = fixtures.point, postal: Postal = fixtures.postal;
  expect(point).not.toHaveProperty('city_id'); expect(point?.city?.id).toBe('city_7aj899nvwyku');
  expect(postal.country).toBe('US'); expect(postal?.neighbors).toEqual(['00544']); expect(postal).not.toHaveProperty('deep');
- const older: Point = {latitude:0,longitude:0,country:null,country_name:null,state:null,state_name:null,district:null,district_name:null,timezone:null};
+ const older: Point = {latitude:0,longitude:0,country:null,country_name:null,state:null,state_name:null,county:null,county_name:null,timezone:null};
  expect(older.city).toBeUndefined();
  const detail: Partial<PostalDeep> = { neighbors: [] }; expect(detail.neighbors).toEqual([]); expect(detail.currency).toBeUndefined();
 });

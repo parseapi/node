@@ -17,7 +17,7 @@ async function main() {
 	let cardRequests = 0;
   const parse = parseAPI('fixture', { fetch: async (_input, init) => {
     const headers = new Headers(init?.headers);
-    if (headers.get('X-API-Version') !== '2.1.0') throw new Error('Packaged SDK must pin API 2.1.0');
+    if (headers.get('X-API-Version') !== '2.2.0') throw new Error('Packaged SDK must pin API 2.2.0');
     if (headers.has('Parse-Version')) throw new Error('Packaged SDK must send only the canonical API version header');
     if (headers.get('X-API-Key') !== 'fixture') throw new Error('Packaged SDK must preserve credentials');
     if (String(_input).endsWith('/preflight')) {

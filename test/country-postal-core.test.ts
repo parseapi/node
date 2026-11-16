@@ -16,7 +16,7 @@ it('reads Core postal guidance without requesting paid detail and preserves olde
 	const calls: URL[] = [];
 	const client = parseAPI('fixture', { fetch: async (input, init) => {
 		calls.push(new URL(String(input)));
-		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.1.0');
+		expect(new Headers(init?.headers).get('X-API-Version')).toBe('2.2.0');
 		return new Response(JSON.stringify(bodies[calls.length - 1]));
 	} });
 	for (const expected of bodies) expect(await client.country('US')).toEqual(expected);

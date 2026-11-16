@@ -18,7 +18,7 @@ it('uses ordinary requests, preserves retries and cancellation', async () => {
     return calls.length === 1 ? new Response('{"code":"unavailable"}', { status: 503, headers: { 'Retry-After': '0' } }) : new Response('{"timezones":[]}');
   } });
   await parse.time.zones(); expect(calls).toHaveLength(2);
-  for (const headers of calls) { expect(headers.get('Parse-Response')).toBeNull(); expect(headers.get('X-API-Version')).toBe('2.1.0'); }
+  for (const headers of calls) { expect(headers.get('Parse-Response')).toBeNull(); expect(headers.get('X-API-Version')).toBe('2.2.0'); }
   const fetch = vi.fn(); const signal = AbortSignal.abort(new Error('cancelled'));
   await expect(parseAPI('fixture', { fetch }).time.zones(undefined, { signal })).rejects.toThrow('cancelled');
   expect(fetch).not.toHaveBeenCalled();
